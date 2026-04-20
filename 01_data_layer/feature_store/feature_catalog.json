@@ -1,0 +1,110 @@
+[
+  {
+    "name": "DAYS_EMPLOYED_ANOM",
+    "source": "application",
+    "formula": "DAYS_EMPLOYED == 365243",
+    "description": "Flag anomalie emploi (retraites/inactifs)"
+  },
+  {
+    "name": "DEBT_TO_INCOME",
+    "source": "application",
+    "formula": "AMT_ANNUITY / AMT_INCOME_TOTAL",
+    "description": "Ratio dette/revenu (DTI)"
+  },
+  {
+    "name": "CREDIT_TO_ANNUITY_RATIO",
+    "source": "application",
+    "formula": "AMT_CREDIT / AMT_ANNUITY",
+    "description": "Ratio credit/annuite (proxy duree)"
+  },
+  {
+    "name": "CREDIT_TO_INCOME_RATIO",
+    "source": "application",
+    "formula": "AMT_CREDIT / AMT_INCOME_TOTAL",
+    "description": "Ratio credit/revenu"
+  },
+  {
+    "name": "GOODS_CREDIT_DIFF",
+    "source": "application",
+    "formula": "AMT_CREDIT - AMT_GOODS_PRICE",
+    "description": "Difference credit vs prix bien"
+  },
+  {
+    "name": "GOODS_CREDIT_RATIO",
+    "source": "application",
+    "formula": "AMT_GOODS_PRICE / AMT_CREDIT",
+    "description": "Ratio prix bien / credit"
+  },
+  {
+    "name": "AGE_YEARS",
+    "source": "application",
+    "formula": "-DAYS_BIRTH / 365.25",
+    "description": "Age en annees"
+  },
+  {
+    "name": "EMPLOYMENT_YEARS",
+    "source": "application",
+    "formula": "-DAYS_EMPLOYED / 365.25",
+    "description": "Anciennete emploi (annees)"
+  },
+  {
+    "name": "EMPLOYMENT_TO_AGE_RATIO",
+    "source": "application",
+    "formula": "DAYS_EMPLOYED / DAYS_BIRTH",
+    "description": "Ratio emploi / age"
+  },
+  {
+    "name": "INCOME_PER_CHILD",
+    "source": "application",
+    "formula": "AMT_INCOME_TOTAL / (CNT_CHILDREN + 1)",
+    "description": "Revenu par personne a charge"
+  },
+  {
+    "name": "INCOME_PER_FAMILY",
+    "source": "application",
+    "formula": "AMT_INCOME_TOTAL / CNT_FAM_MEMBERS",
+    "description": "Revenu par membre famille"
+  },
+  {
+    "name": "REGISTRATION_YEARS",
+    "source": "application",
+    "formula": "-DAYS_REGISTRATION / 365.25",
+    "description": "Anciennete enregistrement"
+  },
+  {
+    "name": "ID_PUBLISH_YEARS",
+    "source": "application",
+    "formula": "-DAYS_ID_PUBLISH / 365.25",
+    "description": "Anciennete piece identite"
+  },
+  {
+    "name": "EXT_SOURCE_MEAN",
+    "source": "application",
+    "formula": "mean(EXT_SOURCE_*)",
+    "description": "Score externe moyen"
+  },
+  {
+    "name": "EXT_SOURCE_STD",
+    "source": "application",
+    "formula": "std(EXT_SOURCE_*)",
+    "description": "Variabilite scores externes"
+  },
+  {
+    "name": "EXT_SOURCE_PRODUCT",
+    "source": "application",
+    "formula": "prod(EXT_SOURCE_*)",
+    "description": "Produit scores externes"
+  },
+  {
+    "name": "FLAG_DOCUMENT_SUM",
+    "source": "application",
+    "formula": "sum(FLAG_DOCUMENT_*)",
+    "description": "Nombre total de documents fournis"
+  },
+  {
+    "name": "FLAG_CONTACT_SUM",
+    "source": "application",
+    "formula": "sum(contact_flags)",
+    "description": "Nombre de contacts fournis"
+  }
+]

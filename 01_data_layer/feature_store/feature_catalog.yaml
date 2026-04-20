@@ -1,0 +1,245 @@
+# Feature Catalog — Credit Risk Engine
+# Documented, traceable feature registry
+# Each feature: name, source table, formula, description, type, category
+
+features:
+  # ═══ APPLICATION — Financial Ratios ═══════════════════════
+  - name: DEBT_TO_INCOME
+    source: application
+    formula: "AMT_ANNUITY / AMT_INCOME_TOTAL"
+    description: "Ratio dette sur revenu (DTI). Indicateur cle de solvabilite."
+    type: float
+    category: financial_ratio
+    importance: critical
+    regulatory_use: [decision_engine, ifrs9_staging]
+
+  - name: CREDIT_TO_ANNUITY_RATIO
+    source: application
+    formula: "AMT_CREDIT / AMT_ANNUITY"
+    description: "Proxy de la duree du pret en mois."
+    type: float
+    category: financial_ratio
+
+  - name: CREDIT_TO_INCOME_RATIO
+    source: application
+    formula: "AMT_CREDIT / AMT_INCOME_TOTAL"
+    description: "Ratio credit sur revenu. Mesure l'endettement global."
+    type: float
+    category: financial_ratio
+    importance: critical
+
+  - name: GOODS_CREDIT_DIFF
+    source: application
+    formula: "AMT_CREDIT - AMT_GOODS_PRICE"
+    description: "Difference entre credit accorde et prix du bien."
+    type: float
+    category: financial_ratio
+
+  - name: GOODS_CREDIT_RATIO
+    source: application
+    formula: "AMT_GOODS_PRICE / AMT_CREDIT"
+    description: "Ratio prix du bien sur credit (LTV proxy)."
+    type: float
+    category: financial_ratio
+
+  - name: INCOME_PER_CHILD
+    source: application
+    formula: "AMT_INCOME_TOTAL / (CNT_CHILDREN + 1)"
+    description: "Revenu par personne a charge."
+    type: float
+    category: demographic
+
+  - name: INCOME_PER_FAMILY
+    source: application
+    formula: "AMT_INCOME_TOTAL / CNT_FAM_MEMBERS"
+    description: "Revenu par tete dans le menage."
+    type: float
+    category: demographic
+
+  # ═══ APPLICATION — Demographics ═══════════════════════════
+  - name: AGE_YEARS
+    source: application
+    formula: "-DAYS_BIRTH / 365.25"
+    description: "Age du client en annees."
+    type: float
+    category: demographic
+
+  - name: EMPLOYMENT_YEARS
+    source: application
+    formula: "-DAYS_EMPLOYED / 365.25"
+    description: "Anciennete dans l'emploi actuel (annees)."
+    type: float
+    category: demographic
+
+  - name: EMPLOYMENT_TO_AGE_RATIO
+    source: application
+    formula: "DAYS_EMPLOYED / DAYS_BIRTH"
+    description: "Ratio anciennete emploi / age. Stabilite professionnelle."
+    type: float
+    category: demographic
+
+  - name: DAYS_EMPLOYED_ANOM
+    source: application
+    formula: "DAYS_EMPLOYED == 365243"
+    description: "Flag anomalie emploi (retraites, inactifs)."
+    type: binary
+    category: anomaly_flag
+
+  # ═══ APPLICATION — External Scores ════════════════════════
+  - name: EXT_SOURCE_MEAN
+    source: application
+    formula: "mean(EXT_SOURCE_1, EXT_SOURCE_2, EXT_SOURCE_3)"
+    description: "Moyenne des scores externes. Feature la plus predictive."
+    type: float
+    category: external_score
+    importance: critical
+
+  - name: EXT_SOURCE_STD
+    source: application
+    formula: "std(EXT_SOURCE_*)"
+    description: "Variabilite inter-sources. Signal d'incoherence."
+    type: float
+    category: external_score
+
+  - name: EXT_SOURCE_PRODUCT
+    source: application
+    formula: "EXT_SOURCE_1 * EXT_SOURCE_2 * EXT_SOURCE_3"
+    description: "Interaction multiplicative des scores externes."
+    type: float
+    category: external_score
+
+  # ═══ APPLICATION — Flags ══════════════════════════════════
+  - name: FLAG_DOCUMENT_SUM
+    source: application
+    formula: "sum(FLAG_DOCUMENT_*)"
+    description: "Nombre total de documents fournis."
+    type: integer
+    category: documentation
+
+  - name: FLAG_CONTACT_SUM
+    source: application
+    formula: "sum(contact_flags)"
+    description: "Nombre de moyens de contact fournis."
+    type: integer
+    category: documentation
+
+  # ═══ BUREAU — Credit History ══════════════════════════════
+  - name: BUREAU_DAYS_CREDIT_COUNT
+    source: bureau
+    formula: "count(DAYS_CREDIT) GROUP BY SK_ID_CURR"
+    description: "Nombre total de credits au bureau."
+    type: integer
+    category: bureau
+
+  - name: BUREAU_AMT_CREDIT_SUM_DEBT_SUM
+    source: bureau
+    formula: "sum(AMT_CREDIT_SUM_DEBT) GROUP BY SK_ID_CURR"
+    description: "Total dette outstanding au bureau."
+    type: float
+    category: bureau
+
+  - name: BUREAU_CREDIT_UTILIZATION
+    source: bureau
+    formula: "AMT_CREDIT_SUM_DEBT / AMT_CREDIT_SUM"
+    description: "Taux d'utilisation du credit bureau."
+    type: float
+    category: bureau
+    importance: high
+
+  - name: BUREAU_AMT_CREDIT_SUM_OVERDUE_SUM
+    source: bureau
+    formula: "sum(AMT_CREDIT_SUM_OVERDUE)"
+    description: "Total echeances impayees au bureau."
+    type: float
+    category: bureau
+
+  # ═══ INSTALLMENTS — Payment Behavior ═════════════════════
+  - name: INST_LATE_PAYMENT_RATE
+    source: installments_payments
+    formula: "mean(DAYS_ENTRY_PAYMENT > DAYS_INSTALMENT)"
+    description: "Taux de paiements en retard."
+    type: float
+    category: payment_behavior
+    importance: critical
+
+  - name: INST_MEAN_DAYS_LATE
+    source: installments_payments
+    formula: "mean(max(0, DAYS_ENTRY_PAYMENT - DAYS_INSTALMENT))"
+    description: "Retard moyen en jours."
+    type: float
+    category: payment_behavior
+
+  - name: INST_MAX_DAYS_LATE
+    source: installments_payments
+    formula: "max(DAYS_LATE) by SK_ID_PREV, then mean by SK_ID_CURR"
+    description: "Retard maximum historique."
+    type: float
+    category: payment_behavior
+
+  - name: INST_PAYMENT_DIFF_MEAN
+    source: installments_payments
+    formula: "mean(AMT_INSTALMENT - AMT_PAYMENT)"
+    description: "Ecart moyen entre montant du et montant paye."
+    type: float
+    category: payment_behavior
+
+  # ═══ CREDIT CARD — Revolving Behavior ════════════════════
+  - name: CC_UTILIZATION_RATE
+    source: credit_card_balance
+    formula: "mean(AMT_BALANCE / AMT_CREDIT_LIMIT_ACTUAL)"
+    description: "Taux d'utilisation moyen cartes de credit."
+    type: float
+    category: revolving
+    importance: high
+
+  - name: CC_MAX_UTILIZATION
+    source: credit_card_balance
+    formula: "max(AMT_BALANCE / AMT_CREDIT_LIMIT_ACTUAL)"
+    description: "Utilisation maximale historique."
+    type: float
+    category: revolving
+
+  - name: CC_DRAWING_COUNT
+    source: credit_card_balance
+    formula: "sum(CNT_DRAWINGS_CURRENT)"
+    description: "Nombre total de tirages carte."
+    type: integer
+    category: revolving
+
+  # ═══ PREVIOUS APPLICATIONS — History ═════════════════════
+  - name: PREV_APP_COUNT
+    source: previous_application
+    formula: "count(SK_ID_PREV) GROUP BY SK_ID_CURR"
+    description: "Nombre total de demandes anterieures."
+    type: integer
+    category: application_history
+
+  - name: PREV_REFUSED_RATE
+    source: previous_application
+    formula: "count(Refused) / count(all)"
+    description: "Taux de refus historique."
+    type: float
+    category: application_history
+    importance: high
+
+  - name: PREV_APPROVED_FLAG_SUM
+    source: previous_application
+    formula: "count(Approved)"
+    description: "Nombre de demandes approuvees."
+    type: integer
+    category: application_history
+
+metadata:
+  version: "2.0.0"
+  last_updated: "2024-01-01"
+  total_features: 30
+  categories:
+    - financial_ratio
+    - demographic
+    - external_score
+    - anomaly_flag
+    - documentation
+    - bureau
+    - payment_behavior
+    - revolving
+    - application_history

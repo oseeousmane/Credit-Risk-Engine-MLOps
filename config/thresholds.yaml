@@ -1,0 +1,57 @@
+# Credit Risk Engine - Central Configuration
+# Thresholds and regulatory parameters
+# CEMAC / COBAC / Basel III / IFRS 9
+
+decision_engine:
+  pd_thresholds:
+    accept_max: 0.30
+    review_max: 0.60
+    reject_min: 0.60
+  max_el_rate: 0.10
+  max_dti_ratio: 0.50
+  single_obligor_limit: 500000000
+
+ifrs9_staging:
+  stage_1_max_pd: 0.15
+  stage_2_max_pd: 0.999
+  stage_3_min_pd: 1.0
+  sicr_relative_threshold: 2.0
+  sicr_absolute_threshold: 0.03
+  dpd_stage_2: 30
+  dpd_stage_3: 90
+
+raroc:
+  target_hurdle_rate: 0.15
+  economic_capital_multiplier: 12.5
+  capital_ratio: 0.08
+  default_funding_rate: 0.045
+  default_operating_cost_ratio: 0.015
+
+regulatory:
+  framework: "Basel_III_Foundation_IRB"
+  pd_floor: 0.0003
+  lgd_floor_secured: 0.10
+  lgd_floor_unsecured: 0.25
+
+monitoring:
+  psi_warning: 0.10
+  psi_critical: 0.25
+  auc_degradation_threshold: 0.03
+  brier_degradation_threshold: 0.02
+  validation_frequency_tier1: "ANNUAL"
+  validation_frequency_tier2: "BIANNUAL"
+
+forward_looking:
+  scenarios:
+    base:
+      probability: 0.55
+      pd_scalar: 1.0
+      lgd_scalar: 1.0
+    adverse:
+      probability: 0.30
+      pd_scalar: 1.30
+      lgd_scalar: 1.10
+    severe:
+      probability: 0.15
+      pd_scalar: 1.80
+      lgd_scalar: 1.25

@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+:root {
+  /* LIGHT MODE (Clean, Professional, Linear-like) */
+  --bg-primary: #fcfcfc;
+  --bg-secondary: #f3f4f6;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fafafa;
+  --bg-elevated: #e5e7eb;
+  
+  --border-subtle: rgba(0, 0, 0, 0.08); /* sharper borders */
+  --border-active: rgba(0, 0, 0, 0.15);
+  
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  
+  --accent-blue: #0070f3; /* Vercel blue */
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #e11d48;
+  
+  --shadow-card: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
+  --shadow-intense: 0 12px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  
+  /* Glassmorphism Light */
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.05);
+}
+
+.dark {
+  /* DARK MODE (Scale AI / Vercel premium dark) */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #0a0a0a;
+  --bg-card-hover: #111111;
+  --bg-elevated: #1a1a1a;
+  
+  --border-subtle: rgba(255, 255, 255, 0.12); /* Brighter border for crisp lines */
+  --border-active: rgba(255, 255, 255, 0.3);
+  
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  
+  --accent-blue: #3b82f6; /* scale AI blue */
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+  
+  --shadow-card: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 20px -5px rgba(0,0,0,0.5);
+  --shadow-intense: 0 0 0 1px rgba(255,255,255,0.1), 0 12px 40px -10px rgba(0,0,0,0.8), 0 0 40px -10px rgba(59, 130, 246, 0.15);
+  
+  /* Glassmorphism Dark */
+  --glass-bg: rgba(10, 10, 10, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* AI Premium Radial Background */
+.bg-radial-premium {
+  position: relative;
+}
+.bg-radial-premium::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 600px;
+  background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-radial-premium > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glassmorphism Panel Focus (Linear/Vercel style) */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+}
+.glass-panel:hover {
+  box-shadow: var(--shadow-intense);
+  border-color: var(--border-subtle); /* subtle highlight on hover */
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Recharts Overrides for Dual Theme (Refined) */
+.recharts-default-tooltip {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-intense) !important;
+  backdrop-filter: blur(12px) !important;
+}
+.recharts-tooltip-item {
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+}
+.recharts-text {
+  fill: var(--text-muted) !important;
+  font-size: 11px !important;
+  font-family: var(--font-sans) !important;
+}
+.recharts-cartesian-axis-line {
+  display: none !important;
+}
+.recharts-cartesian-axis-tick-line {
+  display: none !important;
+}
+.recharts-cartesian-grid-horizontal line, 
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--border-subtle) !important;
+  stroke-dasharray: 4 4 !important;
+}

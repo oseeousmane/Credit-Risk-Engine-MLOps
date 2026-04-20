@@ -1,0 +1,71 @@
+# ═══════════════════════════════════════════════════════════════
+# Credit Risk Engine — Docker Compose
+# ═══════════════════════════════════════════════════════════════
+# Environnement de développement complet avec API + monitoring
+# ═══════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+services:
+  # ── Credit Risk Engine API ─────────────────────────────────
+  risk-engine-api:
+    build:
+      context: ../..
+      dockerfile: 09_infrastructure/docker/Dockerfile
+    container_name: credit-risk-engine
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=info
+      - PYTHONPATH=/app
+    volumes:
+      - ../../config:/app/config:ro
+      - model-artifacts:/app/02_modeling/pd_model/artifacts
+      - monitoring-data:/app/06_monitoring
+      - governance-logs:/app/07_governance/audit_logs
+    restart: unless-stopped
+    networks:
+      - risk-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── MLflow Tracking Server ─────────────────────────────────
+  mlflow:
+    image: python:3.11-slim
+    container_name: mlflow-server
+    command: >
+      bash -c "pip install mlflow==2.10.2 && 
+               mlflow server --host 0.0.0.0 --port 5000 
+               --backend-store-uri sqlite:///mlflow.db 
+               --default-artifact-root /mlflow/artifacts"
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    networks:
+      - risk-network
+    restart: unless-stopped
+
+volumes:
+  model-artifacts:
+    driver: local
+  monitoring-data:
+    driver: local
+  governance-logs:
+    driver: local
+  mlflow-data:
+    driver: local
+
+networks:
+  risk-network:
+    driver: bridge

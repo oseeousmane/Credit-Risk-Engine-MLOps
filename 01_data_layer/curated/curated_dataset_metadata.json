@@ -1,0 +1,16 @@
+{
+  "dataset": "train",
+  "n_rows": 307511,
+  "n_features": 226,
+  "initial_features": 122,
+  "added_features": 104,
+  "tables_joined": [
+    "bureau",
+    "previous_application",
+    "installments",
+    "credit_card",
+    "pos_cash"
+  ],
+  "build_time_seconds": 63.2,
+  "build_timestamp": "2026-04-19T19:03:55.395980"
+}

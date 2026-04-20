@@ -1,0 +1,93 @@
+# ═══════════════════════════════════════════════════════════════
+# MODEL CARD — PD Model (LightGBM)
+# ═══════════════════════════════════════════════════════════════
+# Carte d'identité du modèle conforme aux meilleures pratiques
+# de gouvernance des modèles (MRM / COBAC)
+# ═══════════════════════════════════════════════════════════════
+
+model:
+  id: "PD-LGBM-001"
+  name: "Probability of Default — LightGBM"
+  version: "1.0.0"
+  type: "PD (Probability of Default)"
+  risk_tier: 1  # CRITICAL — Impact matériel sur fonds propres
+  
+description: |
+  Modèle de scoring de la probabilité de défaut (PD) pour le risque de
+  crédit retail et commercial. Basé sur LightGBM (Gradient Boosted Decision Trees),
+  calibré sur le dataset Home Credit Default Risk et adapté au contexte CEMAC.
+  
+  Usage réglementaire :
+  - Calcul Expected Loss (EL = PD × LGD × EAD)
+  - Classification IFRS 9 (staging 1/2/3) 
+  - Décision de crédit automatisée (Accept/Review/Reject)
+  - Calcul RAROC (Risk-Adjusted Return on Capital)
+  - Reporting réglementaire COBAC
+
+algorithm:
+  type: "LightGBM (Gradient Boosted Decision Trees)"
+  boosting_type: "GBDT"
+  objective: "binary"
+  n_estimators: 2000
+  learning_rate: 0.02
+  num_leaves: 63
+  max_depth: 7
+  early_stopping: 100
+  
+training:
+  dataset: "Kaggle — Home Credit Default Risk"
+  n_features: "~17 (après feature engineering)"
+  n_train_samples: "TBD (dépend du run)"
+  target: "TARGET (binary: 0=non-default, 1=default)"
+  split_strategy: "Stratified Train/Validation/Test (65/15/20)"
+  class_balance: "is_unbalance=True + scale_pos_weight"
+  calibration: "Platt Scaling / Isotonic Regression (auto-sélection)"
+  
+validation:
+  discrimination:
+    auc_min_acceptable: 0.65
+    auc_min_production: 0.70
+    gini_min_production: 0.40
+    ks_min_production: 0.20
+  calibration:
+    brier_max: 0.10
+    hosmer_lemeshow_alpha: 0.05
+  stability:
+    psi_warning: 0.10
+    psi_critical: 0.25
+    
+regulatory:
+  framework: "Basel III — Foundation IRB"
+  pd_floor: 0.0003  # 3 bps
+  calibration_type: "PIT → TTC (Central Tendency Adjustment)"
+  backtesting: "Traffic Light Approach (annual)"
+  validation_frequency: "Annual (Tier 1)"
+  
+governance:
+  owner: "Credit Risk Analytics"
+  validator: "Model Validation Unit"
+  approver: "Chief Risk Officer"
+  regulatory_body: "COBAC"
+  
+deployment:
+  framework: "FastAPI + Uvicorn"
+  container: "Docker (multi-stage, non-root)"
+  monitoring: "PSI/CSI drift detection + performance tracking"
+  champion_challenger: "Automated comparison framework"
+  
+limitations:
+  - "Entraîné sur données Home Credit, pas directement sur données CEMAC"
+  - "LGD/EAD basés sur des proxies/simulations (pas de données historiques de recouvrement)"
+  - "Pas de modèle macro-économique calibré spécifiquement pour la zone CEMAC"
+  - "Forward-looking overlay basé sur des scénarios hypothétiques"
+
+ethical_considerations:
+  - "Variables sensibles (genre) traitées avec attention — pas utilisées directement"
+  - "Explicabilité assurée via SHAP values"
+  - "Audit trail complet pour traçabilité des décisions"
+  - "Contrôle de fairness prévu dans le pipeline"
+
+changelog:
+  - version: "1.0.0"
+    date: "2024-01-01"
+    description: "Version initiale MVP"
