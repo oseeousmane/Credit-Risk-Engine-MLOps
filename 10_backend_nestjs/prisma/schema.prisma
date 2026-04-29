@@ -1,0 +1,1282 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  engineType    = "binary"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ----------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------
+
+enum Role {
+  CLIENT
+  ANALYST
+  MANAGER
+  CRO
+  ADMIN
+}
+
+enum RiskRating {
+  AAA
+  AA_PLUS
+  AA
+  AA_MINUS
+  A_PLUS
+  A
+  A_MINUS
+  BBB_PLUS
+  BBB
+  BBB_MINUS
+  BB_PLUS
+  BB
+  B
+  CCC
+  D
+}
+
+enum RiskLevel {
+  LOW
+  MED
+  HIGH
+  CRITICAL
+}
+
+enum DecisionStatus {
+  APPROVE
+  APPROVE_WITH_CONDITIONS
+  SEND_TO_REVIEW
+  REJECT
+  PENDING
+}
+
+enum PipelineStage {
+  SUBMITTED
+  DOCUMENTS_PENDING
+  DOCUMENTS_VALIDATED
+  SCORED
+  ANALYST_REVIEW
+  MANAGER_REVIEW
+  COMMITTEE_REVIEW
+  APPROVED
+  APPROVED_WITH_CONDITIONS
+  REJECTED
+}
+
+enum DocumentStatus {
+  REQUIRED
+  UPLOADED
+  PENDING_VALIDATION
+  VALIDATED
+  REJECTED
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum ModelStatus {
+  HEALTHY
+  WARNING
+  DEGRADED
+}
+
+enum LifecycleStatus {
+  CANDIDATE
+  CHALLENGER
+  CHAMPION
+  ARCHIVED
+}
+
+enum DeploymentStatus {
+  DISABLED
+  SHADOW
+  PRODUCTION
+}
+
+enum IFRS9Stage {
+  STAGE_1
+  STAGE_2
+  STAGE_3
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  REVIEW
+  FAILED
+  NOT_APPLICABLE
+}
+
+enum ArtifactCategory {
+  DEMO_BASELINE
+  PROD_CHAMPION
+  TECHNICAL_ARTIFACT
+}
+
+enum AuthProvider {
+  LOCAL
+  OIDC
+  SAML
+}
+
+enum BorrowerSegment {
+  FORMAL
+  SEMI_FORMAL
+  INFORMAL
+  THIN_FILE
+}
+
+enum BorrowerStatus {
+  PROSPECT
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum ConsentSourceType {
+  MOBILE_MONEY
+  DEVICE_DATA
+  FIELD_DATA
+  OCR_DOCUMENT
+  CREDIT_BUREAU
+  KYC_IDENTITY
+  GPS_LOCATION
+  GUARANTOR_DATA
+  GROUP_DATA
+}
+
+enum ConsentPurpose {
+  UNDERWRITING
+  AFFORDABILITY_ASSESSMENT
+  FRAUD_PREVENTION
+  COLLECTIONS
+  PORTFOLIO_MONITORING
+  MODEL_MONITORING
+  MODEL_TRAINING
+  REGULATORY_REPORTING
+}
+
+enum ConsentStatus {
+  GRANTED
+  REVOKED
+  EXPIRED
+}
+
+enum ConsentCaptureChannel {
+  MOBILE_APP
+  FIELD_AGENT
+  BRANCH
+  USSD
+  WEB_PORTAL
+}
+
+enum MicroLoanProductType {
+  INDIVIDUAL
+  GROUP
+  MERCHANT
+  AGRI
+  EMERGENCY
+}
+
+enum MicroLoanApplicationStatus {
+  DRAFT
+  SUBMITTED
+  FIELD_REVIEW_REQUIRED
+  FIELD_REVIEWED
+  SCORED
+  SUPERVISOR_REVIEW
+  APPROVED
+  APPROVED_WITH_CONDITIONS
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum FieldVisitStatus {
+  PLANNED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum FieldVisitOutcome {
+  VERIFIED
+  NEEDS_REVIEW
+  REJECTED
+  FRAUD_SUSPECTED
+}
+
+enum PolicyStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum RepaymentFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  BULLET
+}
+
+enum ScorecardRecommendation {
+  APPROVE_SMALL_LIMIT
+  APPROVE_WITH_GUARANTOR
+  FIELD_REVIEW_REQUIRED
+  SUPERVISOR_REVIEW
+  DECLINE_FOR_NOW
+}
+
+enum LoanOfferStatus {
+  DRAFT
+  ISSUED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum DisbursementChannel {
+  CASH
+  BANK_TRANSFER
+  MOBILE_MONEY
+  AGENT_CASHOUT
+}
+
+enum DisbursementStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
+enum LoanAccountStatus {
+  PENDING_DISBURSEMENT
+  ACTIVE
+  CLOSED
+  DEFAULTED
+  WRITTEN_OFF
+  CANCELLED
+}
+
+enum RepaymentScheduleStatus {
+  SCHEDULED
+  DUE
+  PAID
+  PARTIALLY_PAID
+  LATE
+  DEFAULTED
+  WAIVED
+}
+
+enum RepaymentChannel {
+  CASH
+  BANK_TRANSFER
+  MOBILE_MONEY
+  AGENT_COLLECTION
+}
+
+enum RepaymentEventStatus {
+  POSTED
+  REVERSED
+  FAILED
+}
+
+enum DelinquencyStatus {
+  OPEN
+  CURED
+  ESCALATED
+  RESTRUCTURED
+  WRITTEN_OFF
+}
+
+enum CollectionActionType {
+  SMS_REMINDER
+  PHONE_CALL
+  WHATSAPP_MESSAGE
+  FIELD_VISIT
+  PROMISE_TO_PAY
+  RESTRUCTURING_PROPOSAL
+  GUARANTOR_CONTACT
+  GROUP_ESCALATION
+  LEGAL_NOTICE
+  WRITE_OFF_RECOMMENDATION
+}
+
+enum CollectionActionStatus {
+  PLANNED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AlternativeDataSourceType {
+  MOBILE_MONEY
+  AIRTIME
+  FIELD_DATA
+  CREDIT_BUREAU
+  OCR_DOCUMENT
+  DEVICE_DATA
+  REPAYMENT_HISTORY
+  GROUP_DATA
+  GUARANTOR_DATA
+}
+
+// ----------------------------------------------------------------------
+// Core Entities
+// ----------------------------------------------------------------------
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  name               String
+  passwordHash       String? // Nullable for SSO users
+  passwordAlgorithm  String    @default("BCRYPT")
+  passwordMigratedAt DateTime?
+  role               Role      @default(ANALYST)
+
+  // Federation Readiness
+  authProvider AuthProvider @default(LOCAL)
+  externalId   String?      @unique // ID from OIDC/SAML provider
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedCounterparties Counterparty[] @relation("AnalystCounterparties")
+  auditEvents            AuditEvent[]   @relation("ActorAuditEvents")
+  decisionsMade          Decision[]     @relation("DeciderRelation")
+  applications           Application[]  @relation("OwnerRelation")
+
+  // Client Specific Links
+  counterpartyId     String?
+  clientFirm         Counterparty?  @relation("ClientCounterparty", fields: [counterpartyId], references: [id])
+  notifications      Notification[]
+  documentsUploaded  Document[]     @relation("DocumentUploader")
+  documentsValidated Document[]     @relation("DocumentValidator")
+}
+
+model Counterparty {
+  id             String     @id @default(uuid())
+  lei            String     @unique // LEI or external ID
+  name           String
+  sector         String
+  geography      String?
+  internalRating RiskRating
+  riskLevel      RiskLevel
+  ifrs9Stage     IFRS9Stage @default(STAGE_1)
+  watchlistFlag  Boolean    @default(false)
+
+  // Business Demographics
+  industry        String?
+  yearsInBusiness Int?
+
+  // Financials (Enhanced for Data Realism)
+  revenue           Float? // Annual revenue in millions
+  ebitda            Float? // EBITDA in millions
+  netProfit         Float? // Net profit in millions
+  totalAssets       Float? // Total assets in millions
+  totalDebt         Float? // Total debt in millions
+  operatingCashFlow Float? // Cash flow from operations
+  currentRatio      Float? // Current Assets / Current Liabilities
+  leverageRatio     Float? // Total Debt / EBITDA or Assets
+  inventoryTurnover Float? // Efficiency ratio
+
+  // Behavioral & Credit History
+  daysPastDue        Int    @default(0)
+  missedPayments24m  Int    @default(0)
+  creditHistoryYears Float?
+  bureauScore        Int? // External credit bureau signal
+
+  exposure            Float @default(0.0) // in millions
+  expLimit            Float @default(0.0)
+  pd1y                Float @default(0.0)
+  expectedLoss        Float @default(0.0)
+  facilityUtilization Float @default(0.0)
+
+  lastReview DateTime @default(now())
+
+  analystId String?
+  analyst   User?   @relation("AnalystCounterparties", fields: [analystId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientUsers  User[]        @relation("ClientCounterparty")
+  applications Application[]
+  decisions    Decision[]
+  exposures    Exposure[]
+  documents    Document[]
+}
+
+model Exposure {
+  id             String       @id @default(uuid())
+  amount         Float
+  facilityType   String
+  currency       String       @default("USD")
+  counterpartyId String
+  counterparty   Counterparty @relation(fields: [counterpartyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Application {
+  id              String   @id @default(uuid())
+  reqId           String   @unique
+  requestedAmount Float
+  priority        Boolean  @default(false)
+  slaDeadline     DateTime
+
+  // Facility Terms
+  facilityType    String? // e.g., TERM_LOAN, REVOLVER
+  interestRate    Float? // percentage
+  tenorMonths     Int? // duration in months
+  collateralValue Float? // in millions
+  collateralType  String? // e.g., REAL_ESTATE, CASH, UNSECURED
+
+  repaymentSource   String? // e.g., CASH_FLOW, ASSET_SALE
+  amortizationType  String? // e.g., BULLET, LINEAR, ANNUITY
+  gracePeriodMonths Int?    @default(0)
+
+  currentStage PipelineStage @default(SUBMITTED)
+  pd           Float         @default(0.0)
+
+  counterpartyId String
+  counterparty   Counterparty @relation(fields: [counterpartyId], references: [id])
+
+  ownerId String?
+  owner   User?   @relation("OwnerRelation", fields: [ownerId], references: [id])
+
+  decision  Decision?
+  documents Document[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  metadata Json?
+}
+
+model Decision {
+  id            String      @id @default(uuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id])
+
+  counterpartyId String
+  counterparty   Counterparty @relation(fields: [counterpartyId], references: [id])
+
+  status       DecisionStatus @default(PENDING)
+  decisionType String // e.g., 'AUTO', 'MANUAL_COMMITTEE'
+
+  overrideFlag   Boolean @default(false)
+  overrideReason String?
+  justification  String?
+
+  // Dedicated cleanly structured JSON Snapshot
+  scoringSnapshot Json?
+
+  decidedById String?
+  decidedBy   User?     @relation("DeciderRelation", fields: [decidedById], references: [id])
+  decidedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------------------------------------------------
+// Governance & MLOps
+// ----------------------------------------------------------------------
+
+model ModelRegistry {
+  id          String   @id @default(uuid())
+  name        String
+  type        String // e.g., 'XGBOOST', 'LOG_REG'
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  versions ModelVersion[]
+}
+
+model ModelVersion {
+  id       String        @id @default(uuid())
+  modelId  String
+  registry ModelRegistry @relation(fields: [modelId], references: [id])
+
+  versionTag       String
+  status           ModelStatus
+  lifecycleStatus  LifecycleStatus  @default(CANDIDATE)
+  deploymentStatus DeploymentStatus @default(DISABLED)
+  artifactCategory ArtifactCategory @default(DEMO_BASELINE)
+
+  // Metrics Snapshot (In-Sample / Validation)
+  auc Float @default(0.0)
+  ks  Float @default(0.0)
+  psi Float @default(0.0)
+
+  // OOT (Out-of-Time) Metrics
+  oot_auc          Float?
+  oot_ks           Float?
+  oot_psi          Float?
+  oot_period_start DateTime?
+  oot_period_end   DateTime?
+
+  // MLOps Metadata
+  trainingTimestamp    DateTime?
+  featureSchemaVersion String? // e.g., 'v2_158_features'
+  validationStatus     String? // e.g., 'VALIDATED', 'PENDING', 'REJECTED'
+  deployedAt           DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  metricsLogs ModelMetrics[]
+}
+
+model ModelMetrics {
+  id             String       @id @default(uuid())
+  modelVersionId String
+  modelVersion   ModelVersion @relation(fields: [modelVersionId], references: [id])
+
+  inferenceVolume Int   @default(0)
+  errorRate       Float @default(0.0)
+  latencyP50      Float @default(0.0)
+  latencyP99      Float @default(0.0)
+
+  criticalFeatures Json? // Array of features with PSI
+
+  // Point-in-time metrics
+  auc Float?
+  ks  Float?
+  psi Float?
+
+  // Data Quality Metrics
+  avgPayloadQuality Float?
+  avgImputedCount   Float?
+
+  loggedAt DateTime @default(now())
+}
+
+model Alert {
+  id         String        @id @default(uuid())
+  severity   AlertSeverity
+  message    String
+  detail     String?
+  isResolved Boolean       @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+model Scenario {
+  id           String @id @default(uuid())
+  name         String
+  horizon      String
+  pdDelta      Float  @default(0.0)
+  expectedLoss Float  @default(0.0)
+  rwaImpact    Float  @default(0.0)
+
+  parameters Json // Unemployment, GDP shocks
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditEvent {
+  id         String @id @default(uuid())
+  eventType  String // e.g., 'DECISION_OVERRIDE', 'STAGE_TRANSITION'
+  entityType String // e.g., 'Application', 'Counterparty'
+  entityId   String
+
+  actorId String?
+  actor   User?   @relation("ActorAuditEvents", fields: [actorId], references: [id])
+
+  previousValue Json?
+  newValue      Json?
+
+  timestamp DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+// ----------------------------------------------------------------------
+// Client Portal Entities
+// ----------------------------------------------------------------------
+
+model Document {
+  id              String         @id @default(uuid())
+  type            String // e.g., 'FINANCIALS', 'LEGAL'
+  name            String
+  description     String?
+  fileUrl         String?
+  mimeType        String?
+  sizeBytes       Int?
+  status          DocumentStatus @default(REQUIRED)
+  rejectionReason String?
+  isRequired      Boolean        @default(true)
+
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id])
+
+  counterpartyId String
+  counterparty   Counterparty @relation(fields: [counterpartyId], references: [id])
+
+  uploadedById String?
+  uploadedBy   User?     @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  uploadedAt   DateTime?
+
+  validatedById     String?
+  validatedBy       User?     @relation("DocumentValidator", fields: [validatedById], references: [id])
+  validatedAt       DateTime?
+  validationComment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String // 'info', 'action', 'success'
+  isRead    Boolean  @default(false)
+  appReqId  String? // Reference application ReqId if needed
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------
+// Microfinance / Informal / B2C Foundation Pack
+// ----------------------------------------------------------------------
+
+model RetailBorrower {
+  id               String          @id @default(uuid())
+  externalId       String?         @unique
+  fullName         String
+  phone            String?         @unique
+  nationalIdNumber String?
+  dateOfBirth      DateTime?
+  gender           String?
+  geography        String?
+  address          String?
+  segment          BorrowerSegment @default(THIN_FILE)
+  status           BorrowerStatus  @default(PROSPECT)
+  identityVerified Boolean         @default(false)
+  kycLevel         String? // e.g. BASIC, STANDARD, ENHANCED
+  riskFlags        Json?
+  metadata         Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  informalBusinessProfile  InformalBusinessProfile?
+  consents                 ConsentGrant[]
+  applications             MicroLoanApplication[]
+  fieldVisits              FieldVisit[]
+  guarantorsRequested      Guarantor[]                      @relation("BorrowerGuarantors")
+  guarantorForApplications Guarantor[]                      @relation("GuarantorBorrower")
+  groupMemberships         GroupMembership[]
+  scorecards               ThinFileScorecard[]
+  decisions                MicroLoanDecision[]
+  offers                   LoanOffer[]
+  disbursements            Disbursement[]
+  loanAccounts             LoanAccount[]
+  repaymentEvents          RepaymentEvent[]
+  delinquencyEvents        DelinquencyEvent[]
+  collectionActions        CollectionAction[]
+  mobileMoneySnapshots     MobileMoneySnapshot[]
+  alternativeDataSnapshots AlternativeDataFeatureSnapshot[]
+
+  @@index([segment, status])
+  @@index([phone])
+}
+
+model InformalBusinessProfile {
+  id         String         @id @default(uuid())
+  borrowerId String         @unique
+  borrower   RetailBorrower @relation(fields: [borrowerId], references: [id])
+
+  businessName           String?
+  activityType           String
+  sector                 String?
+  locationType           String? // e.g. MARKET_STALL, HOME_BASED, MOBILE_VENDOR
+  yearsInActivity        Float?
+  monthlyRevenueEstimate Float?
+  monthlyExpenseEstimate Float?
+  seasonalityNotes       String?
+  stockValueEstimate     Float?
+  employeeCount          Int?
+  declaredIncomeSource   String?
+  metadata               Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ConsentGrant {
+  id                 String                @id @default(uuid())
+  borrowerId         String
+  borrower           RetailBorrower        @relation(fields: [borrowerId], references: [id])
+  sourceType         ConsentSourceType
+  purpose            ConsentPurpose
+  status             ConsentStatus         @default(GRANTED)
+  grantedAt          DateTime              @default(now())
+  expiresAt          DateTime?
+  revokedAt          DateTime?
+  consentTextVersion String
+  captureChannel     ConsentCaptureChannel
+  capturedBy         String?
+  evidenceUrl        String?
+  metadata           Json?
+
+  mobileMoneySnapshots     MobileMoneySnapshot[]
+  alternativeDataSnapshots AlternativeDataFeatureSnapshot[]
+
+  @@index([borrowerId, sourceType, purpose, status])
+}
+
+model MicroLoanPolicy {
+  id                         String               @id @default(uuid())
+  name                       String
+  version                    String
+  productType                MicroLoanProductType
+  segment                    BorrowerSegment
+  minAmount                  Float
+  maxAmount                  Float
+  currency                   String               @default("XAF")
+  allowedTenors              Json // array of tenor days
+  interestRateMin            Float
+  interestRateMax            Float
+  feeRules                   Json?
+  minScore                   Float
+  maxDebtBurdenRatio         Float?
+  requiresGuarantor          Boolean              @default(false)
+  requiresFieldVisit         Boolean              @default(true)
+  requiresMobileMoneyConsent Boolean              @default(false)
+  renewalRules               Json?
+  progressiveLendingRules    Json?
+  coolingOffPeriodDays       Int                  @default(0)
+  status                     PolicyStatus         @default(DRAFT)
+  approvedBy                 String?
+  approvedAt                 DateTime?
+  metadata                   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications MicroLoanApplication[]
+  snapshots    ProductPolicySnapshot[]
+
+  @@unique([name, version])
+  @@index([productType, segment, status])
+}
+
+model ProductPolicySnapshot {
+  id            String               @id @default(uuid())
+  policyId      String?
+  policy        MicroLoanPolicy?     @relation(fields: [policyId], references: [id])
+  policyName    String
+  policyVersion String
+  snapshot      Json
+  applicationId String               @unique
+  application   MicroLoanApplication @relation(fields: [applicationId], references: [id])
+
+  scorecards ThinFileScorecard[]
+  decisions  MicroLoanDecision[]
+  offers     LoanOffer[]
+
+  createdAt DateTime @default(now())
+}
+
+model MicroLoanApplication {
+  id              String                     @id @default(uuid())
+  reqId           String                     @unique
+  borrowerId      String
+  borrower        RetailBorrower             @relation(fields: [borrowerId], references: [id])
+  policyId        String?
+  policy          MicroLoanPolicy?           @relation(fields: [policyId], references: [id])
+  requestedAmount Float
+  currency        String                     @default("XAF")
+  purpose         String?
+  productType     MicroLoanProductType       @default(INDIVIDUAL)
+  segment         BorrowerSegment            @default(THIN_FILE)
+  channel         String? // e.g. FIELD_AGENT, BRANCH, MOBILE_APP
+  status          MicroLoanApplicationStatus @default(SUBMITTED)
+  priority        Boolean                    @default(false)
+  submittedAt     DateTime                   @default(now())
+  createdBy       String?
+  metadata        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  policySnapshot           ProductPolicySnapshot?
+  fieldVisits              FieldVisit[]
+  guarantors               Guarantor[]
+  scorecards               ThinFileScorecard[]
+  decisions                MicroLoanDecision[]
+  offers                   LoanOffer[]
+  disbursements            Disbursement[]
+  loanAccount              LoanAccount?
+  alternativeDataSnapshots AlternativeDataFeatureSnapshot[]
+
+  @@index([borrowerId, status])
+  @@index([segment, productType, status])
+}
+
+model FieldVisit {
+  id                   String               @id @default(uuid())
+  applicationId        String
+  application          MicroLoanApplication @relation(fields: [applicationId], references: [id])
+  borrowerId           String
+  borrower             RetailBorrower       @relation(fields: [borrowerId], references: [id])
+  status               FieldVisitStatus     @default(PLANNED)
+  outcome              FieldVisitOutcome?
+  visitType            String? // e.g. INITIAL, FOLLOW_UP, COLLECTION
+  assignedToId         String?
+  completedById        String?
+  scheduledAt          DateTime?
+  completedAt          DateTime?
+  latitude             Float?
+  longitude            Float?
+  address              String?
+  observations         Json?
+  agentConfidenceScore Float?
+  photos               Json?
+  auditMetadata        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId, status])
+  @@index([borrowerId, status])
+}
+
+model Guarantor {
+  id                  String               @id @default(uuid())
+  applicationId       String
+  application         MicroLoanApplication @relation(fields: [applicationId], references: [id])
+  borrowerId          String
+  borrower            RetailBorrower       @relation("BorrowerGuarantors", fields: [borrowerId], references: [id])
+  guarantorBorrowerId String?
+  guarantorBorrower   RetailBorrower?      @relation("GuarantorBorrower", fields: [guarantorBorrowerId], references: [id])
+  fullName            String
+  phone               String?
+  relationship        String?
+  guaranteeType       String?
+  maxLiabilityAmount  Float?
+  status              String               @default("PENDING")
+  metadata            Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([borrowerId])
+}
+
+model GroupMembership {
+  id         String         @id @default(uuid())
+  borrowerId String
+  borrower   RetailBorrower @relation(fields: [borrowerId], references: [id])
+  groupName  String
+  groupType  String? // e.g. TONTINE, VILLAGE_BANKING, SOLIDARITY_GROUP
+  role       String?
+  joinedAt   DateTime?
+  active     Boolean        @default(true)
+  groupScore Float?
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([borrowerId, active])
+}
+
+model ThinFileScorecard {
+  id                     String                  @id @default(uuid())
+  applicationId          String
+  application            MicroLoanApplication    @relation(fields: [applicationId], references: [id])
+  borrowerId             String
+  borrower               RetailBorrower          @relation(fields: [borrowerId], references: [id])
+  policySnapshotId       String?
+  policySnapshot         ProductPolicySnapshot?  @relation(fields: [policySnapshotId], references: [id])
+  identityScore          Float
+  activityStabilityScore Float
+  cashflowScore          Float
+  mobileMoneyScore       Float
+  repaymentHistoryScore  Float
+  guarantorGroupScore    Float
+  fieldConfidenceScore   Float
+  totalScore             Float
+  recommendation         ScorecardRecommendation
+  reasonCodes            Json
+  featureSnapshot        Json?
+  createdBy              String?
+
+  createdAt DateTime @default(now())
+
+  decisions MicroLoanDecision[]
+
+  @@index([applicationId, createdAt])
+  @@index([borrowerId, createdAt])
+}
+
+model MicroLoanDecision {
+  id               String                 @id @default(uuid())
+  applicationId    String
+  application      MicroLoanApplication   @relation(fields: [applicationId], references: [id])
+  borrowerId       String
+  borrower         RetailBorrower         @relation(fields: [borrowerId], references: [id])
+  scorecardId      String?
+  scorecard        ThinFileScorecard?     @relation(fields: [scorecardId], references: [id])
+  policySnapshotId String?
+  policySnapshot   ProductPolicySnapshot? @relation(fields: [policySnapshotId], references: [id])
+  status           DecisionStatus         @default(PENDING)
+  decisionType     String                 @default("HUMAN_IN_THE_LOOP")
+  approvedAmount   Float?
+  tenorDays        Int?
+  interestRate     Float?
+  overrideFlag     Boolean                @default(false)
+  overrideReason   String?
+  decidedById      String?
+  decidedAt        DateTime?
+  conditions       Json?
+  auditMetadata    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reasons DecisionReason[]
+  offers  LoanOffer[]
+
+  @@index([applicationId, createdAt])
+  @@index([borrowerId, status])
+}
+
+model DecisionReason {
+  id         String            @id @default(uuid())
+  decisionId String
+  decision   MicroLoanDecision @relation(fields: [decisionId], references: [id])
+  code       String
+  label      String
+  severity   String            @default("INFO")
+  source     String            @default("SCORECARD")
+  details    Json?
+
+  createdAt DateTime @default(now())
+}
+
+model LoanOffer {
+  id                 String                 @id @default(uuid())
+  applicationId      String
+  application        MicroLoanApplication   @relation(fields: [applicationId], references: [id])
+  borrowerId         String
+  borrower           RetailBorrower         @relation(fields: [borrowerId], references: [id])
+  decisionId         String
+  decision           MicroLoanDecision      @relation(fields: [decisionId], references: [id])
+  policySnapshotId   String?
+  policySnapshot     ProductPolicySnapshot? @relation(fields: [policySnapshotId], references: [id])
+  approvedAmount     Float
+  currency           String                 @default("XAF")
+  tenorDays          Int
+  interestRate       Float
+  fees               Json?
+  repaymentFrequency RepaymentFrequency
+  requiresGuarantor  Boolean                @default(false)
+  requiresCollateral Boolean                @default(false)
+  conditions         Json?
+  status             LoanOfferStatus        @default(DRAFT)
+  issuedAt           DateTime?
+  acceptedAt         DateTime?
+  expiresAt          DateTime?
+  acceptedBy         String?
+  auditMetadata      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  disbursements Disbursement[]
+  loanAccount   LoanAccount?
+
+  @@index([applicationId, status])
+  @@index([borrowerId, status])
+}
+
+model Disbursement {
+  id                String               @id @default(uuid())
+  loanOfferId       String
+  loanOffer         LoanOffer            @relation(fields: [loanOfferId], references: [id])
+  applicationId     String
+  application       MicroLoanApplication @relation(fields: [applicationId], references: [id])
+  borrowerId        String
+  borrower          RetailBorrower       @relation(fields: [borrowerId], references: [id])
+  loanAccountId     String?              @unique
+  loanAccount       LoanAccount?         @relation(fields: [loanAccountId], references: [id])
+  amount            Float
+  currency          String               @default("XAF")
+  channel           DisbursementChannel
+  provider          String?
+  providerReference String?
+  status            DisbursementStatus   @default(PENDING)
+  requestedBy       String?
+  disbursedAt       DateTime?
+  failureReason     String?
+  auditMetadata     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([loanOfferId, status])
+  @@index([borrowerId, status])
+}
+
+model LoanAccount {
+  id                   String               @id @default(uuid())
+  accountNumber        String               @unique
+  loanOfferId          String               @unique
+  loanOffer            LoanOffer            @relation(fields: [loanOfferId], references: [id])
+  applicationId        String               @unique
+  application          MicroLoanApplication @relation(fields: [applicationId], references: [id])
+  borrowerId           String
+  borrower             RetailBorrower       @relation(fields: [borrowerId], references: [id])
+  principalAmount      Float
+  outstandingPrincipal Float
+  currency             String               @default("XAF")
+  status               LoanAccountStatus    @default(ACTIVE)
+  openedAt             DateTime             @default(now())
+  closedAt             DateTime?
+  metadata             Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  disbursement       Disbursement?
+  repaymentSchedules RepaymentSchedule[]
+  repaymentEvents    RepaymentEvent[]
+  delinquencyEvents  DelinquencyEvent[]
+  collectionActions  CollectionAction[]
+
+  @@index([borrowerId, status])
+}
+
+model RepaymentSchedule {
+  id                String                  @id @default(uuid())
+  loanAccountId     String
+  loanAccount       LoanAccount             @relation(fields: [loanAccountId], references: [id])
+  installmentNumber Int
+  dueDate           DateTime
+  principalDue      Float
+  interestDue       Float                   @default(0)
+  feesDue           Float                   @default(0)
+  totalDue          Float
+  amountPaid        Float                   @default(0)
+  status            RepaymentScheduleStatus @default(SCHEDULED)
+  paidAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  repaymentEvents   RepaymentEvent[]
+  delinquencyEvents DelinquencyEvent[]
+  collectionActions CollectionAction[]
+
+  @@unique([loanAccountId, installmentNumber])
+  @@index([loanAccountId, dueDate, status])
+}
+
+model RepaymentEvent {
+  id                String               @id @default(uuid())
+  loanAccountId     String
+  loanAccount       LoanAccount          @relation(fields: [loanAccountId], references: [id])
+  scheduleId        String?
+  schedule          RepaymentSchedule?   @relation(fields: [scheduleId], references: [id])
+  borrowerId        String
+  borrower          RetailBorrower       @relation(fields: [borrowerId], references: [id])
+  amount            Float
+  currency          String               @default("XAF")
+  channel           RepaymentChannel
+  provider          String?
+  providerReference String?
+  status            RepaymentEventStatus @default(POSTED)
+  receivedAt        DateTime             @default(now())
+  metadata          Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([loanAccountId, receivedAt])
+  @@index([borrowerId, receivedAt])
+}
+
+model DelinquencyEvent {
+  id            String             @id @default(uuid())
+  loanAccountId String
+  loanAccount   LoanAccount        @relation(fields: [loanAccountId], references: [id])
+  scheduleId    String?
+  schedule      RepaymentSchedule? @relation(fields: [scheduleId], references: [id])
+  borrowerId    String
+  borrower      RetailBorrower     @relation(fields: [borrowerId], references: [id])
+  dpd           Int
+  overdueAmount Float
+  status        DelinquencyStatus  @default(OPEN)
+  severity      String             @default("WATCH")
+  reason        String?
+  openedAt      DateTime           @default(now())
+  curedAt       DateTime?
+  metadata      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  collectionActions CollectionAction[]
+
+  @@index([loanAccountId, status])
+  @@index([borrowerId, status])
+}
+
+model CollectionAction {
+  id                 String                 @id @default(uuid())
+  loanAccountId      String
+  loanAccount        LoanAccount            @relation(fields: [loanAccountId], references: [id])
+  scheduleId         String?
+  schedule           RepaymentSchedule?     @relation(fields: [scheduleId], references: [id])
+  delinquencyEventId String?
+  delinquencyEvent   DelinquencyEvent?      @relation(fields: [delinquencyEventId], references: [id])
+  borrowerId         String
+  borrower           RetailBorrower         @relation(fields: [borrowerId], references: [id])
+  actionType         CollectionActionType
+  status             CollectionActionStatus @default(PLANNED)
+  assignedToId       String?
+  scheduledAt        DateTime?
+  completedAt        DateTime?
+  outcome            String?
+  promiseToPayDate   DateTime?
+  promiseToPayAmount Float?
+  nextActionAt       DateTime?
+  notes              String?
+  auditMetadata      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([loanAccountId, status])
+  @@index([borrowerId, status])
+  @@index([delinquencyEventId])
+}
+
+model MobileMoneySnapshot {
+  id                   String         @id @default(uuid())
+  borrowerId           String
+  borrower             RetailBorrower @relation(fields: [borrowerId], references: [id])
+  consentGrantId       String?
+  consentGrant         ConsentGrant?  @relation(fields: [consentGrantId], references: [id])
+  provider             String
+  walletNumberMasked   String?
+  statementStart       DateTime
+  statementEnd         DateTime
+  cashInTotal          Float          @default(0)
+  cashOutTotal         Float          @default(0)
+  avgBalance           Float          @default(0)
+  transactionCount     Int            @default(0)
+  activeDays           Int            @default(0)
+  salaryLikeInflows    Int            @default(0)
+  merchantPaymentCount Int            @default(0)
+  reversalsCount       Int            @default(0)
+  metadata             Json?
+  capturedAt           DateTime       @default(now())
+
+  @@index([borrowerId, capturedAt])
+  @@index([consentGrantId])
+}
+
+model AlternativeDataFeatureSnapshot {
+  id                   String                    @id @default(uuid())
+  borrowerId           String
+  borrower             RetailBorrower            @relation(fields: [borrowerId], references: [id])
+  applicationId        String?
+  application          MicroLoanApplication?     @relation(fields: [applicationId], references: [id])
+  consentGrantId       String?
+  consentGrant         ConsentGrant?             @relation(fields: [consentGrantId], references: [id])
+  sourceType           AlternativeDataSourceType
+  featureSchemaVersion String
+  payloadQualityScore  Float
+  rawCount             Int                       @default(0)
+  derivedCount         Int                       @default(0)
+  imputedCount         Int                       @default(0)
+  declaredCount        Int                       @default(0)
+  features             Json
+  lineage              Json
+
+  createdAt DateTime @default(now())
+
+  @@index([borrowerId, sourceType, createdAt])
+  @@index([applicationId])
+}
+
+model FairnessMetric {
+  id          String          @id @default(uuid())
+  segment     BorrowerSegment
+  metricName  String
+  metricValue Float
+  sampleSize  Int
+  windowStart DateTime
+  windowEnd   DateTime
+  filters     Json?
+  generatedAt DateTime        @default(now())
+
+  @@index([segment, metricName, windowEnd])
+}
+
+// ----------------------------------------------------------------------
+// Governance & Configuration
+// ----------------------------------------------------------------------
+
+model ComplianceItem {
+  id            String           @id @default(uuid())
+  label         String
+  status        ComplianceStatus @default(REVIEW)
+  detail        String?
+  referenceDoc  String? // e.g. 'COBAC Circular No. 01/2022'
+  lastValidated DateTime?
+  dueDate       DateTime? // Next review due date
+  isActive      Boolean          @default(true)
+  sortOrder     Int              @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TechDocument {
+  id          String   @id @default(uuid())
+  name        String
+  version     String
+  fileType    String // 'pdf', 'py', 'doc', 'xlsx'
+  fileUrl     String?
+  description String?
+  isPublic    Boolean  @default(false) // Visible to client portal?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+model AdminSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique // e.g. 'auto_approve_max_pd'
+  value     String // Stored as string, parsed by consumer
+  label     String? // Human-readable label
+  group     String? // e.g. 'scoring_policy', 'notifications'
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
