@@ -282,6 +282,57 @@ export class ComplianceService {
    * Portfolio ECL Summary Report
    * Sector-level exposure and ECL summary ready for committee reporting.
    */
+  /**
+   * ECL Monthly Trend — real data from Decision.scoringSnapshot.ecl grouped by month.
+   * Returns up to 12 months of ECL + EAD evolution for the CRO dashboard chart.
+   */
+  async getEclTrend(months = 12) {
+    const since = new Date();
+    since.setMonth(since.getMonth() - months);
+
+    const decisions = await this.prisma.decision.findMany({
+      where: {
+        decidedAt: { gte: since },
+        scoringSnapshot: { not: undefined },
+      },
+      select: { decidedAt: true, scoringSnapshot: true },
+      orderBy: { decidedAt: 'asc' },
+    });
+
+    // Group by YYYY-MM
+    const byMonth: Record<string, { ecls: number[]; eads: number[] }> = {};
+    for (const d of decisions) {
+      if (!d.decidedAt) continue;
+      const snap = d.scoringSnapshot as any;
+      const ecl = snap?.ecl;
+      const ead = snap?.ead;
+      if (ecl == null) continue;
+      const key = d.decidedAt.toISOString().slice(0, 7); // "2026-05"
+      if (!byMonth[key]) byMonth[key] = { ecls: [], eads: [] };
+      byMonth[key].ecls.push(ecl);
+      if (ead != null) byMonth[key].eads.push(ead);
+    }
+
+    const sorted = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b));
+
+    // Running cumulative ECL (IFRS 9 stock, not flow)
+    let cumulativeEcl = 0;
+    return sorted.map(([month, data]) => {
+      const monthEcl = data.ecls.reduce((s, v) => s + v, 0);
+      cumulativeEcl += monthEcl;
+      return {
+        month: month.slice(0, 7),
+        label: new Date(month + '-01').toLocaleString('fr-FR', { month: 'short', year: '2-digit' }),
+        newEcl: parseFloat(monthEcl.toFixed(3)),
+        cumulativeEcl: parseFloat(cumulativeEcl.toFixed(3)),
+        avgEad: data.eads.length > 0
+          ? parseFloat((data.eads.reduce((s, v) => s + v, 0) / data.eads.length).toFixed(3))
+          : null,
+        count: data.ecls.length,
+      };
+    });
+  }
+
   async getPortfolioReport(actorId: string) {
     const counterparties = await this.prisma.counterparty.findMany({
       select: {

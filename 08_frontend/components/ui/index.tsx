@@ -3,7 +3,7 @@ import * as React from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import type { AlertSeverity } from '@/lib/types'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 // ─── StatusBadge ─────────────────────────────────────────────────────────────
@@ -57,6 +57,7 @@ interface KPIBlockProps {
   label: string
   value: ReactNode
   sub?: ReactNode
+  icon?: ReactNode
   delta?: number
   deltaLabel?: string
   accent?: 'blue' | 'emerald' | 'amber' | 'rose' | 'purple' | 'none'
@@ -75,7 +76,7 @@ const accentGlow: Record<string, string> = {
 }
 
 export function KPIBlock({
-  label, value, sub, delta, deltaLabel, accent = 'none', size = 'md', className, children
+  label, value, sub, icon, delta, deltaLabel, accent = 'none', size = 'md', className, children
 }: KPIBlockProps) {
   const isPositive = (delta ?? 0) < 0
   return (
@@ -86,7 +87,10 @@ export function KPIBlock({
       {accent !== 'none' && (
         <div className={cn('absolute inset-0 bg-gradient-to-br opacity-100 transition-all duration-500 pointer-events-none', accentGlow[accent])} />
       )}
-      <span className="relative text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">{label}</span>
+      <div className="relative flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">{label}</span>
+        {icon && <span className="text-zinc-600">{icon}</span>}
+      </div>
       <div className={cn(
         'relative font-black tracking-tight text-white leading-none',
         size === 'sm' ? 'text-2xl' : size === 'md' ? 'text-3xl' : size === 'lg' ? 'text-4xl' : 'text-5xl'

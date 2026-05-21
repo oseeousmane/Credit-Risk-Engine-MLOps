@@ -1,91 +1,144 @@
 'use client'
 import * as React from 'react'
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts'
-import { Download, Sparkles, AlertCircle, Loader2, RefreshCw, TrendingUp } from 'lucide-react'
+import {
+  Download, AlertCircle, Loader2, RefreshCw, TrendingUp, TrendingDown,
+  ShieldAlert, Brain, Clock, Users, BarChart2, Activity, AlertTriangle,
+} from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import {
-  KPIBlock, StatusBadge, LiveBadge, SectionHeader, DataTable, AlertBlock, Btn
-} from '@/components/ui'
+import { KPIBlock, StatusBadge, LiveBadge, SectionHeader, Btn } from '@/components/ui'
 import { fetchApi } from '@/lib/api-client'
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const fmt = (v: number | null | undefined, digits = 1) =>
+  v == null ? '—' : v.toFixed(digits)
+
+const fmtM = (v: number | null | undefined) =>
+  v == null ? '—' : `$${v.toFixed(1)}M`
+
+const item = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', bounce: 0, duration: 0.45 } },
+} as const
+
+const container = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.07 } },
+} as const
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function EclTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#0a0a0a] border border-white/[0.1] rounded-xl p-3 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-xs backdrop-blur-md">
+    <div className="bg-[#0a0a0a] border border-white/[0.1] rounded-xl p-3 shadow-xl text-xs backdrop-blur-md">
       <p className="text-zinc-500 font-mono uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-[#3ECF8E] font-bold text-base drop-shadow-[0_0_8px_rgba(62,207,142,0.5)]">${payload[0].value.toFixed(1)}M ECL</p>
+      <p className="text-[#3ECF8E] font-bold">{fmtM(payload[0]?.value)} ECL cumulé</p>
+      {payload[1] && <p className="text-blue-400">{fmtM(payload[1]?.value)} nouvelles originations</p>}
     </div>
   )
 }
 
-const ALGORITHMIC_INSIGHTS = [
-  { id: 1, type: 'warning', title: 'Sector Concentration Rising', body: 'Manufacturing sector now at 34.2% of total exposure — approaching the 35% internal limit.' },
-  { id: 2, type: 'critical', title: 'Stage Migration Signal', body: '3 counterparties showing SICR patterns consistent with Stage 2 migration within 30 days.' },
-]
+function SeverityDot({ severity }: { severity: string }) {
+  const c = severity === 'CRITICAL' ? 'bg-rose-500' : severity === 'WARNING' ? 'bg-amber-500' : 'bg-blue-500'
+  return <span className={`inline-block w-2 h-2 rounded-full ${c} flex-shrink-0 mt-1.5`} />
+}
+
+function PriorityBadge({ priority, sla }: { priority: string; sla: boolean }) {
+  if (sla) return <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-400">SLA BREACH</span>
+  if (priority === 'URGENT') return <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400">URGENT</span>
+  if (priority === 'HIGH') return <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-400">HIGH</span>
+  return <span className="text-[9px] font-mono text-zinc-600">—</span>
+}
+
+function ModelHealthPill({ status, auc }: { status: string | null; auc: number | null }) {
+  const ok = status === 'HEALTHY'
+  return (
+    <div className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border ${ok ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-amber-500/30 bg-amber-500/10 text-amber-400'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${ok ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse`} />
+      {status ?? 'N/A'} {auc != null ? `· AUC ${(auc).toFixed(3)}` : ''}
+    </div>
+  )
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export function CRODashboard() {
-  const kpiQuery = useQuery({
+  // ── Data fetching ─────────────────────────────────────────────────────────
+  const kpiQ = useQuery({
     queryKey: ['counterparty-kpis'],
     queryFn: () => fetchApi('/counterparties/kpis'),
-    refetchInterval: 60000,
+    refetchInterval: 60_000,
   })
 
-  const topExposureQuery = useQuery({
-    queryKey: ['counterparty-top'],
-    queryFn: () => fetchApi('/counterparties?limit=5&sortBy=exposure&sortDir=desc'),
+  const summaryQ = useQuery({
+    queryKey: ['monitoring-dashboard-summary'],
+    queryFn: () => fetchApi('/monitoring/dashboard-summary'),
+    refetchInterval: 60_000,
   })
 
-  const kpis = kpiQuery.data
-  const topExposure: any[] = topExposureQuery.data?.data || []
+  const eclTrendQ = useQuery({
+    queryKey: ['ecl-trend'],
+    queryFn: () => fetchApi('/compliance/reports/ecl-trend?months=12'),
+  })
 
-  const eclTrend = kpis ? [
-    { month: 'Jan', value: kpis.totalEL * 0.92 },
-    { month: 'Feb', value: kpis.totalEL * 0.95 },
-    { month: 'Mar', value: kpis.totalEL * 0.94 },
-    { month: 'Apr', value: kpis.totalEL * 0.97 },
-    { month: 'May', value: kpis.totalEL * 0.99 },
-    { month: 'Jun', value: kpis.totalEL },
-  ] : []
+  const alertsQ = useQuery({
+    queryKey: ['monitoring-alerts'],
+    queryFn: () => fetchApi('/monitoring/alerts?resolved=false'),
+    refetchInterval: 30_000,
+  })
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  } as const
+  const queueQ = useQuery({
+    queryKey: ['decisions-queue'],
+    queryFn: () => fetchApi('/decisions/queue?limit=10'),
+    refetchInterval: 30_000,
+  })
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', bounce: 0, duration: 0.5 } }
-  } as const
+  const kpis = kpiQ.data
+  const summary = summaryQ.data
+  const eclTrend: any[] = eclTrendQ.data ?? []
+  const alerts: any[] = alertsQ.data?.slice(0, 5) ?? []
+  const queue: any[] = queueQ.data ?? []
+
+  // Coverage ratio computed client-side
+  const coverageRatio = kpis?.totalExposure > 0
+    ? ((kpis.totalEL / kpis.totalExposure) * 100).toFixed(2)
+    : null
+
+  // ECL trend fallback: if no real data yet, show flat line at current EL
+  const chartData = eclTrend.length > 0
+    ? eclTrend
+    : kpis
+      ? [{ label: 'Now', cumulativeEcl: kpis.totalEL, newEcl: 0 }]
+      : []
+
+  const isAnyLoading = kpiQ.isLoading || summaryQ.isLoading
+  const refetchAll = () => { kpiQ.refetch(); summaryQ.refetch(); eclTrendQ.refetch(); alertsQ.refetch(); queueQ.refetch() }
 
   return (
-    <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-      className="p-6 space-y-6 pb-10"
-    >
+    <motion.div variants={container} initial="hidden" animate="show" className="p-6 space-y-5 pb-12">
+
+      {/* ── Header ── */}
       <SectionHeader
         title="Risk Intelligence"
-        subtitle="INSTITUTIONAL RISK COMMAND CENTER"
-        badge={
-          <div className="flex items-center gap-3">
-            <LiveBadge />
-            <span className="text-[11px] text-zinc-600">
-              {kpiQuery.isLoading ? 'Loading...' : kpiQuery.isError ? 'Error loading' : 'Updated just now'}
-            </span>
-          </div>
-        }
+        subtitle="CRO COMMAND CENTER — IFRS 9 / COBAC"
+        badge={<LiveBadge />}
         actions={
           <div className="flex items-center gap-3">
-            {kpiQuery.isError && (
-              <button onClick={() => kpiQuery.refetch()} className="flex items-center gap-2 text-[12px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-2 transition-colors hover:bg-amber-500/20">
-                <RefreshCw className="w-3.5 h-3.5" /> Retry
+            {summary && (
+              <ModelHealthPill
+                status={summary.model?.status ?? null}
+                auc={summary.model?.auc ?? null}
+              />
+            )}
+            {(kpiQ.isError || summaryQ.isError) && (
+              <button onClick={refetchAll} className="flex items-center gap-2 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5 hover:bg-amber-500/20 transition-colors">
+                <RefreshCw className="w-3 h-3" /> Retry
               </button>
             )}
             <Btn variant="secondary" size="md">
@@ -95,157 +148,399 @@ export function CRODashboard() {
         }
       />
 
-      {/* Row 1: ECL Hero + 3 KPIs */}
+      {/* ── Row 1: 6 KPI cards ── */}
+      <div className="grid grid-cols-6 gap-3">
+        {isAnyLoading ? (
+          <div className="col-span-6 flex items-center justify-center h-24">
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-600" />
+          </div>
+        ) : (
+          <>
+            <motion.div variants={item} className="col-span-1">
+              <KPIBlock
+                label="Portfolio EAD"
+                value={<span className="tabular-nums text-2xl">{fmtM(kpis?.totalExposure)}</span>}
+                accent="emerald"
+                icon={<BarChart2 className="w-4 h-4" />}
+              />
+            </motion.div>
+
+            <motion.div variants={item} className="col-span-1">
+              <KPIBlock
+                label="ECL Portefeuille (IFRS 9)"
+                value={<span className="tabular-nums text-2xl">{fmtM(kpis?.totalEL)}</span>}
+                accent="rose"
+                icon={<TrendingUp className="w-4 h-4" />}
+                sub={<span className="text-[10px] text-zinc-600">Provision stock cumulée</span>}
+              />
+            </motion.div>
+
+            <motion.div variants={item} className="col-span-1">
+              <KPIBlock
+                label="Coverage Ratio ECL/EAD"
+                value={<span className="tabular-nums text-2xl">{coverageRatio != null ? `${coverageRatio}%` : '—'}</span>}
+                accent={parseFloat(coverageRatio ?? '0') < 1 ? 'amber' : 'emerald'}
+                icon={<Activity className="w-4 h-4" />}
+                sub={<span className="text-[10px] text-zinc-600">Seuil prudentiel ≥ 1%</span>}
+              />
+            </motion.div>
+
+            <motion.div variants={item} className="col-span-1">
+              <KPIBlock
+                label="Override Rate (30j)"
+                value={<span className={`tabular-nums text-2xl ${(summary?.overrideRate ?? 0) > 15 ? 'text-rose-400' : (summary?.overrideRate ?? 0) > 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  {summary ? `${fmt(summary.overrideRate)}%` : '—'}
+                </span>}
+                accent="amber"
+                icon={<ShieldAlert className="w-4 h-4" />}
+                sub={<span className="text-[10px] text-zinc-600">{summary?.overrideCount ?? '—'} / {summary?.totalDecisions30d ?? '—'} décisions</span>}
+              />
+            </motion.div>
+
+            <motion.div variants={item} className="col-span-1">
+              <KPIBlock
+                label="Modèle ML — Gini"
+                value={<span className={`tabular-nums text-2xl ${(summary?.model?.gini ?? 0) >= 45 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {summary?.model?.gini != null ? `${fmt(summary.model.gini)}%` : '—'}
+                </span>}
+                accent="blue"
+                icon={<Brain className="w-4 h-4" />}
+                sub={<span className="text-[10px] text-zinc-600">Floor MRM: 45% | PSI {summary?.model?.psi != null ? fmt(summary.model.psi, 3) : '—'}</span>}
+              />
+            </motion.div>
+
+            <motion.div variants={item} className="col-span-1">
+              <KPIBlock
+                label="Watchlist + Stage 2/3"
+                value={<span className={`tabular-nums text-2xl ${(summary?.stageAtRiskCount ?? 0) > 5 ? 'text-rose-400' : 'text-amber-400'}`}>
+                  {summary ? summary.stageAtRiskCount : '—'}
+                </span>}
+                accent="rose"
+                icon={<AlertTriangle className="w-4 h-4" />}
+                sub={<span className="text-[10px] text-zinc-600">S2: {summary?.stage2Count ?? '—'} · S3: {summary?.stage3Count ?? '—'} · WL: {summary?.watchlistCount ?? '—'}</span>}
+              />
+            </motion.div>
+          </>
+        )}
+      </div>
+
+      {/* ── Row 2: ECL Trend + IFRS 9 Stages ── */}
       <div className="grid grid-cols-12 gap-4">
-        {/* ECL Hero */}
-        <motion.div variants={itemVariants} className="col-span-7 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-6 overflow-hidden relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#3ECF8E]/5 to-transparent pointer-events-none group-hover:from-[#3ECF8E]/10 transition-colors duration-500" />
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 mb-3 relative z-10">
-            Expected Credit Loss (IFRS 9)
+
+        {/* ECL Trend — données réelles */}
+        <motion.div variants={item} className="col-span-8 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+          <div className="flex items-start justify-between mb-1">
+            <div>
+              <h3 className="text-sm font-bold text-white">ECL Évolution — Stock Provisions</h3>
+              <p className="text-[10px] text-zinc-500 mt-0.5">
+                {eclTrend.length > 0
+                  ? `Données réelles sur ${eclTrend.length} mois depuis les snapshots de décision`
+                  : 'En attente de décisions avec scoringSnapshot.ecl — données insuffisantes'}
+              </p>
+            </div>
+            {eclTrendQ.isLoading && <Loader2 className="w-4 h-4 animate-spin text-zinc-600" />}
           </div>
-          <div className="flex items-end gap-4 mb-6 relative z-10">
-            {kpiQuery.isLoading ? (
-              <Loader2 className="w-8 h-8 animate-spin text-zinc-600" />
-            ) : (
-              <>
-                <span className="text-6xl font-black text-white tracking-tight tabular-nums">
-                  ${kpis ? kpis.totalEL.toFixed(1) : '—'}M
-                </span>
-                <div className="flex items-center gap-1.5 text-rose-400 text-xs font-bold bg-rose-500/10 border border-rose-500/20 rounded px-2.5 py-1 mb-1.5 shadow-[0_0_10px_rgba(244,63,94,0.1)]">
-                  <TrendingUp className="w-3 h-3" /> IFRS 9 ECL
-                </div>
-              </>
-            )}
-          </div>
-          <div className="h-[180px] relative z-10">
-             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={eclTrend} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+
+          {eclTrend.length === 0 && !eclTrendQ.isLoading && (
+            <div className="flex items-center gap-2 mt-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+              <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+              <p className="text-[11px] text-amber-400">
+                Aucun historique ECL disponible — soumettre des décisions avec scoring ML pour alimenter le graphique.
+              </p>
+            </div>
+          )}
+
+          <div className="h-[200px] mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 5, right: 4, left: -16, bottom: 0 }}>
                 <defs>
                   <linearGradient id="eclGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3ECF8E" stopOpacity={0.4} />
+                    <stop offset="0%" stopColor="#3ECF8E" stopOpacity={0.35} />
                     <stop offset="100%" stopColor="#3ECF8E" stopOpacity={0.01} />
+                  </linearGradient>
+                  <linearGradient id="newGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.01} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.02)" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#52525b' }} tickLine={false} axisLine={false} dy={8} />
-                <YAxis tick={{ fontSize: 10, fill: '#52525b' }} tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(0)}M`} />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(62,207,142,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                <Area type="monotone" dataKey="value" stroke="#3ECF8E" strokeWidth={3} fill="url(#eclGrad)" dot={{ r: 3, fill: '#0a0a0a', stroke: '#3ECF8E', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#3ECF8E', stroke: '#0a0a0a', strokeWidth: 2 }} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#52525b' }} tickLine={false} axisLine={false} dy={6} />
+                <YAxis tick={{ fontSize: 10, fill: '#52525b' }} tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(1)}M`} />
+                <Tooltip content={<EclTooltip />} cursor={{ stroke: 'rgba(62,207,142,0.15)', strokeWidth: 1 }} />
+                <Area type="monotone" dataKey="cumulativeEcl" stroke="#3ECF8E" strokeWidth={2.5}
+                  fill="url(#eclGrad)" dot={false} activeDot={{ r: 5, fill: '#3ECF8E' }} name="ECL cumulé" />
+                <Area type="monotone" dataKey="newEcl" stroke="#60a5fa" strokeWidth={1.5}
+                  fill="url(#newGrad)" dot={false} activeDot={{ r: 4, fill: '#60a5fa' }} name="Nouvelles originations" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          <div className="flex items-center gap-4 mt-2">
+            <span className="flex items-center gap-1.5 text-[10px] text-zinc-500"><span className="w-3 h-0.5 bg-[#3ECF8E] inline-block rounded" /> ECL stock cumulé</span>
+            <span className="flex items-center gap-1.5 text-[10px] text-zinc-500"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> Nouvelles originations ECL</span>
+          </div>
         </motion.div>
 
-        {/* 3 KPIs */}
-        <div className="col-span-5 flex flex-col gap-4">
-          {kpiQuery.isLoading ? (
-            <div className="flex-1 flex items-center justify-center border border-white/[0.08] rounded-xl bg-[#0a0a0a]">
-              <Loader2 className="w-6 h-6 animate-spin text-zinc-600" />
-            </div>
+        {/* IFRS 9 Stage Allocation */}
+        <motion.div variants={item} className="col-span-4 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+          <h3 className="text-sm font-bold text-white mb-0.5">Allocation IFRS 9</h3>
+          <p className="text-[10px] text-zinc-500 mb-4">Répartition par stade de dépréciation</p>
+
+          {kpiQ.isLoading ? (
+            <div className="flex items-center justify-center h-32"><Loader2 className="w-5 h-5 animate-spin text-zinc-600" /></div>
           ) : (
             <>
-              <motion.div variants={itemVariants} className="flex-1">
-                <KPIBlock label="Total Portfolio Exposure" value={<span className="tabular-nums">${kpis ? kpis.totalExposure.toFixed(1) : '—'}M</span>} accent="emerald" className="h-full">
-                  <div className="h-1 bg-white/[0.06] rounded-full mt-2 overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: '72%' }} transition={{ duration: 1, ease: 'easeOut' }} className="h-full bg-[#3ECF8E]/50 rounded-full" />
+              <div className="space-y-3">
+                {[
+                  { stage: 'Stage 1', pct: kpis?.stage1Pct ?? 0, color: '#3ECF8E', label: 'Sain (12M ECL)', count: summary?.stage2Count != null ? kpis?.totalCounterparties - summary.stage2Count - summary.stage3Count : null },
+                  { stage: 'Stage 2', pct: kpis?.stage2Pct ?? 0, color: '#f59e0b', label: 'SICR détecté', count: summary?.stage2Count },
+                  { stage: 'Stage 3', pct: kpis?.stage3Pct ?? 0, color: '#f43f5e', label: 'Défaut (LT ECL)', count: summary?.stage3Count },
+                ].map(({ stage, pct, color, label, count }) => (
+                  <div key={stage}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-semibold text-zinc-300">{stage}</span>
+                      <div className="flex items-center gap-2">
+                        {count != null && <span className="text-[10px] text-zinc-600">{count} cpties</span>}
+                        <span className="text-[11px] font-mono font-bold" style={{ color }}>{pct.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.max(pct, 1)}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                    </div>
+                    <p className="text-[9px] text-zinc-600 mt-0.5">{label}</p>
                   </div>
-                </KPIBlock>
-              </motion.div>
-              <motion.div variants={itemVariants} className="flex-1">
-                <KPIBlock label="Avg. Probability of Default" value={<span className="tabular-nums">{kpis ? kpis.avgPD.toFixed(2) : '—'}%</span>} accent="rose" className="h-full">
-                  <div className="h-1 bg-white/[0.06] rounded-full mt-2 overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min((kpis?.avgPD || 0) * 10, 100)}%` }} transition={{ duration: 1, ease: 'easeOut' }} className="h-full bg-rose-500/60 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.3)]" />
-                  </div>
-                </KPIBlock>
-              </motion.div>
-              <motion.div variants={itemVariants} className="flex-1">
-                <KPIBlock label="Counterparties Monitored" value={<span className="tabular-nums">{kpis ? kpis.totalCounterparties : '—'}</span>} accent="amber" className="h-full">
-                  <div className="h-1 bg-white/[0.06] rounded-full mt-2 overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: '55%' }} transition={{ duration: 1, ease: 'easeOut' }} className="h-full bg-amber-500/60 rounded-full" />
-                  </div>
-                </KPIBlock>
-              </motion.div>
+                ))}
+              </div>
+
+              {/* Coverage Ratio bar */}
+              <div className="mt-4 pt-4 border-t border-white/[0.04]">
+                <div className="flex justify-between text-[10px] mb-1">
+                  <span className="text-zinc-500">Coverage Ratio</span>
+                  <span className={`font-mono font-bold ${parseFloat(coverageRatio ?? '0') >= 1 ? 'text-emerald-400' : 'text-amber-400'}`}>{coverageRatio ?? '—'}%</span>
+                </div>
+                <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${Math.min(parseFloat(coverageRatio ?? '0') * 10, 100)}%` }} />
+                </div>
+              </div>
             </>
           )}
-        </div>
+        </motion.div>
       </div>
 
-      {/* Row 2: Insights + IFRS 9 Allocation */}
+      {/* ── Row 3: Alerts + Override/Fallback metrics ── */}
       <div className="grid grid-cols-12 gap-4">
-        <motion.div variants={itemVariants} className="col-span-5 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-6 relative group overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-opacity">
-             <Sparkles className="w-24 h-24 text-[#3ECF8E] blur-2xl" />
-          </div>
-          <div className="flex items-center gap-2 mb-5 relative z-10">
-            <Sparkles className="w-4 h-4 text-[#3ECF8E]" />
-            <h3 className="text-sm font-bold text-white">Algorithmic Insights</h3>
-          </div>
-          <div className="space-y-3 relative z-10">
-            {ALGORITHMIC_INSIGHTS.map(ins => (
-              <AlertBlock
-                key={ins.id}
-                severity={ins.type === 'warning' ? 'WARNING' : 'CRITICAL'}
-                title={ins.title}
-                body={ins.body}
-              />
-            ))}
-          </div>
-        </motion.div>
 
-        <motion.div variants={itemVariants} className="col-span-7 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-6">
-          <h3 className="text-sm font-bold text-white mb-1">IFRS 9 Stage Allocation</h3>
-          <p className="text-[11px] text-zinc-500 mb-6">Portfolio segmentation by impairment stage</p>
-          {kpiQuery.isLoading ? (
-            <div className="flex items-center justify-center h-32"><Loader2 className="w-6 h-6 animate-spin text-zinc-600" /></div>
+        {/* Real alerts from /monitoring/alerts */}
+        <motion.div variants={item} className="col-span-5 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-400" />
+              <h3 className="text-sm font-bold text-white">Alertes Actives</h3>
+            </div>
+            {alertsQ.isLoading && <Loader2 className="w-4 h-4 animate-spin text-zinc-600" />}
+            {alerts.length > 0 && (
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-400">{alerts.length} actives</span>
+            )}
+          </div>
+
+          {alerts.length === 0 && !alertsQ.isLoading ? (
+            <div className="flex flex-col items-center justify-center h-32 gap-2">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Activity className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p className="text-zinc-500 text-xs">Aucune alerte active</p>
+            </div>
           ) : (
-            <div className="flex items-end justify-around gap-4 h-[140px]">
-              {[
-                { stage: 1, value: kpis?.stage1Pct ?? 0, color: 'border-[#3ECF8E]/30 bg-[#3ECF8E]/5 text-[#3ECF8E]', glow: 'shadow-[0_0_20px_rgba(62,207,142,0.1)]' },
-                { stage: 2, value: kpis?.stage2Pct ?? 0, color: 'border-amber-500/30 bg-amber-500/5 text-amber-300', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.1)]' },
-                { stage: 3, value: kpis?.stage3Pct ?? 0, color: 'border-rose-500/30 bg-rose-500/5 text-rose-300', glow: 'shadow-[0_0_20px_rgba(244,63,94,0.1)]' },
-              ].map(({ stage, value, color, glow }) => (
-                <div key={stage} className="flex flex-col items-center gap-3 flex-1 h-full justify-end">
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: `${Math.max(value, 15)}%`, opacity: 1 }}
-                    transition={{ duration: 0.8, type: 'spring', bounce: 0.2 }}
-                    className={`w-full max-w-[140px] flex items-center justify-center rounded-t-2xl border-x border-t border-b-0 ${color} ${glow} relative overflow-hidden`}
-                  >
-                     <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/5 pointer-events-none" />
-                     <span className="text-2xl font-black tabular-nums">{value.toFixed(0)}%</span>
-                  </motion.div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Stage {stage}</div>
+            <div className="space-y-2.5">
+              {alerts.map((a: any) => (
+                <div key={a.id} className={`flex gap-2.5 p-3 rounded-lg border ${
+                  a.severity === 'CRITICAL' ? 'border-rose-500/20 bg-rose-500/5' :
+                  a.severity === 'WARNING' ? 'border-amber-500/20 bg-amber-500/5' :
+                  'border-blue-500/20 bg-blue-500/5'
+                }`}>
+                  <SeverityDot severity={a.severity} />
+                  <div className="min-w-0">
+                    <p className={`text-xs font-semibold truncate ${
+                      a.severity === 'CRITICAL' ? 'text-rose-400' :
+                      a.severity === 'WARNING' ? 'text-amber-400' : 'text-blue-400'
+                    }`}>{a.message}</p>
+                    {a.detail && <p className="text-[10px] text-zinc-600 mt-0.5 line-clamp-2">{a.detail}</p>}
+                    <p className="text-[9px] text-zinc-700 mt-1 font-mono">
+                      {new Date(a.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </motion.div>
+
+        {/* Override Rate + Fallback + Model metrics */}
+        <motion.div variants={item} className="col-span-7 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Brain className="w-4 h-4 text-blue-400" />
+            <h3 className="text-sm font-bold text-white">Gouvernance MRM</h3>
+            <span className="text-[10px] text-zinc-600 ml-auto">Basel II Pillar 2 · IFRS 9 §B5.5</span>
+          </div>
+
+          {summaryQ.isLoading ? (
+            <div className="flex items-center justify-center h-32"><Loader2 className="w-5 h-5 animate-spin text-zinc-600" /></div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {/* Override Rate bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-zinc-400 font-medium">Override Rate (30j)</span>
+                  <span className={`font-mono font-bold ${(summary?.overrideRate ?? 0) > 15 ? 'text-rose-400' : (summary?.overrideRate ?? 0) > 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {summary ? `${fmt(summary.overrideRate)}%` : '—'}
+                  </span>
+                </div>
+                <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(summary?.overrideRate ?? 0, 100)}%` }}
+                    transition={{ duration: 0.8 }}
+                    className={`h-full rounded-full ${(summary?.overrideRate ?? 0) > 15 ? 'bg-rose-500/60' : (summary?.overrideRate ?? 0) > 5 ? 'bg-amber-500/60' : 'bg-emerald-500/60'}`} />
+                </div>
+                <p className="text-[9px] text-zinc-600">Seuil MRM: ≤ 15% · {summary?.overrideCount ?? '—'}/{summary?.totalDecisions30d ?? '—'} décisions</p>
+              </div>
+
+              {/* Fallback Rate */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-zinc-400 font-medium">Fallback Engine Rate</span>
+                  <span className={`font-mono font-bold ${(summary?.fallbackRate ?? 0) > 10 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {summary ? `${fmt(summary.fallbackRate)}%` : '—'}
+                  </span>
+                </div>
+                <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(summary?.fallbackRate ?? 0, 100)}%` }}
+                    transition={{ duration: 0.8 }}
+                    className={`h-full rounded-full ${(summary?.fallbackRate ?? 0) > 10 ? 'bg-rose-500/60' : 'bg-emerald-500/60'}`} />
+                </div>
+                <p className="text-[9px] text-zinc-600">
+                  Flag: <span className={summary?.fallbackGovernanceFlag === 'REVIEW_REQUIRED' ? 'text-rose-400 font-bold' : 'text-emerald-400'}>{summary?.fallbackGovernanceFlag ?? '—'}</span>
+                </p>
+              </div>
+
+              {/* Model AUC / Gini */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-zinc-400 font-medium">Modèle Gini</span>
+                  <span className={`font-mono font-bold ${(summary?.model?.gini ?? 0) >= 45 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {summary?.model?.gini != null ? `${fmt(summary.model.gini)}%` : '—'}
+                  </span>
+                </div>
+                <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(summary?.model?.gini ?? 0, 100)}%` }}
+                    transition={{ duration: 0.8 }}
+                    className={`h-full rounded-full ${(summary?.model?.gini ?? 0) >= 45 ? 'bg-emerald-500/60' : 'bg-amber-500/60'}`} />
+                </div>
+                <p className="text-[9px] text-zinc-600">Floor MRM 45% · AUC {summary?.model?.auc != null ? fmt(summary.model.auc, 3) : '—'} · KS {summary?.model?.ks != null ? fmt(summary.model.ks, 3) : '—'}</p>
+              </div>
+
+              {/* PSI */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-zinc-400 font-medium">PSI (drift)</span>
+                  <span className={`font-mono font-bold ${(summary?.model?.psi ?? 0) > 0.25 ? 'text-rose-400' : (summary?.model?.psi ?? 0) > 0.10 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {summary?.model?.psi != null ? fmt(summary.model.psi, 4) : '—'}
+                  </span>
+                </div>
+                <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min((summary?.model?.psi ?? 0) * 400, 100)}%` }}
+                    transition={{ duration: 0.8 }}
+                    className={`h-full rounded-full ${(summary?.model?.psi ?? 0) > 0.25 ? 'bg-rose-500/60' : (summary?.model?.psi ?? 0) > 0.10 ? 'bg-amber-500/60' : 'bg-emerald-500/60'}`} />
+                </div>
+                <p className="text-[9px] text-zinc-600">Warn: 0.10 · Critical: 0.25 · {summary?.model?.status ?? '—'}</p>
+              </div>
+            </div>
+          )}
+        </motion.div>
       </div>
 
-      {/* Row 3: Top Exposure Shifts */}
-      <motion.div variants={itemVariants} className="rounded-xl border border-white/[0.08] bg-[#0a0a0a] overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white">Top Portfolio Exposures</h3>
-          {topExposureQuery.isLoading && <Loader2 className="w-4 h-4 animate-spin text-zinc-600" />}
+      {/* ── Row 4: Decision Queue with SLA + Priority ── */}
+      <motion.div variants={item} className="rounded-xl border border-white/[0.08] bg-[#0a0a0a] overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-zinc-400" />
+            <h3 className="text-sm font-bold text-white">File d'Attente Décisions</h3>
+            {summary?.pendingDecisions != null && (
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${summary.pendingDecisions > 20 ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : 'border-zinc-700 text-zinc-500'}`}>
+                {summary.pendingDecisions} en attente
+              </span>
+            )}
+          </div>
+          {queueQ.isLoading && <Loader2 className="w-4 h-4 animate-spin text-zinc-600" />}
         </div>
-        {topExposureQuery.isError ? (
-          <div className="flex items-center gap-2 p-6 text-zinc-500 text-sm">
+
+        {queueQ.isError ? (
+          <div className="flex items-center gap-2 p-5 text-zinc-500 text-sm">
             <AlertCircle className="w-4 h-4 text-amber-400" />
-            Could not load counterparty data — backend may be offline.
+            Impossible de charger la file — backend hors ligne.
+          </div>
+        ) : queue.length === 0 && !queueQ.isLoading ? (
+          <div className="flex items-center justify-center h-20 text-zinc-600 text-sm">
+            <Activity className="w-4 h-4 mr-2" /> Aucune décision en attente
           </div>
         ) : (
-          <DataTable
-            columns={[
-              { key: 'name', header: 'Counterparty', cell: r => <span className="font-medium text-white">{r.name}</span> },
-              { key: 'sector', header: 'Sector', cell: r => <span className="text-zinc-400">{r.sector}</span> },
-              { key: 'exposure', header: 'Exposure', cell: r => <span className="font-mono font-semibold text-white tabular-nums">${r.exposure.toFixed(1)}M</span> },
-              { key: 'pd1y', header: 'PD (1Y)', cell: r => <span className={`font-mono font-bold tabular-nums ${r.pd1y > 3 ? 'text-rose-400' : r.pd1y > 1 ? 'text-amber-400' : 'text-emerald-400'}`}>{r.pd1y.toFixed(2)}%</span> },
-              { key: 'riskLevel', header: 'Risk', cell: r => <StatusBadge status={r.riskLevel} /> },
-            ]}
-            data={topExposure}
-          />
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-white/[0.04]">
+                  {['Dossier', 'Contrepartie', 'Secteur', 'Montant', 'Rating', 'PD', 'Stage', 'Âge', 'Priorité', 'Statut'].map(h => (
+                    <th key={h} className="px-4 py-2.5 text-left text-[9px] font-bold uppercase tracking-widest text-zinc-600 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {queue.map((d: any) => (
+                  <tr key={d.id} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${d.slaBreached ? 'bg-rose-500/[0.03]' : ''}`}>
+                    <td className="px-4 py-3 font-mono text-zinc-300 whitespace-nowrap">{d.reqId ?? d.id.slice(0, 8)}</td>
+                    <td className="px-4 py-3 font-medium text-white max-w-[160px] truncate">{d.counterpartyName ?? '—'}</td>
+                    <td className="px-4 py-3 text-zinc-400">{d.sector ?? '—'}</td>
+                    <td className="px-4 py-3 font-mono font-semibold text-white whitespace-nowrap">{d.requestedAmount != null ? fmtM(d.requestedAmount) : '—'}</td>
+                    <td className="px-4 py-3">
+                      {d.internalRating ? (
+                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.08] text-zinc-300">{d.internalRating}</span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-4 py-3 font-mono font-bold whitespace-nowrap">
+                      <span className={d.pd != null ? (d.pd > 6 ? 'text-rose-400' : d.pd > 3 ? 'text-amber-400' : 'text-emerald-400') : 'text-zinc-600'}>
+                        {d.pd != null ? `${fmt(d.pd, 2)}%` : '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {d.ifrs9Stage ? (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                          d.ifrs9Stage === 'STAGE_3' ? 'bg-rose-500/20 text-rose-400' :
+                          d.ifrs9Stage === 'STAGE_2' ? 'bg-amber-500/20 text-amber-400' :
+                          'bg-emerald-500/10 text-emerald-500'
+                        }`}>{d.ifrs9Stage?.replace('_', ' ')}</span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-4 py-3 font-mono whitespace-nowrap">
+                      <span className={d.ageInDays >= 7 ? 'text-rose-400 font-bold' : d.ageInDays >= 3 ? 'text-amber-400' : 'text-zinc-400'}>
+                        {d.ageInDays}j
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <PriorityBadge priority={d.priority} sla={d.slaBreached} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={d.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </motion.div>
+
     </motion.div>
   )
 }

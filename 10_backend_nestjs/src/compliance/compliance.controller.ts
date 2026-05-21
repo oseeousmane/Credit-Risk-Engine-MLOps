@@ -121,4 +121,14 @@ export class ComplianceController {
   getPortfolioReport(@Req() req: any) {
     return this.complianceService.getPortfolioReport(req.user.id);
   }
+
+  /**
+   * GET /compliance/reports/ecl-trend
+   * Monthly ECL evolution from real Decision scoringSnapshots.
+   * Powers the CRO dashboard ECL chart — no interpolation.
+   */
+  @Get('reports/ecl-trend')
+  getEclTrend(@Query('months') months?: string) {
+    return this.complianceService.getEclTrend(months ? parseInt(months, 10) : 12);
+  }
 }

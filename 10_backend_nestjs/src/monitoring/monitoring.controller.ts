@@ -92,6 +92,12 @@ export class MonitoringController {
     );
   }
 
+  /** GET /monitoring/dashboard-summary — CRO dashboard aggregation (one call) */
+  @Get('dashboard-summary')
+  getDashboardSummary() {
+    return this.monitoringService.getDashboardSummary();
+  }
+
   /** POST /monitoring/ingest â€” Ingest model performance metrics */
   @Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
   @Post('ingest')

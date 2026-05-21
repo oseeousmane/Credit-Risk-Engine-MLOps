@@ -331,6 +331,48 @@ export class DecisioningService {
     };
   }
 
+  /**
+   * GET /decisions/queue
+   * Pending decisions enriched with ageInDays and priority flag for the CRO dashboard.
+   */
+  async getQueue(limit = 50) {
+    const decisions = await this.prisma.decision.findMany({
+      where: { status: { in: ['PENDING', 'SEND_TO_REVIEW'] } },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      include: {
+        application: { select: { reqId: true, requestedAmount: true, pd: true, facilityType: true } },
+        counterparty: { select: { name: true, sector: true, internalRating: true, riskLevel: true } },
+        decidedBy: { select: { name: true } },
+      },
+    });
+
+    const now = Date.now();
+    return decisions.map(d => {
+      const ageInDays = Math.floor((now - d.createdAt.getTime()) / 86_400_000);
+      const snapshot = d.scoringSnapshot as any;
+      return {
+        id: d.id,
+        reqId: d.application?.reqId,
+        counterpartyName: d.counterparty?.name,
+        sector: d.counterparty?.sector,
+        internalRating: d.counterparty?.internalRating,
+        riskLevel: d.counterparty?.riskLevel,
+        requestedAmount: d.application?.requestedAmount,
+        pd: d.application?.pd ?? snapshot?.pd,
+        facilityType: (d.application as any)?.facilityType,
+        status: d.status,
+        ageInDays,
+        priority: ageInDays >= 7 ? 'URGENT' : ageInDays >= 3 ? 'HIGH' : 'NORMAL',
+        slaBreached: ageInDays >= 10,
+        analyst: d.decidedBy?.name ?? null,
+        ifrs9Stage: snapshot?.ifrs9Stage,
+        ecl: snapshot?.ecl,
+        createdAt: d.createdAt,
+      };
+    });
+  }
+
   async findAll(query: PaginationDto = {}) {
     const { page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;

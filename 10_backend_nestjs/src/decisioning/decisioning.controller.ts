@@ -13,6 +13,12 @@ import { PaginationDto } from '../common/dto/query.dto';
 export class DecisioningController {
   constructor(private readonly decisioningService: DecisioningService) {}
 
+  /** GET /decisions/queue — pending decisions with SLA age + priority for CRO dashboard */
+  @Get('queue')
+  getQueue(@Query('limit') limit?: string) {
+    return this.decisioningService.getQueue(limit ? parseInt(limit, 10) : 50);
+  }
+
   @Get()
   findAll(@Query() query: PaginationDto) {
     return this.decisioningService.findAll(query);

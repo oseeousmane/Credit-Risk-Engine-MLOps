@@ -363,6 +363,77 @@ export class MonitoringService {
     }
   }
 
+  /**
+   * Single-call CRO dashboard summary:
+   * override rate, model AUC, fallback rate, stage 2/3 migrations this month,
+   * pending decisions count, watchlist count.
+   */
+  async getDashboardSummary() {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const [
+      totalDecisions30d,
+      overrideDecisions30d,
+      champion,
+      fallbackHistory,
+      stage2Count,
+      stage3Count,
+      pendingCount,
+      watchlistCount,
+    ] = await Promise.all([
+      this.prisma.decision.count({
+        where: { createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } },
+      }),
+      this.prisma.decision.count({
+        where: {
+          overrideFlag: true,
+          createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) },
+        },
+      }),
+      this.prisma.modelVersion.findFirst({
+        where: { status: { in: ['HEALTHY', 'WARNING'] } },
+        orderBy: { createdAt: 'desc' },
+        select: { auc: true, ks: true, psi: true, versionTag: true, status: true, validationStatus: true },
+      }),
+      this.getFallbackHistory(1),
+      this.prisma.counterparty.count({ where: { ifrs9Stage: 'STAGE_2' } }),
+      this.prisma.counterparty.count({ where: { ifrs9Stage: 'STAGE_3' } }),
+      this.prisma.decision.count({ where: { status: { in: ['PENDING', 'SEND_TO_REVIEW'] } } }),
+      this.prisma.counterparty.count({ where: { watchlistFlag: true } }),
+    ]);
+
+    const overrideRate = totalDecisions30d > 0
+      ? parseFloat(((overrideDecisions30d / totalDecisions30d) * 100).toFixed(1))
+      : 0;
+
+    return {
+      overrideRate,
+      overrideCount: overrideDecisions30d,
+      totalDecisions30d,
+      model: champion
+        ? {
+            auc: champion.auc,
+            ks: champion.ks,
+            psi: champion.psi,
+            versionTag: champion.versionTag,
+            status: champion.status,
+            validationStatus: champion.validationStatus,
+            gini: champion.auc != null ? parseFloat(((champion.auc * 2 - 1) * 100).toFixed(1)) : null,
+          }
+        : null,
+      fallbackRate: parseFloat((fallbackHistory.fallbackRate * 100).toFixed(1)),
+      fallbackGovernanceFlag: fallbackHistory.governanceFlag,
+      stage2Count,
+      stage3Count,
+      stageAtRiskCount: stage2Count + stage3Count,
+      pendingDecisions: pendingCount,
+      watchlistCount,
+      asOf: new Date().toISOString(),
+    };
+  }
+
   async getAlerts(resolved?: boolean) {
     const where = resolved !== undefined ? { isResolved: resolved } : {};
     return this.prisma.alert.findMany({
