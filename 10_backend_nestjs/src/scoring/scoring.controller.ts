@@ -1,9 +1,11 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
 import { ScoringService } from './scoring.service';
+import { AdhocScoringDto } from './dto/adhoc-scoring.dto';
 import { randomUUID } from 'crypto';
 
 @Controller('scoring')
@@ -15,30 +17,11 @@ export class ScoringController {
   /**
    * POST /scoring/adhoc
    * Ad-hoc PD scoring without requiring an existing DB application.
-   * Used by the scoring sandbox page.
+   * Used by the scoring sandbox page. Rate-limited to 10 req/min per user.
    */
+  @Throttle({ scoring: { limit: 10, ttl: 60000 } })
   @Post('adhoc')
-  async adhocScore(@Body() body: {
-    pdCurrent?: number;
-    exposure?: number;
-    riskLevel?: string;
-    requestedAmount?: number;
-    sector?: string;
-    internalRating?: string;
-    yearsInBusiness?: number;
-    watchlistFlag?: boolean;
-    revenue?: number;
-    ebitda?: number;
-    totalDebt?: number;
-    operatingCashFlow?: number;
-    collateralValue?: number;
-    collateralType?: string;
-    tenorMonths?: number;
-    facilityType?: string;
-    daysPastDue?: number;
-    missedPayments24m?: number;
-    bureauScore?: number;
-  }, @Req() req: any) {
+  async adhocScore(@Body() body: AdhocScoringDto) {
     return this.scoringService.score({
       applicationId: `ADHOC-${randomUUID().slice(0, 8).toUpperCase()}`,
       pdCurrent: body.pdCurrent ?? 2.0,

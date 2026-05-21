@@ -64,7 +64,11 @@ LABEL maintainer="Credit Risk Analytics" \
       description="Credit Risk Engine API — COBAC Compliant" \
       regulatory.framework="Basel_III_IFRS9"
 
-# Run the canonical lineage-aware scoring service used by NestJS /score.
+# Entrypoint: auto-trains PD model if artifact is missing (one-shot Docker setup)
+COPY 09_infrastructure/docker/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "-m", "uvicorn", "03_risk_engine.main:app", \
      "--host", "0.0.0.0", "--port", "8000", \
      "--workers", "2", "--log-level", "info"]

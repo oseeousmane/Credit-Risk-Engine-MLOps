@@ -197,6 +197,19 @@ export default function ScoringPage() {
 
           {result && (
             <>
+              {/* FALLBACK warning banner */}
+              {result.engine?.includes('FALLBACK') && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-amber-400 text-sm font-bold">Moteur FALLBACK actif</p>
+                    <p className="text-amber-400/70 text-xs mt-0.5">
+                      Le modèle ML Python est indisponible. Le score PD affiché est calculé par le moteur de règles de substitution — non certifié pour décision finale.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* KPI Row */}
               <div className="grid grid-cols-4 gap-4">
                 <KPICard label="PD Score" value={`${result.pdScore?.toFixed(2)}%`}
