@@ -1,67 +1,85 @@
 # ═══════════════════════════════════════════════════════════════
-# Credit Risk Engine — Docker Compose
-# ═══════════════════════════════════════════════════════════════
-# Environnement de développement complet avec API + monitoring
+# RiskEngine — Docker Compose (full stack)
+# Services: NestJS API | Python scoring | Next.js frontend
+# Usage: docker-compose up --build
 # ═══════════════════════════════════════════════════════════════
 
 version: "3.9"
 
 services:
-  # ── Credit Risk Engine API ─────────────────────────────────
-  risk-engine-api:
+
+  # ── Python Risk Engine (FastAPI, port 8000) ────────────────
+  python-scoring:
     build:
       context: ../..
       dockerfile: 09_infrastructure/docker/Dockerfile
-    container_name: credit-risk-engine
-    expose:
-      - "8000"
+    container_name: risk-engine-python
+    ports:
+      - "8000:8000"
     environment:
-      - ENVIRONMENT=development
-      - LOG_LEVEL=info
       - PYTHONPATH=/app
+      - SCORING_API_KEY=${SCORING_API_KEY:-}
+      - LOG_LEVEL=info
     volumes:
-      - ../../config:/app/config:ro
-      - monitoring-data:/app/06_monitoring
-      - governance-logs:/app/07_governance/audit_logs
+      - ../../02_modeling:/app/02_modeling:ro
     restart: unless-stopped
     networks:
       - risk-network
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: "2.0"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 20s
 
-  # ── MLflow Tracking Server ─────────────────────────────────
-  mlflow:
-    image: python:3.11-slim
-    container_name: mlflow-server
-    command: >
-      bash -c "pip install mlflow==2.10.2 && 
-               mlflow server --host 0.0.0.0 --port 5000 
-               --backend-store-uri sqlite:///mlflow.db 
-               --default-artifact-root /mlflow/artifacts"
+  # ── NestJS Backend (port 3001) ────────────────────────────
+  nestjs-api:
+    build:
+      context: ../../10_backend_nestjs
+      dockerfile: Dockerfile
+    container_name: risk-engine-nestjs
     ports:
-      - "5000:5000"
-    volumes:
-      - mlflow-data:/mlflow
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DIRECT_URL=${DIRECT_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - REFRESH_SECRET=${REFRESH_SECRET}
+      - SCORING_SERVICE_URL=http://python-scoring:8000
+      - SCORING_API_KEY=${SCORING_API_KEY:-}
+      - FRONTEND_URL=http://localhost:3000
+      - NODE_ENV=production
+      - OIDC_ALLOWED_DOMAINS=${OIDC_ALLOWED_DOMAINS:-}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+    depends_on:
+      python-scoring:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - risk-network
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health/liveness"]
+      interval: 20s
+      timeout: 8s
+      retries: 3
+      start_period: 30s
 
-volumes:
-  monitoring-data:
-    driver: local
-  governance-logs:
-    driver: local
-  mlflow-data:
-    driver: local
+  # ── Next.js Frontend (port 3000) ──────────────────────────
+  nextjs-frontend:
+    build:
+      context: ../../08_frontend
+      dockerfile: Dockerfile
+    container_name: risk-engine-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+    depends_on:
+      - nestjs-api
+    restart: unless-stopped
+    networks:
+      - risk-network
 
 networks:
   risk-network:

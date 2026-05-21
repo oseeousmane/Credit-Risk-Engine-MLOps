@@ -1,308 +1,353 @@
-"use client"
+'use client'
+import * as React from 'react'
+import { useState } from 'react'
+import { Play, RotateCcw, Loader2, AlertTriangle, BrainCircuit, ShieldCheck, TrendingUp, Activity } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
+import { fetchApi } from '@/lib/api-client'
 
-import * as React from "react"
-import { Play, RotateCcw, AlertTriangle, Fingerprint, BrainCircuit } from "lucide-react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from "recharts"
-import { useI18n } from "@/lib/i18n"
+const SECTORS = ['Agriculture', 'Energy', 'Manufacturing', 'Retail', 'Technology', 'Transport', 'Healthcare', 'Finance', 'Real Estate', 'Other']
+const RATINGS = ['AAA', 'AA_PLUS', 'AA', 'AA_MINUS', 'A_PLUS', 'A', 'A_MINUS', 'BBB_PLUS', 'BBB', 'BBB_MINUS', 'BB_PLUS', 'BB', 'B', 'CCC']
+const RISK_LEVELS = ['LOW', 'MED', 'HIGH', 'CRITICAL']
+const FACILITY_TYPES = ['TERM_LOAN', 'REVOLVING_CREDIT', 'TRADE_FINANCE', 'GUARANTEE', 'LEASING']
+const COLLATERAL_TYPES = ['REAL_ESTATE', 'EQUIPMENT', 'RECEIVABLES', 'CASH', 'NONE']
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
-
-// Fake SHAP simulation based on features
-const generateShap = (data: any, t: any) => {
-  return [
-    { feature: "EXT_SOURCE_2", value: data.EXT_SOURCE_2 > 0.5 ? -0.15 : 0.20, name: "External Source 2" },
-    { feature: "DTI_RATIO", value: data.AMT_ANNUITY / data.AMT_INCOME_TOTAL > 0.3 ? 0.25 : -0.10, name: t("loanAmount") + " Ratio" },
-    { feature: "DAYS_BIRTH", value: data.DAYS_BIRTH > -10000 ? 0.08 : -0.05, name: t("age") },
-    { feature: "NAME_CONTRACT_TYPE", value: data.NAME_CONTRACT_TYPE === "Cash loans" ? 0.02 : -0.02, name: "Contract Type" },
-    { feature: "DAYS_EMPLOYED", value: data.DAYS_EMPLOYED < -2000 ? -0.12 : 0.15, name: t("employmentStatus") },
-  ].sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+const DEFAULT_FORM = {
+  requestedAmount: 10,
+  exposure: 10,
+  pdCurrent: 2.5,
+  riskLevel: 'MED',
+  sector: 'Manufacturing',
+  internalRating: 'BBB',
+  yearsInBusiness: 8,
+  watchlistFlag: false,
+  revenue: 50,
+  ebitda: 8,
+  totalDebt: 20,
+  operatingCashFlow: 6,
+  collateralValue: 15,
+  collateralType: 'REAL_ESTATE',
+  tenorMonths: 36,
+  facilityType: 'TERM_LOAN',
+  daysPastDue: 0,
+  missedPayments24m: 0,
+  bureauScore: 680,
 }
 
+function QualityBadge({ band }: { band: string }) {
+  const cfg = {
+    HIGH:   { color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400', label: 'HIGH QUALITY' },
+    MEDIUM: { color: 'bg-amber-500/10 border-amber-500/30 text-amber-400', label: 'MEDIUM QUALITY' },
+    LOW:    { color: 'bg-rose-500/10 border-rose-500/30 text-rose-400', label: 'LOW QUALITY' },
+  }[band] ?? { color: 'bg-zinc-500/10 border-zinc-500/30 text-zinc-400', label: band }
+  return <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded border ${cfg.color}`}>{cfg.label}</span>
+}
+
+function RecommendationBadge({ rec }: { rec: string }) {
+  const cfg: Record<string, string> = {
+    APPROVE: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+    APPROVE_WITH_CONDITIONS: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+    SEND_TO_REVIEW: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+    REJECT: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
+  }
+  return (
+    <span className={`text-sm font-bold px-3 py-1.5 rounded-lg border ${cfg[rec] ?? 'bg-zinc-500/10 border-zinc-500/30 text-zinc-400'}`}>
+      {rec.replace(/_/g, ' ')}
+    </span>
+  )
+}
+
+type FormState = typeof DEFAULT_FORM
+
 export default function ScoringPage() {
-  const { t } = useI18n()
-  const [isExpertMode, setIsExpertMode] = React.useState(false)
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [result, setResult] = React.useState<any>(null)
-  const [error, setError] = React.useState<string | null>(null)
-  
-  const [formData, setFormData] = React.useState({
-    SK_ID_CURR: 100002,
-    NAME_CONTRACT_TYPE: "Cash loans",
-    CODE_GENDER: "M",
-    FLAG_OWN_CAR: "N",
-    FLAG_OWN_REALTY: "Y",
-    CNT_CHILDREN: 0,
-    AMT_INCOME_TOTAL: 250000,
-    AMT_CREDIT: 400000,
-    AMT_ANNUITY: 25000,
-    DAYS_BIRTH: -9461,
-    DAYS_EMPLOYED: -637,
-    EXT_SOURCE_2: 0.26,
-    EXT_SOURCE_3: 0.13
+  const [form, setForm] = useState<FormState>({ ...DEFAULT_FORM })
+
+  const mutation = useMutation({
+    mutationFn: (payload: FormState) => fetchApi('/scoring/adhoc', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: isNaN(Number(value)) || value === "" || name.includes("NAME") || name.includes("CODE") || name.includes("FLAG") ? value : Number(value) }))
-  }
+  const set = (k: keyof FormState, v: any) =>
+    setForm(prev => ({ ...prev, [k]: v }))
 
-  const handleScore = async () => {
-    setIsLoading(true)
-    setError(null)
-    setResult(null)
-    try {
-      await new Promise(r => setTimeout(r, 1200)) // Fake latency
-      
-      const dti = formData.AMT_ANNUITY / formData.AMT_INCOME_TOTAL
-      const pd = Math.min(Math.max((dti * 0.4) + (formData.EXT_SOURCE_2 > 0.5 ? -0.05 : 0.08) + 0.02, 0.01), 0.99)
-      
-      const responseData = {
-        probability: pd,
-        expectedLoss: pd * formData.AMT_CREDIT * 0.45, // EL = PD * EAD * LGD (assumed 45%)
-        decision: pd > 0.12 ? "reject" : pd > 0.08 ? "review" : "accept",
-        stage: pd > 0.12 ? "stage2" : "stage1",
-        features_used: 15
-      }
+  const handleScore = () => mutation.mutate(form)
+  const handleReset = () => { setForm({ ...DEFAULT_FORM }); mutation.reset() }
 
-      setResult({
-        ...responseData,
-        shap: generateShap(formData, t)
-      })
-
-    } catch (err: any) {
-      setError(err.message || "Network Error.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const isPositive = data.value > 0;
-      return (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3 rounded-lg shadow-xl">
-          <p className="text-sm font-bold text-[var(--text-primary)] mb-1">
-            {isExpertMode ? data.feature : data.name}
-          </p>
-          <p className={cn("text-xs font-semibold", isPositive ? "text-emerald-500" : "text-rose-500")}>
-            {isPositive ? t("lowersRisk") : t("increasesRisk")} : {Math.abs(data.value * 100).toFixed(1)}%
-          </p>
-        </div>
-      );
-    }
-    return null;
-  }
+  const result = mutation.data
+  const xai: any[] = result?.xaiDrivers ?? []
+  const riskDrivers = xai.filter((d: any) => d.direction === 'negative').slice(0, 5)
+  const mitigants = xai.filter((d: any) => d.direction === 'positive').slice(0, 5)
+  const maxImpact = Math.max(...xai.map((d: any) => Math.abs(d.impact)), 0.001)
 
   return (
-    <div className="space-y-6 animate-fade-up pb-10">
+    <div className="max-w-[1280px] mx-auto p-6 pb-16 space-y-6 page-enter">
+
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">{t("scoring")}</h1>
-          <p className="text-[var(--text-muted)] mt-1">Individual credit applicant evaluation.</p>
+          <h1 className="text-3xl font-black text-white tracking-tight">Scoring Sandbox</h1>
+          <p className="text-zinc-500 text-sm mt-1">Évaluation PD ad-hoc — moteur Python + SHAP, sans application préalable</p>
         </div>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-3 cursor-pointer p-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm">
-            <span className={cn("text-xs font-semibold tracking-wide uppercase transition-colors", !isExpertMode ? "text-blue-500" : "text-[var(--text-muted)]")}>{t("simpleMode")}</span>
-            <div 
-              className={cn("w-10 h-5 rounded-full relative transition-colors duration-300", isExpertMode ? "bg-purple-500" : "bg-blue-500")}
-              onClick={() => setIsExpertMode(!isExpertMode)}
-            >
-              <div className={cn("w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all shadow-md", isExpertMode ? "left-5" : "left-1")} />
-            </div>
-            <span className={cn("text-xs font-semibold tracking-wide uppercase transition-colors", isExpertMode ? "text-purple-500" : "text-[var(--text-muted)]")}>{t("expertMode")}</span>
-          </label>
+        <div className="flex items-center gap-2">
+          {result && (
+            <button onClick={handleReset} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.04] text-sm font-medium transition-colors">
+              <RotateCcw className="w-4 h-4" /> Reset
+            </button>
+          )}
+          <button
+            onClick={handleScore}
+            disabled={mutation.isPending}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-colors disabled:opacity-50 shadow-lg shadow-blue-500/20"
+          >
+            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            {mutation.isPending ? 'Scoring...' : 'Run Score'}
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Panel : Inputs */}
-        <div className="lg:col-span-4 glass-panel flex flex-col h-full border-none">
-          <div className="p-5 border-b border-[var(--border-subtle)] bg-[var(--bg-card)]/50 rounded-t-xl">
-            <h3 className="flex items-center gap-2 text-base font-bold text-[var(--text-primary)]">
-              <UserSquare2Icon className="w-5 h-5 text-blue-500" />
-              Applicant Data
-            </h3>
+      <div className="grid grid-cols-12 gap-6">
+
+        {/* ── Left: Form ── */}
+        <div className="col-span-4 space-y-4">
+
+          {/* Facility */}
+          <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Facilité de Crédit</h3>
+            <div className="space-y-3">
+              <Field label="Montant demandé ($M)" value={form.requestedAmount} onChange={v => set('requestedAmount', +v)} type="number" />
+              <Field label="Exposition totale ($M)" value={form.exposure} onChange={v => set('exposure', +v)} type="number" />
+              <Field label="PD courante (%)" value={form.pdCurrent} onChange={v => set('pdCurrent', +v)} type="number" step="0.1" />
+              <SelectField label="Niveau de risque" value={form.riskLevel} onChange={v => set('riskLevel', v)} options={RISK_LEVELS} />
+              <SelectField label="Type de facilité" value={form.facilityType} onChange={v => set('facilityType', v)} options={FACILITY_TYPES} />
+              <Field label="Durée (mois)" value={form.tenorMonths} onChange={v => set('tenorMonths', +v)} type="number" />
+              <SelectField label="Type de collatéral" value={form.collateralType} onChange={v => set('collateralType', v)} options={COLLATERAL_TYPES} />
+              <Field label="Valeur collatéral ($M)" value={form.collateralValue} onChange={v => set('collateralValue', +v)} type="number" />
+            </div>
           </div>
-          <div className="p-6 space-y-5 flex-1">
-            
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                {t("income")} (€)
-              </label>
-              <Input name="AMT_INCOME_TOTAL" type="number" className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] focus-visible:ring-blue-500" value={formData.AMT_INCOME_TOTAL} onChange={handleChange} />
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                {t("loanAmount")} (€)
-              </label>
-              <Input name="AMT_CREDIT" type="number" className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] focus-visible:ring-blue-500" value={formData.AMT_CREDIT} onChange={handleChange} />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                Annual Annuity (€)
-              </label>
-              <Input name="AMT_ANNUITY" type="number" className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] focus-visible:ring-blue-500" value={formData.AMT_ANNUITY} onChange={handleChange} />
-            </div>
-
-            {!isExpertMode && (
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                  External Score (/10)
-                </label>
-                <Input name="EXT_SOURCE_2" type="number" step="0.1" className="bg-[var(--bg-secondary)] border-[var(--border-subtle)] focus-visible:ring-blue-500" value={formData.EXT_SOURCE_2 * 10} onChange={(e) => setFormData(p => ({...p, EXT_SOURCE_2: Number(e.target.value)/10}))} />
+          {/* Counterparty */}
+          <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Contrepartie</h3>
+            <div className="space-y-3">
+              <SelectField label="Secteur" value={form.sector} onChange={v => set('sector', v)} options={SECTORS} />
+              <SelectField label="Rating interne" value={form.internalRating} onChange={v => set('internalRating', v)} options={RATINGS} />
+              <SelectField label="Niveau de risque" value={form.riskLevel} onChange={v => set('riskLevel', v)} options={RISK_LEVELS} />
+              <Field label="Années d'activité" value={form.yearsInBusiness} onChange={v => set('yearsInBusiness', +v)} type="number" />
+              <div className="flex items-center justify-between py-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Watchlist</span>
+                <button
+                  onClick={() => set('watchlistFlag', !form.watchlistFlag)}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${form.watchlistFlag ? 'bg-rose-500' : 'bg-zinc-700'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all shadow ${form.watchlistFlag ? 'left-5' : 'left-1'}`} />
+                </button>
               </div>
-            )}
-
-            {isExpertMode && (
-              <div className="p-4 bg-purple-500/5 rounded-xl border border-purple-500/20 space-y-4 shadow-inner mt-6">
-                <h4 className="text-xs font-bold text-purple-400 flex items-center gap-2"><Fingerprint className="w-4 h-4"/> Raw DB Feeds</h4>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-[var(--text-muted)] uppercase">EXT_SOURCE_2 [0-1]</label>
-                  <Input name="EXT_SOURCE_2" type="number" step="0.01" className="font-mono text-xs bg-[var(--bg-card)] border-[var(--border-subtle)] focus-visible:ring-purple-500" value={formData.EXT_SOURCE_2} onChange={handleChange} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-[var(--text-muted)] uppercase">DAYS_BIRTH (int)</label>
-                  <Input name="DAYS_BIRTH" type="number" className="font-mono text-xs bg-[var(--bg-card)] border-[var(--border-subtle)] focus-visible:ring-purple-500" value={formData.DAYS_BIRTH} onChange={handleChange} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-[var(--text-muted)] uppercase">DAYS_EMPLOYED (int)</label>
-                  <Input name="DAYS_EMPLOYED" type="number" className="font-mono text-xs bg-[var(--bg-card)] border-[var(--border-subtle)] focus-visible:ring-purple-500" value={formData.DAYS_EMPLOYED} onChange={handleChange} />
-                </div>
-              </div>
-            )}
-
+            </div>
           </div>
-          <div className="p-5 bg-[var(--bg-card)]/50 border-t border-[var(--border-subtle)] rounded-b-xl flex gap-3">
-            <Button 
-               onClick={handleScore} 
-               className="flex-1 font-bold shadow-lg bg-blue-600 hover:bg-blue-700 text-white transition-all" 
-               disabled={isLoading}
-            >
-              {isLoading ? <span className="animate-pulse flex items-center"><BrainCircuit className="animate-spin w-4 h-4 mr-2"/> Processing...</span> :  <span className="flex items-center gap-2"><Play className="w-4 h-4 fill-current"/> Interpret Score</span>}
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => window.location.reload()} className="border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)]"><RotateCcw className="w-4 h-4 text-[var(--text-primary)]" /></Button>
+
+          {/* Financials */}
+          <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Données Financières ($M)</h3>
+            <div className="space-y-3">
+              <Field label="Chiffre d'affaires" value={form.revenue} onChange={v => set('revenue', +v)} type="number" />
+              <Field label="EBITDA" value={form.ebitda} onChange={v => set('ebitda', +v)} type="number" />
+              <Field label="Dette totale" value={form.totalDebt} onChange={v => set('totalDebt', +v)} type="number" />
+              <Field label="Cash flow opérationnel" value={form.operatingCashFlow} onChange={v => set('operatingCashFlow', +v)} type="number" />
+            </div>
+          </div>
+
+          {/* Behavior */}
+          <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Historique de Crédit</h3>
+            <div className="space-y-3">
+              <Field label="Jours en retard (DPD)" value={form.daysPastDue} onChange={v => set('daysPastDue', +v)} type="number" />
+              <Field label="Impayés (24 mois)" value={form.missedPayments24m} onChange={v => set('missedPayments24m', +v)} type="number" />
+              <Field label="Score bureau" value={form.bureauScore} onChange={v => set('bureauScore', +v)} type="number" />
+            </div>
           </div>
         </div>
 
-        {/* Right Panel : Output */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          
-          {/* Main Decision Matrix */}
-          <div className="glass-panel p-8 border-none min-h-[200px] flex items-center justify-center">
-              {!result && !isLoading && !error && (
-                <div className="flex flex-col items-center justify-center py-8 text-center text-[var(--text-muted)]">
-                  <BrainCircuit className="w-16 h-16 mb-4 opacity-20 text-blue-500" />
-                  <p className="font-medium text-[var(--text-primary)]">Ready for Evaluation</p>
-                  <p className="text-xs mt-2 max-w-sm">Input the applicant's metrics and click Interpret Score to run the model inference.</p>
-                </div>
-              )}
+        {/* ── Right: Results ── */}
+        <div className="col-span-8 space-y-4">
 
-              {error && (
-                <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 flex items-start gap-3 w-full">
-                  <AlertTriangle className="w-5 h-5 flex-none mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-sm">Inference Error</h4>
-                    <p className="text-xs mt-1">{error}</p>
-                  </div>
-                </div>
-              )}
+          {mutation.isError && (
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex items-center gap-3 text-rose-400 text-sm">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              {(mutation.error as Error).message}
+            </div>
+          )}
 
-              {result && (
-                <div className="flex flex-col md:flex-row items-center gap-10 w-full animate-fade-up">
-                  {/* Circular Indicator */}
-                  <div className="relative w-48 h-48 flex-none rounded-full flex items-center justify-center bg-[var(--bg-card)] shadow-inner"
-                       style={{ border: `4px solid ${result.decision === "reject" ? '#f43f5e' : result.decision === "review" ? '#f59e0b' : '#10b981'}` }}>
-                    <div className="text-center">
-                      <span className="block text-5xl font-black text-[var(--text-primary)]">{(result.probability * 100).toFixed(1)}<span className="text-xl text-[var(--text-muted)]">%</span></span>
-                      <span className="text-xs font-bold tracking-wider text-[var(--text-muted)] uppercase mt-2 block">PD Score</span>
-                    </div>
-                  </div>
-
-                  {/* Badges & Metrics */}
-                  <div className="flex-1 space-y-6">
-                    <div>
-                      <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">{t("result")}</h4>
-                      <h3 className="text-3xl font-black flex items-center gap-3">
-                        {result.decision === "accept" && <span className="text-emerald-500 bg-emerald-500/10 px-4 py-1.5 rounded-lg">{t("accept")}</span>}
-                        {result.decision === "review" && <span className="text-amber-500 bg-amber-500/10 px-4 py-1.5 rounded-lg">{t("review")}</span>}
-                        {result.decision === "reject" && <span className="text-rose-500 bg-rose-500/10 px-4 py-1.5 rounded-lg">{t("reject")}</span>}
-                      </h3>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="p-3 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-subtle)]">
-                          <div className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">{t("expectedLoss")}</div>
-                          <div className="text-lg font-bold text-rose-500 mt-1">€{result.expectedLoss.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
-                       </div>
-                       <div className="p-3 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-subtle)]">
-                          <div className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">{t("ifrs9Stage")}</div>
-                          <div className="text-lg font-bold text-[var(--text-primary)] mt-1">{t(result.stage)}</div>
-                       </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-          </div>
-
-          {/* XAI SHAP Explanation */}
-          {result && (
-            <div className="glass-panel flex-1 flex flex-col animate-fade-up border-none" style={{ animationDelay: '0.1s'}}>
-              <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-card)]/50 rounded-t-xl">
-                <h3 className="text-base font-bold flex items-center gap-3 text-[var(--text-primary)]">
-                  <BrainCircuit className="w-5 h-5 text-purple-500" />
-                  {t("shapExplanation")}
-                </h3>
-              </div>
-              <div className="p-6 flex-1 min-h-[300px]">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={result.shap} layout="vertical" margin={{ top: 0, right: 30, left: isExpertMode ? 50 : 20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-subtle)" />
-                      <XAxis type="number" stroke="var(--text-muted)" fontSize={11} domain={['-dataMax - 0.05', 'dataMax + 0.05']} tickFormatter={(v) => (v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2))}/>
-                      <YAxis dataKey={isExpertMode ? "feature" : "name"} type="category" stroke="var(--text-primary)" fontSize={11} tickLine={false} axisLine={false} width={100} />
-                      <Tooltip cursor={{fill: 'var(--bg-elevated)', opacity: 0.4}} content={<CustomTooltip />} />
-                      <ReferenceLine x={0} stroke="var(--text-secondary)" strokeWidth={2} />
-                      <Bar dataKey="value" radius={4} barSize={24}>
-                        {result.shap.map((entry: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={entry.value > 0 ? '#10b981' : '#f43f5e'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+          {!result && !mutation.isPending && !mutation.isError && (
+            <div className="bg-[#0d0d0d] border-2 border-dashed border-white/[0.06] rounded-2xl flex flex-col items-center justify-center min-h-[400px] text-center gap-4">
+              <BrainCircuit className="w-12 h-12 text-zinc-700" />
+              <div>
+                <p className="text-zinc-400 font-semibold">Prêt à scorer</p>
+                <p className="text-zinc-600 text-sm mt-1">Configurez la facilité et la contrepartie, puis cliquez sur Run Score</p>
               </div>
             </div>
           )}
 
+          {mutation.isPending && (
+            <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl flex flex-col items-center justify-center min-h-[400px] gap-4">
+              <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+              <p className="text-zinc-400 text-sm font-medium">Calcul PD en cours — moteur Python...</p>
+            </div>
+          )}
+
+          {result && (
+            <>
+              {/* KPI Row */}
+              <div className="grid grid-cols-4 gap-4">
+                <KPICard label="PD Score" value={`${result.pdScore?.toFixed(2)}%`}
+                  color={result.pdScore > 6 ? 'text-rose-400' : result.pdScore > 3 ? 'text-amber-400' : 'text-emerald-400'}
+                  icon={<Activity className="w-4 h-4" />} />
+                <KPICard label="Recommandation" value={<RecommendationBadge rec={result.recommendation} />}
+                  icon={<ShieldCheck className="w-4 h-4" />} />
+                <KPICard label="Confiance" value={`${(result.confidence * 100).toFixed(0)}%`}
+                  color="text-blue-400" icon={<TrendingUp className="w-4 h-4" />} />
+                <KPICard label="Qualité données" value={<QualityBadge band={result.qualityBand} />}
+                  icon={<BrainCircuit className="w-4 h-4" />} />
+              </div>
+
+              {/* Rationale */}
+              <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">Rationale</h3>
+                <p className="text-sm text-zinc-300 leading-relaxed">{result.rationale}</p>
+                <div className="mt-3 flex items-center gap-3 text-[10px] text-zinc-600">
+                  <span>Moteur: <span className="text-zinc-400 font-mono">{result.engine}</span></span>
+                  <span>•</span>
+                  <span>Version: <span className="text-zinc-400 font-mono">{result.modelVersion}</span></span>
+                  <span>•</span>
+                  <span>Scoré par: <span className="text-zinc-400 font-mono">{result.scoredBy}</span></span>
+                </div>
+              </div>
+
+              {/* XAI Drivers */}
+              {xai.length > 0 && (
+                <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Facteurs SHAP</h3>
+                    <span className="text-[10px] font-mono text-zinc-600 bg-white/[0.04] px-2 py-1 rounded">
+                      {result.featureLineage?.imputedCount ?? 0} features imputées / {(result.featureLineage?.rawCount ?? 0) + (result.featureLineage?.derivedCount ?? 0) + (result.featureLineage?.imputedCount ?? 0)} total
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-8">
+                    <div>
+                      <p className="text-xs font-semibold text-rose-400 mb-3 flex items-center gap-1">↗ Facteurs aggravants</p>
+                      <div className="space-y-3">
+                        {riskDrivers.length === 0 ? <p className="text-zinc-600 text-xs">Aucun</p> : riskDrivers.map((d: any) => (
+                          <div key={d.label}>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-zinc-300 font-medium truncate mr-2">{d.label}</span>
+                              <span className="text-rose-400 font-mono flex-shrink-0">+{Math.abs(d.impact).toFixed(3)}</span>
+                            </div>
+                            <div className="h-1.5 bg-white/[0.04] rounded-full">
+                              <div className="h-full bg-rose-500/70 rounded-full transition-all duration-500"
+                                style={{ width: `${(Math.abs(d.impact) / maxImpact) * 100}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-400 mb-3 flex items-center gap-1">↘ Facteurs atténuants</p>
+                      <div className="space-y-3">
+                        {mitigants.length === 0 ? <p className="text-zinc-600 text-xs">Aucun</p> : mitigants.map((d: any) => (
+                          <div key={d.label}>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-zinc-300 font-medium truncate mr-2">{d.label}</span>
+                              <span className="text-emerald-400 font-mono flex-shrink-0">-{Math.abs(d.impact).toFixed(3)}</span>
+                            </div>
+                            <div className="h-1.5 bg-white/[0.04] rounded-full">
+                              <div className="h-full bg-emerald-500/70 rounded-full transition-all duration-500"
+                                style={{ width: `${(Math.abs(d.impact) / maxImpact) * 100}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Lineage */}
+              <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Lignée des Features</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { label: 'RAW', count: result.featureLineage?.rawCount ?? 0, color: 'bg-emerald-500' },
+                    { label: 'DÉRIVÉES', count: result.featureLineage?.derivedCount ?? 0, color: 'bg-blue-500' },
+                    { label: 'IMPUTÉES', count: result.featureLineage?.imputedCount ?? 0, color: 'bg-amber-500' },
+                  ].map(({ label, count, color }) => (
+                    <div key={label} className="bg-white/[0.02] rounded-xl p-4">
+                      <div className={`w-2 h-2 rounded-full ${color} mb-2`} />
+                      <div className="text-2xl font-black text-white tabular-nums">{count}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-1">{label}</div>
+                    </div>
+                  ))}
+                </div>
+                {result.featureLineage?.imputedFeatures?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/[0.04]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 mb-2">Features imputées (top 10)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.featureLineage.imputedFeatures.slice(0, 10).map((f: string) => (
+                        <span key={f} className="text-[9px] font-mono bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded">{f}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function UserSquare2Icon(props: any) {
+function Field({ label, value, onChange, type = 'text', step }: {
+  label: string; value: any; onChange: (v: string) => void; type?: string; step?: string
+}) {
   return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-      <circle cx="12" cy="10" r="3" />
-      <path d="M7 21v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" />
-    </svg>
+    <div>
+      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 block mb-1.5">{label}</label>
+      <input
+        type={type}
+        step={step}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full bg-[#141414] border border-white/[0.08] text-sm text-white rounded-lg px-3 py-2 outline-none focus:border-blue-500/50 transition-colors"
+      />
+    </div>
+  )
+}
+
+function SelectField({ label, value, onChange, options }: {
+  label: string; value: string; onChange: (v: string) => void; options: readonly string[]
+}) {
+  return (
+    <div>
+      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 block mb-1.5">{label}</label>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full bg-[#141414] border border-white/[0.08] text-sm text-white rounded-lg px-3 py-2 outline-none focus:border-blue-500/50 transition-colors"
+      >
+        {options.map(o => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
+      </select>
+    </div>
+  )
+}
+
+function KPICard({ label, value, color, icon }: { label: string; value: React.ReactNode; color?: string; icon: React.ReactNode }) {
+  return (
+    <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">{label}</span>
+        <span className="text-zinc-600">{icon}</span>
+      </div>
+      <div className={`text-lg font-black tabular-nums ${color ?? 'text-white'}`}>{value}</div>
+    </div>
   )
 }
