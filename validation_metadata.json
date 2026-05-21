@@ -1,0 +1,14 @@
+{
+  "artifactCategory": "DEMO_BASELINE",
+  "validationStatus": "DEMO_VALIDATION_PASS",
+  "validationDate": "2026-04-27T11:09:28.719219",
+  "model_basis": "Home Credit public dataset (Russia/Asia consumer credit, 2016-2018). NOT real CEMAC banking data. Promotion to PROD_CHAMPION requires retraining on proprietary bank data with signed data-sharing agreement — see OOT_VALIDATION_PACK.md §7.",
+  "oot_auc": 0.743,
+  "oot_ks": 0.38,
+  "oot_psi": 0.082,
+  "oot_split_method": "SK_ID_CURR chronological proxy (IDs 85-100%). NOT a calendar OOT window. Real OOT requires min. 6-month gap — see OOT_VALIDATION_PACK.md §1.",
+  "oot_period_note": "Home Credit dataset IDs (top 15%). Fictitious 2025 calendar dates removed — dataset is 2016-2018.",
+  "mrm_comments": "Model shows stable PSI (< 0.1) and discrimination above regulatory floors on Home Credit demo data. Slight under-calibration in high-risk tails noted; buffer applied at decision level (main.py). Self-Employed segment Gini ~38% is below the 45% floor — mandatory human review required for this segment. NOT a production validation.",
+  "feature_contract_version": "1.0.0",
+  "governance_spec_version": "1.0.0"
+}

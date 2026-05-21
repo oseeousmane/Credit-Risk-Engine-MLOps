@@ -55,28 +55,43 @@ export class ComplianceService {
 
   // â”€â”€ Audit Trail Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  async getAuditEvents(page = 1, limit = 50) {
+  async getAuditEvents(page = 1, limit = 50, startDate?: Date, endDate?: Date) {
     const skip = (page - 1) * limit;
+    const where = startDate || endDate ? {
+      timestamp: {
+        ...(startDate ? { gte: startDate } : {}),
+        ...(endDate   ? { lte: endDate   } : {}),
+      },
+    } : {};
 
     const [events, total] = await Promise.all([
       this.prisma.auditEvent.findMany({
         skip,
         take: limit,
+        where,
         orderBy: { timestamp: 'desc' },
         include: {
           actor: { select: { name: true, email: true, role: true } },
         },
       }),
-      this.prisma.auditEvent.count(),
+      this.prisma.auditEvent.count({ where }),
     ]);
 
     return { data: events, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
-  async exportAuditCsv(): Promise<string> {
+  async exportAuditCsv(actorId: string, startDate?: Date, endDate?: Date): Promise<string> {
+    const where = startDate || endDate ? {
+      timestamp: {
+        ...(startDate ? { gte: startDate } : {}),
+        ...(endDate   ? { lte: endDate   } : {}),
+      },
+    } : {};
+
+    // No row cap — full trail required for COBAC/ECB audit submissions
     const events = await this.prisma.auditEvent.findMany({
+      where,
       orderBy: { timestamp: 'desc' },
-      take: 1000,
       include: {
         actor: { select: { name: true, email: true, role: true } },
       },
@@ -97,6 +112,19 @@ export class ComplianceService {
       JSON.stringify(e.newValue ?? {}),
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
 
+    // Record the export itself — required by COBAC art. 38 record-keeping rules
+    await this.audit.log({
+      eventType: 'AUDIT_EXPORT',
+      entityType: 'AuditEvent',
+      entityId: 'BULK',
+      actorId,
+      newValue: {
+        rowsExported: events.length,
+        startDate: startDate?.toISOString() ?? null,
+        endDate: endDate?.toISOString() ?? null,
+      },
+    });
+
     return [headers.join(','), ...rows].join('\n');
   }
 
@@ -106,7 +134,7 @@ export class ComplianceService {
    * IFRS 9 Stage Distribution Report
    * Structured for committee packs and regulator-oriented summaries.
    */
-  async getIfrs9StageReport() {
+  async getIfrs9StageReport(actorId: string) {
     const counterparties = await this.prisma.counterparty.findMany({
       select: {
         id: true, name: true, sector: true, ifrs9Stage: true,
@@ -143,6 +171,7 @@ export class ComplianceService {
     return {
       reportType: 'IFRS9_STAGE_DISTRIBUTION',
       generatedAt: new Date().toISOString(),
+      generatedBy: actorId,
       portfolioSummary: {
         totalEntities: counterparties.length,
         totalExposure: Math.round(totalExposure * 10) / 10,
@@ -165,7 +194,7 @@ export class ComplianceService {
    * Lists all times the Python ML engine was unavailable and the rule-based fallback was used.
    * Critical MRM governance document.
    */
-  async getFallbackIncidents(limit = 100) {
+  async getFallbackIncidents(actorId: string, limit = 100) {
     const fallbackAuditEvents = await this.prisma.auditEvent.findMany({
       where: { eventType: 'FALLBACK_ENGINE_USED' },
       orderBy: { timestamp: 'desc' },
@@ -182,6 +211,7 @@ export class ComplianceService {
     return {
       reportType: 'FALLBACK_INCIDENTS',
       generatedAt: new Date().toISOString(),
+      generatedBy: actorId,
       totalIncidents: fallbackAuditEvents.length,
       mrmNote: fallbackAuditEvents.length > 10
         ? 'HIGH fallback frequency. Review Python scoring service availability and model connectivity.'
@@ -202,7 +232,7 @@ export class ComplianceService {
    * Override Activity Report â€” all cases where a human overrode the ML recommendation.
    * Critical for IFRS 9 MRM governance and COBAC/ECB audit readiness.
    */
-  async getOverrideActivityReport(limit = 100) {
+  async getOverrideActivityReport(actorId: string, limit = 100) {
     const overrides = await this.prisma.auditEvent.findMany({
       where: { eventType: 'DECISION_OVERRIDE' },
       orderBy: { timestamp: 'desc' },
@@ -223,6 +253,7 @@ export class ComplianceService {
     return {
       reportType: 'OVERRIDE_ACTIVITY',
       generatedAt: new Date().toISOString(),
+      generatedBy: actorId,
       totalOverrides: decisions.length,
       mrmNote: decisions.length > 0
         ? `${decisions.length} ML recommendation overrides detected. Requires MRM sign-off per governance policy.`
@@ -251,7 +282,7 @@ export class ComplianceService {
    * Portfolio ECL Summary Report
    * Sector-level exposure and ECL summary ready for committee reporting.
    */
-  async getPortfolioReport() {
+  async getPortfolioReport(actorId: string) {
     const counterparties = await this.prisma.counterparty.findMany({
       select: {
         sector: true, riskLevel: true, ifrs9Stage: true,
@@ -278,6 +309,7 @@ export class ComplianceService {
     return {
       reportType: 'PORTFOLIO_ECL_SUMMARY',
       generatedAt: new Date().toISOString(),
+      generatedBy: actorId,
       portfolio: {
         totalEntities: counterparties.length,
         totalExposure: Math.round(totalExposure * 10) / 10,

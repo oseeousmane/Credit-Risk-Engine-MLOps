@@ -1,187 +1,380 @@
-"use client"
+'use client'
+import * as React from 'react'
+import { useState } from 'react'
+import { LineChart, Line, ResponsiveContainer, Tooltip, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts'
+import { Filter, Download, ChevronLeft, ChevronRight, Bot, Loader2 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import {
+  KPIBlock, StatusBadge, LiveBadge, SectionHeader, SidePanel, Sparkline,
+  ProgressBar
+} from '@/components/ui'
+import { fetchApi } from '@/lib/api-client'
+import { riskLevelColor, fmtPct, fmt } from '@/lib/utils'
 
-import * as React from "react"
-import { useI18n } from "@/lib/i18n"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { Search, Filter, Download, MoreHorizontal, CheckCircle2, AlertTriangle, XCircle, Activity } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-// Mock Data
-const portfolioData = [
-  { id: "CL-98234", income: "€85,000", riskLevel: "Low", pd: 1.2, stage: "Stage 1", decision: "accept" },
-  { id: "CL-12044", income: "€42,000", riskLevel: "Medium", pd: 6.5, stage: "Stage 1", decision: "accept" },
-  { id: "CL-55091", income: "€31,000", riskLevel: "High", pd: 14.8, stage: "Stage 2", decision: "review" },
-  { id: "CL-77210", income: "€105,000", riskLevel: "Low", pd: 0.8, stage: "Stage 1", decision: "accept" },
-  { id: "CL-33902", income: "€28,000", riskLevel: "Critical", pd: 24.5, stage: "Stage 3", decision: "reject" },
-  { id: "CL-88123", income: "€54,000", riskLevel: "Medium", pd: 5.1, stage: "Stage 1", decision: "accept" },
-  { id: "CL-44019", income: "€62,000", riskLevel: "Medium", pd: 7.2, stage: "Stage 1", decision: "review" },
-]
-
-const riskBarData = [
-  { range: "0-2%", count: 450 },
-  { range: "2-5%", count: 320 },
-  { range: "5-10%", count: 180 },
-  { range: "10-20%", count: 90 },
-  { range: ">20%", count: 25 },
-]
+const RISK_LEVELS = ['ALL', 'LOW', 'MED', 'HIGH', 'CRITICAL'] as const
+const SECTORS = ['ALL', 'Aerospace', 'Utilities', 'Healthcare', 'Transport', 'Technology', 'Energy', 'Retail', 'Transportation', 'Manufacturing']
 
 export default function PortfolioPage() {
-  const { t } = useI18n()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [filterRisk, setFilterRisk] = useState<string>('ALL')
+  const [filterSector, setFilterSector] = useState<string>('ALL')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 8
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3 rounded-lg shadow-xl">
-          <p className="text-xs text-[var(--text-muted)] mb-1">PD Range: {label}</p>
-          <p className="text-sm font-bold text-[var(--text-primary)]">
-            {payload[0].value} Clients
-          </p>
-        </div>
-      )
-    }
-    return null
+  const kpQuery = useQuery({
+    queryKey: ['portfolio-kpis'],
+    queryFn: () => fetchApi('/counterparties/kpis'),
+  })
+
+  // Build query string
+  const queryParams = new URLSearchParams()
+  queryParams.append('page', page.toString())
+  queryParams.append('limit', PAGE_SIZE.toString())
+  if (filterRisk !== 'ALL') queryParams.append('riskLevel', filterRisk)
+  if (filterSector !== 'ALL') queryParams.append('sector', filterSector)
+  if (search) queryParams.append('search', search)
+
+  const cpQuery = useQuery({
+    queryKey: ['counterparties', page, filterRisk, filterSector, search],
+    queryFn: () => fetchApi(`/counterparties?${queryParams.toString()}`),
+  })
+
+  const selectedQuery = useQuery({
+    queryKey: ['counterparty-detail', selectedId],
+    queryFn: () => fetchApi(`/counterparties/${selectedId}`),
+    enabled: !!selectedId,
+  })
+
+  const analyticsQuery = useQuery({
+    queryKey: ['portfolio-analytics'],
+    queryFn: () => fetchApi('/scenarios/portfolio-analytics'),
+  })
+
+  function riskColor(level: string) {
+    if (level === 'LOW') return 'text-emerald-400'
+    if (level === 'MED') return 'text-amber-400'
+    if (level === 'HIGH') return 'text-rose-400'
+    return 'text-red-400'
   }
 
+  const kpis = kpQuery.data
+  const counterparties = cpQuery.data?.data || []
+  const pagination = cpQuery.data?.meta || { total: 0, totalPages: 1 }
+
+  const analytics = analyticsQuery.data
+  const stageDist: { name: string; value: number; color: string }[] = analytics?.stageDistribution
+    ? analytics.stageDistribution.map((item: any) => ({
+        name: item.stage.replace('_', ' '),
+        value: item.totalExposure,
+        color: item.stage === 'STAGE_1' ? '#10b981' : item.stage === 'STAGE_2' ? '#f59e0b' : '#ef4444'
+      }))
+    : []
+  const sectorDist: { name: string; ecl: number }[] = analytics?.eclBySector
+    ? analytics.eclBySector.map((item: any) => ({ name: item.sector, ecl: item.totalECL }))
+    : []
+
   return (
-    <div className="space-y-6 animate-fade-up pb-10">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">{t("portfolioAnalysis")}</h1>
-          <p className="text-[var(--text-muted)] mt-1">Deep dive into current portfolio metrics and individual client states.</p>
-        </div>
-        <div className="flex gap-3">
-           <button className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium hover:bg-[var(--bg-elevated)] transition-colors shadow-sm">
-              <Download className="w-4 h-4" /> Export CSV
-           </button>
-           <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-              <Filter className="w-4 h-4" /> Advanced Filters
-           </button>
-        </div>
+    <div className="p-6 space-y-6 page-enter pb-10">
+      <SectionHeader
+        title="Portfolio Explorer"
+        badge={<LiveBadge label="LIVE COMP" />}
+        actions={
+          <>
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2">
+              <input
+                placeholder="Search entities..."
+                value={search}
+                onChange={e => { setSearch(e.target.value); setPage(1) }}
+                className="bg-transparent text-[12px] text-zinc-400 placeholder-zinc-700 outline-none w-40"
+              />
+            </div>
+          </>
+        }
+      />
+
+      {/* KPI Row */}
+      <div className="grid grid-cols-3 gap-4">
+        {kpQuery.isLoading ? (
+          <div className="col-span-3 h-32 flex items-center justify-center border border-white/[0.08] rounded-2xl bg-[#0d0d0d]">
+             <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          </div>
+        ) : (
+          <>
+            <KPIBlock
+              label="Total Exposure"
+              value={<span className="tabular-nums">${((kpis?.totalExposure || 0) / 1000).toFixed(1)}B</span>}
+              delta={2.4}
+              deltaLabel="% vs last quarter"
+              accent="blue"
+              size="lg"
+            >
+              <div className="h-8 mt-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={[{v:12.1},{v:12.8},{v:13.4},{v:13.1},{v:13.7},{v:14.2}]}>
+                    <Line type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={1.5} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </KPIBlock>
+            <KPIBlock
+              label="Portfolio Avg PD"
+              value={<span className="tabular-nums">{(kpis?.avgPD || 0).toFixed(2)}%</span>}
+              delta={4}
+              deltaLabel="bps 30d"
+              accent="amber"
+              size="lg"
+            >
+              <div className="h-8 mt-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={[{v:1.74},{v:1.78},{v:1.80},{v:1.82},{v:1.83},{v:1.84}]}>
+                    <Line type="monotone" dataKey="v" stroke="#f59e0b" strokeWidth={1.5} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </KPIBlock>
+            <KPIBlock
+              label="Watchlist Entities"
+              value={<span className="tabular-nums">{kpis?.watchlistEntities || 0}</span>}
+              sub={<span className="text-amber-400 text-[11px] font-semibold">⚠ 2 added today</span>}
+              accent="rose"
+              size="lg"
+            >
+              <div className="flex -space-x-2 mt-2">
+                {['SJ','MD','CL','AR'].map(a => (
+                  <div key={a} className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-[9px] font-bold text-white border-2 border-[#0d0d0d]">
+                    {a}
+                  </div>
+                ))}
+                <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-zinc-400 border-2 border-[#0d0d0d]">
+                  +{Math.max(0, (kpis?.watchlistEntities || 0) - 4)}
+                </div>
+              </div>
+            </KPIBlock>
+          </>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-         {/* Simple Chart */}
-         <div className="lg:col-span-12 glass-panel p-6">
-            <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-blue-500" />
-              Risk Distribution Overview
-            </h3>
-            <div className="h-[180px] w-full">
+      {/* Analytics Charts */}
+      {analytics && (
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-4 bg-[#0d0d0d] border border-white/[0.08] rounded-xl p-5 flex flex-col">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">IFRS 9 Stage Distribution (Exposure)</h3>
+            <div className="flex-1 min-h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
-                 <BarChart data={riskBarData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
-                    <XAxis dataKey="range" stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip cursor={{fill: 'var(--bg-elevated)', opacity: 0.4}} content={<CustomTooltip/>} />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
-                 </BarChart>
+                <PieChart>
+                  <Pie data={stageDist} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value" stroke="none">
+                    {stageDist.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)' }} itemStyle={{ color: '#fff' }} />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '10px', color: '#a1a1aa' }}/>
+                </PieChart>
               </ResponsiveContainer>
             </div>
-         </div>
-      </div>
+          </div>
+          <div className="col-span-8 bg-[#0d0d0d] border border-white/[0.08] rounded-xl p-5 flex flex-col">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Expected Credit Loss by Sector</h3>
+            <div className="flex-1 min-h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sectorDist} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#52525b' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#52525b' }} tickLine={false} axisLine={false} tickFormatter={v => `$${v}M`} />
+                  <Tooltip contentStyle={{ backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)' }} itemStyle={{ color: '#fff' }} cursor={{fill: 'rgba(255,255,255,0.02)'}} />
+                  <Bar dataKey="ecl" name="ECL ($M)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Table Section */}
-      <div className="glass-panel border-none overflow-hidden flex flex-col">
-         {/* Filters Row */}
-         <div className="p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-card)]/40 flex flex-wrap gap-4 items-center justify-between">
-            <div className="relative flex-1 max-w-sm">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-               <input 
-                  type="text" 
-                  placeholder="Search by Client ID..." 
-                  className="w-full pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-               />
+      {/* Main: Table + Side Panel */}
+      <div className="flex gap-4">
+        {/* Table Panel */}
+        <div className="flex-1 rounded-xl border border-white/[0.08] bg-[#0d0d0d] flex flex-col min-h-[500px]">
+          {/* Filters */}
+          <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center gap-3">
+            <div className="flex gap-1 overflow-x-auto custom-scrollbar pb-1">
+              {RISK_LEVELS.map(r => (
+                <button
+                  key={r}
+                  onClick={() => { setFilterRisk(r); setPage(1) }}
+                  className={`flex-shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-colors ${
+                    filterRisk === r
+                      ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {r === 'ALL' ? 'Risk Level' : r}
+                  {r !== 'ALL' && filterRisk !== r && ' ▾'}
+                </button>
+              ))}
             </div>
-            <div className="flex items-center gap-3">
-               <select className="bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm rounded-lg px-3 py-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                  <option value="">{t("decision")} : All</option>
-                  <option value="accept">{t("accept")}</option>
-                  <option value="review">{t("review")}</option>
-                  <option value="reject">{t("reject")}</option>
-               </select>
-               <select className="bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm rounded-lg px-3 py-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                  <option value="">{t("ifrs9Stage")} : All</option>
-                  <option value="stage1">{t("stage1")}</option>
-                  <option value="stage2">{t("stage2")}</option>
-                  <option value="stage3">{t("stage3")}</option>
-               </select>
+            <div className="w-px h-5 bg-white/[0.06]" />
+            <select
+              value={filterSector}
+              onChange={e => { setFilterSector(e.target.value); setPage(1) }}
+              className="bg-white/[0.04] border border-white/[0.06] text-zinc-400 text-[11px] rounded-lg px-3 py-1.5 outline-none"
+            >
+              {SECTORS.map(s => <option key={s} value={s}>{s === 'ALL' ? 'Sector ▾' : s}</option>)}
+            </select>
+            <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 cursor-pointer hover:text-white">
+              <Filter className="w-3 h-3" /> More Filters
             </div>
-         </div>
+            <div className="flex-1" />
+            <button onClick={() => { setFilterRisk('ALL'); setFilterSector('ALL'); setSearch(''); setPage(1) }}
+              className="text-[11px] text-zinc-600 hover:text-zinc-300 transition-colors">
+              Reset
+            </button>
+            <button className="flex items-center gap-1.5 text-[11px] text-zinc-400 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5 hover:bg-white/[0.08]">
+              <Download className="w-3 h-3" /> Export
+            </button>
+          </div>
 
-         {/* Data Table */}
-         <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-[var(--text-secondary)]">
-               <thead className="bg-[var(--bg-elevated)]/50 text-xs uppercase text-[var(--text-muted)] font-semibold border-b border-[var(--border-subtle)]">
-                  <tr>
-                     <th className="px-6 py-4">Client ID</th>
-                     <th className="px-6 py-4">{t("income")}</th>
-                     <th className="px-6 py-4">Risk Level</th>
-                     <th className="px-6 py-4">PD Score</th>
-                     <th className="px-6 py-4">{t("ifrs9Stage")}</th>
-                     <th className="px-6 py-4">{t("decision")}</th>
-                     <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y divide-[var(--border-subtle)]">
-                  {portfolioData.map((row) => (
-                     <tr key={row.id} className="hover:bg-[var(--bg-card-hover)] transition-colors">
-                        <td className="px-6 py-4 font-mono font-medium text-[var(--text-primary)]">{row.id}</td>
-                        <td className="px-6 py-4">{row.income}</td>
-                        <td className="px-6 py-4">
-                           <span className={cn(
-                              "px-2.5 py-1 rounded-md text-[10px] font-bold uppercase",
-                              row.riskLevel === "Low" ? "bg-emerald-500/10 text-emerald-500" :
-                              row.riskLevel === "Medium" ? "bg-amber-500/10 text-amber-500" :
-                              "bg-rose-500/10 text-rose-500"
-                           )}>
-                              {row.riskLevel}
-                           </span>
-                        </td>
-                        <td className="px-6 py-4">
-                           <div className="flex items-center gap-2">
-                              <div className="w-full bg-[var(--bg-secondary)] rounded-full h-1.5 max-w-[60px]">
-                                 <div 
-                                    className={cn("h-1.5 rounded-full", row.pd < 5 ? "bg-emerald-500" : row.pd < 15 ? "bg-amber-500" : "bg-rose-500")} 
-                                    style={{ width: `${Math.min(row.pd * 4, 100)}%` }}
-                                 />
-                              </div>
-                              <span className="font-medium text-[var(--text-primary)]">{row.pd}%</span>
-                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-xs font-semibold">{t(row.stage.toLowerCase().replace(" ", ""))}</td>
-                        <td className="px-6 py-4">
-                           <div className="flex items-center gap-1.5">
-                              {row.decision === "accept" && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                              {row.decision === "review" && <AlertTriangle className="w-4 h-4 text-amber-500" />}
-                              {row.decision === "reject" && <XCircle className="w-4 h-4 text-rose-500" />}
-                              <span className={cn(
-                                 "text-xs font-bold uppercase",
-                                 row.decision === "accept" ? "text-emerald-500" :
-                                 row.decision === "review" ? "text-amber-500" :
-                                 "text-rose-500"
-                              )}>
-                                 {t(row.decision)}
-                              </span>
-                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                           <button className="p-1 hover:bg-[var(--bg-elevated)] rounded-md transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                              <MoreHorizontal className="w-5 h-5" />
-                           </button>
-                        </td>
-                     </tr>
-                  ))}
-               </tbody>
-            </table>
-         </div>
-         
-         <div className="p-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)]">
-            <span>Showing 1 to 7 of 480 entries</span>
-            <div className="flex items-center gap-2">
-               <button className="px-3 py-1 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-elevated)] transition-colors disabled:opacity-50">Prev</button>
-               <button className="px-3 py-1 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-elevated)] transition-colors">Next</button>
+          <div className="flex-1 overflow-x-auto relative">
+            {cpQuery.isLoading ? (
+               <div className="absolute inset-0 flex items-center justify-center">
+                 <Loader2 className="w-6 h-6 animate-spin text-zinc-600" />
+               </div>
+            ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/[0.05]">
+                      {['Entity Name','Sector','Exposure','PD (1Y)','Risk Rating','Trend'].map(h => (
+                        <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-zinc-600 whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {counterparties.map((c: any) => {
+                      const isSelected = selectedId === c.id
+                      return (
+                        <tr
+                          key={c.id}
+                          onClick={() => setSelectedId(c.id)}
+                          className={`border-b border-white/[0.03] cursor-pointer transition-colors ${
+                            isSelected ? 'bg-blue-500/[0.07] border-l-2 border-l-blue-500' : 'hover:bg-white/[0.025]'
+                          }`}
+                        >
+                          <td className="px-5 py-3.5 font-semibold text-white whitespace-nowrap">{c.name}</td>
+                          <td className="px-5 py-3.5 text-zinc-400">{c.sector}</td>
+                          <td className="px-5 py-3.5 font-mono font-semibold text-white tabular-nums">${c.exposure}M</td>
+                          <td className="px-5 py-3.5">
+                            <span className={`font-mono font-bold tabular-nums ${riskColor(c.riskLevel)}`}>
+                              {c.pd1y.toFixed(2)}%
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <StatusBadge status={c.riskLevel} />
+                          </td>
+                          <td className="px-5 py-3.5">
+                             {/* Fake trend data, normally from backend TS data */}
+                            <Sparkline
+                              data={[4, 4.5, 4.2, 5.1, 5.8, 5.3]}
+                              color={c.riskLevel === 'LOW' ? '#10b981' : c.riskLevel === 'MED' ? '#f59e0b' : '#f43f5e'}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+            )}
+            
+            {!cpQuery.isLoading && counterparties.length === 0 && (
+               <div className="flex flex-col items-center justify-center p-10 text-zinc-500">
+                  <Filter className="w-8 h-8 mb-3 opacity-50" />
+                  <p className="text-sm">No counterparties found matching the criteria.</p>
+               </div>
+            )}
+          </div>
+
+          {/* Pagination */}
+          <div className="px-5 py-3 border-t border-white/[0.06] flex items-center justify-between">
+            <span className="text-[11px] text-zinc-600">
+              Showing {(page - 1) * PAGE_SIZE + Math.min(1, counterparties.length)} to {Math.min(page * PAGE_SIZE, pagination.total)} of {pagination.total} entries
+            </span>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="w-7 h-7 flex items-center justify-center rounded text-zinc-500 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 transition-colors">
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => i + 1).map(p => (
+                <button key={p} onClick={() => setPage(p)}
+                  className={`w-7 h-7 flex items-center justify-center rounded text-[12px] font-medium transition-colors ${
+                    page === p ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'text-zinc-500 hover:text-white hover:bg-white/[0.06]'
+                  }`}>
+                  {p}
+                </button>
+              ))}
+              <button onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))} disabled={page === pagination.totalPages || pagination.totalPages === 0}
+                className="w-7 h-7 flex items-center justify-center rounded text-zinc-500 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 transition-colors">
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-         </div>
+          </div>
+        </div>
+
+        {/* Entity Detail Panel */}
+        {selectedId && (
+          <div className="w-[320px] flex-shrink-0 rounded-xl border border-white/[0.08] bg-[#0d0d0d] flex flex-col relative overflow-hidden">
+            {selectedQuery.isLoading ? (
+               <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-zinc-600" />
+               </div>
+            ) : selectedQuery.data ? (
+              <>
+                 {/* Header */}
+                 <div className="p-5 border-b border-white/[0.06] relative">
+                   <button onClick={() => setSelectedId(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white text-xs">✕</button>
+                   <div className="flex items-start justify-between mb-3">
+                     <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400">
+                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/></svg>
+                     </div>
+                     <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded px-2 py-1 uppercase tracking-wider">AI Verified</span>
+                   </div>
+                   <h2 className="text-base font-bold text-white leading-snug pr-4">{selectedQuery.data.name}</h2>
+                   <p className="text-[11px] text-zinc-500 mt-1">Tier 1 · {selectedQuery.data.sector}</p>
+                 </div>
+
+                 {/* KPIs */}
+                 <div className="p-4 grid grid-cols-2 gap-3 border-b border-white/[0.06]">
+                   {[
+                     { label: 'CURRENT EXP', value: `$${selectedQuery.data.exposure}M` },
+                     { label: 'EXP LIMIT', value: `$${selectedQuery.data.expLimit}M` },
+                     { label: 'PD (1Y)', value: `${selectedQuery.data.pd1y.toFixed(2)}%`, color: selectedQuery.data.riskLevel === 'LOW' ? 'text-emerald-400' : selectedQuery.data.riskLevel === 'MED' ? 'text-amber-400' : 'text-rose-400' },
+                     { label: 'EXPECTED LOSS', value: `$${selectedQuery.data.expectedLoss}M` },
+                   ].map(({ label, value, color }) => (
+                     <div key={label} className="bg-white/[0.03] rounded-lg p-3">
+                       <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 mb-1">{label}</div>
+                       <div className={`text-base font-black tabular-nums ${color ?? 'text-white'}`}>{value}</div>
+                     </div>
+                   ))}
+                 </div>
+
+                 {/* Algorithmic Insights */}
+                 <div className="p-4 border-b border-white/[0.06]">
+                   <div className="flex items-center gap-2 mb-3">
+                     <Bot className="w-3.5 h-3.5 text-blue-400" />
+                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Algorithmic Insights</span>
+                   </div>
+                   <div className="text-[12px] text-zinc-400 leading-relaxed">
+                     Facility utilization is currently at <span className="text-white font-semibold">{selectedQuery.data.facilityUtilization}%</span>. 
+                     Expected loss computed via real-time endpoints.
+                   </div>
+                 </div>
+
+                 {/* Footer CTA */}
+                 <div className="p-4 mt-auto">
+                   <button className="w-full bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-bold py-2.5 rounded-lg transition-colors">
+                     View Full Report
+                   </button>
+                 </div>
+              </>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   )

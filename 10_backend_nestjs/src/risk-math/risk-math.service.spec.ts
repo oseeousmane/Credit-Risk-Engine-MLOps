@@ -98,9 +98,16 @@ describe('RiskMathService', () => {
       expect(result.currentStage).toBe(IFRS9Stage.STAGE_3);
     });
 
-    it('should trigger STAGE_3 if PD >= 100%', () => {
-      const result = service.assignStage(100.0, 1.0, 0, false, false);
+    it('should trigger STAGE_3 if PD >= 20% (unlikely-to-pay backstop)', () => {
+      // Threshold changed from 100% (inoperative) to 20% per BCBS 2017 guidance.
+      const result = service.assignStage(25.0, 1.0, 0, false, false);
       expect(result.currentStage).toBe(IFRS9Stage.STAGE_3);
+      expect(result.stagingReasons.some(r => r.includes('unlikely-to-pay backstop'))).toBe(true);
+    });
+
+    it('should NOT trigger STAGE_3 on PD < 20% without DPD', () => {
+      const result = service.assignStage(15.0, 1.0, 0, false, false);
+      expect(result.currentStage).not.toBe(IFRS9Stage.STAGE_3);
     });
   });
 });

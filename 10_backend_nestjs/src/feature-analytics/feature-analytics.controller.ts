@@ -1,8 +1,12 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FeatureAnalyticsService } from './feature-analytics.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(Role.ANALYST, Role.MANAGER, Role.CRO, Role.ADMIN)
 @Controller('feature-analytics')
 export class FeatureAnalyticsController {
   constructor(private readonly service: FeatureAnalyticsService) {}

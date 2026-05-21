@@ -7,6 +7,7 @@ import { Role } from '@prisma/client';
 
 @Controller('model-registry')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(Role.ANALYST, Role.MANAGER, Role.CRO, Role.ADMIN)
 export class ModelRegistryController {
   constructor(private readonly registryService: ModelRegistryService) {}
 
@@ -18,18 +19,18 @@ export class ModelRegistryController {
   @Post('versions/:id/promote')
   @Roles(Role.CRO, Role.ADMIN) // Only CRO or ADMIN can promote a model
   async promote(@Param('id') id: string, @Request() req: any) {
-    return this.registryService.promoteToChampion(id, req.user.userId);
+    return this.registryService.promoteToChampion(id, req.user.id);
   }
 
   @Post(':id/rollback')
   @Roles(Role.CRO, Role.ADMIN, Role.MANAGER)
   async rollback(@Param('id') id: string, @Request() req: any) {
-    return this.registryService.rollback(id, req.user.userId);
+    return this.registryService.rollback(id, req.user.id);
   }
 
   @Post('register-prod-champion')
   @Roles(Role.CRO, Role.ADMIN, Role.MANAGER)
   async registerProdChampion(@Body() data: any, @Request() req: any) {
-    return this.registryService.registerProdChampion(data, req.user.userId);
+    return this.registryService.registerProdChampion(data, req.user.id);
   }
 }

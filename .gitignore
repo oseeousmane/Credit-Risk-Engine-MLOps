@@ -13,6 +13,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+!08_frontend/lib/
+!08_frontend/lib/**
 parts/
 sdist/
 var/
@@ -62,3 +64,15 @@ models/*.joblib
 *.joblib
 logs/
 .pytest_cache/
+*.tsbuildinfo
+
+# Local backend probes / generated artifacts
+10_backend_nestjs/scratch/
+10_backend_nestjs/check_pwd.js
+10_backend_nestjs/check_user.js
+10_backend_nestjs/test-conn.js
+10_backend_nestjs/test-db*.*
+10_backend_nestjs/test-net.js
+10_backend_nestjs/test-pg*.js
+10_backend_nestjs/test-prisma.ts
+10_backend_nestjs/prisma/safe_migration.ts

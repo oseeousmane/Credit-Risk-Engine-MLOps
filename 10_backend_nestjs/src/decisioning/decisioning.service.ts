@@ -5,7 +5,11 @@ import { ScoringService } from '../scoring/scoring.service';
 import { PipelineService } from '../pipeline/pipeline.service';
 import { RiskMathService } from '../risk-math/risk-math.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
+import { EventsBroadcasterService } from '../monitoring/events-broadcaster.service';
+import { WebhookDispatcherService } from '../webhook/webhook-dispatcher.service';
 import { DecisionStatus, Role } from '@prisma/client';
+import { PaginationDto } from '../common/dto/query.dto';
+import { paginate } from '../common/pagination';
 
 @Injectable()
 export class DecisioningService {
@@ -18,6 +22,8 @@ export class DecisioningService {
     private readonly pipelineService: PipelineService,
     private readonly riskMath: RiskMathService,
     private readonly monitoring: MonitoringService,
+    private readonly broadcaster: EventsBroadcasterService,
+    private readonly webhookDispatcher: WebhookDispatcherService,
   ) {}
 
   /**
@@ -32,7 +38,7 @@ export class DecisioningService {
     const cp = app.counterparty as any;
     const appAny = app as any;
 
-    // Build rich business payload â€” Python feature_pipeline.py handles the 158-feature mapping
+    // Build rich business payload â€” Python feature_pipeline.py handles the current 157-feature mapping
     const scoreResult = await this.scoring.score({
       applicationId,
       pdCurrent: app.pd ?? 2.0,
@@ -108,8 +114,10 @@ export class DecisioningService {
       );
     }
 
-    // Run ML evaluation
+    // Run ML evaluation — measure real latency for monitoring
+    const evalStart = Date.now();
     const evaluation = await this.evaluateApplication(applicationId);
+    const evalLatencyMs = Date.now() - evalStart;
     const recommendation = evaluation.recommendation;
     const finalStatus = overrideStatus ?? recommendation;
     const isOverride = !!overrideStatus && overrideStatus !== recommendation;
@@ -138,9 +146,14 @@ export class DecisioningService {
       appAny2.facilityType,
     );
 
+    // pdAtOrigination is set once on first scoring and never overwritten —
+    // it anchors the SICR denominator (IFRS 9 §B5.5.15).
+    const appAny3 = app as any;
+    const pdAtOrigination: number = appAny3.pdAtOrigination ?? evaluation.pdScore;
+
     const stagingResult = this.riskMath.assignStage(
       evaluation.pdScore,
-      app.counterparty.pd1y,
+      pdAtOrigination,
       appAny2.metadata?.daysPastDue ?? 0, // SICR Backstop check
       app.counterparty.watchlistFlag,
     );
@@ -193,13 +206,27 @@ export class DecisioningService {
       },
     });
 
-    // Ingest scoring event to historical monitoring
+    // Ingest scoring event to historical monitoring with measured latency
     await this.monitoring.ingestScoringEvent({
       engine: evaluation.engine as 'PYTHON' | 'FALLBACK',
       payloadQualityScore: evaluation.payloadQualityScore,
       imputedFeaturesCount: evaluation.imputedFeaturesCount,
       qualityBand: evaluation.qualityBand,
-      latencyMs: 150, // Approximation for now, real latency tracking requires wrapping the scoring call
+      latencyMs: evalLatencyMs,
+    });
+
+    // Push real-time SSE event to all connected dashboard clients
+    this.broadcaster.emit('decision.submitted', {
+      decisionId: decision.id,
+      applicationId,
+      reqId: app.reqId,
+      status: finalStatus,
+      pdScore: evaluation.pdScore,
+      isOverride,
+      engine: evaluation.engine,
+      qualityBand: evaluation.qualityBand,
+      ifrs9Stage: stagingResult.currentStage,
+      ecl: eclResult.expectedLoss,
     });
 
     // Also update Counterparty and Application with the new mathematical outputs
@@ -216,7 +243,9 @@ export class DecisioningService {
       where: { id: applicationId },
       data: {
         pd: evaluation.pdScore,
-      }
+        // Set once at first scoring — never overwritten (IFRS 9 SICR anchor)
+        ...(appAny3.pdAtOrigination == null ? { pdAtOrigination: evaluation.pdScore } : {}),
+      },
     });
 
     // Write immutable audit trail
@@ -270,9 +299,29 @@ export class DecisioningService {
     }
 
     if (targetStage) {
-      // Use ADMIN role for the automated pipeline advance triggered by decisioning
-      const systemActor = { id: actor.id, role: Role.ADMIN } as any;
-      await this.pipelineService.moveStage(applicationId, targetStage, systemActor);
+      await this.pipelineService.moveStage(applicationId, targetStage, actor as any);
+    }
+
+    // Fire outbound webhooks (non-blocking — does not delay the API response)
+    const webhookEventMap: Partial<Record<string, 'decision.approved' | 'decision.approved_with_conditions' | 'decision.rejected'>> = {
+      APPROVE: 'decision.approved',
+      APPROVE_WITH_CONDITIONS: 'decision.approved_with_conditions',
+      REJECT: 'decision.rejected',
+    };
+    const webhookEvent = webhookEventMap[finalStatus as string];
+    if (webhookEvent) {
+      this.webhookDispatcher.dispatch(webhookEvent, {
+        decisionId: decision.id,
+        applicationId,
+        reqId: app.reqId,
+        counterpartyId: app.counterpartyId,
+        status: finalStatus,
+        isOverride,
+        pdScore: evaluation.pdScore,
+        ifrs9Stage: stagingResult.currentStage,
+        ecl: eclResult.expectedLoss,
+        decidedAt: new Date().toISOString(),
+      });
     }
 
     return {
@@ -282,15 +331,25 @@ export class DecisioningService {
     };
   }
 
-  async findAll() {
-    return this.prisma.decision.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        counterparty: { select: { name: true, sector: true, internalRating: true } },
-        decidedBy: { select: { name: true, role: true } },
-        application: { select: { reqId: true, requestedAmount: true, pd: true } },
-      },
-    });
+  async findAll(query: PaginationDto = {}) {
+    const { page = 1, limit = 20 } = query;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.decision.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          counterparty: { select: { name: true, sector: true, internalRating: true } },
+          decidedBy: { select: { name: true, role: true } },
+          application: { select: { reqId: true, requestedAmount: true, pd: true } },
+        },
+      }),
+      this.prisma.decision.count(),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async findOne(id: string) {

@@ -2,8 +2,12 @@ import { Controller, Get, Patch, Body, Param, Req, Query, Res, UseGuards } from 
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { ComplianceService } from './compliance.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
 @Controller('compliance')
 export class ComplianceController {
   constructor(private readonly complianceService: ComplianceService) {}
@@ -13,6 +17,7 @@ export class ComplianceController {
     return this.complianceService.getItems();
   }
 
+  @Roles(Role.CRO, Role.ADMIN)
   @Patch('items/:id')
   updateItem(
     @Param('id') id: string,
@@ -38,22 +43,40 @@ export class ComplianceController {
   /**
    * GET /compliance/audit
    * Returns paginated audit events for the Compliance page.
+   * Optional: ?startDate=2026-01-01&endDate=2026-03-31 for period filtering.
    */
   @Get('audit')
   getAudit(
     @Query('page') page = '1',
     @Query('limit') limit = '50',
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
-    return this.complianceService.getAuditEvents(Number(page), Number(limit));
+    return this.complianceService.getAuditEvents(
+      Number(page),
+      Number(limit),
+      startDate ? new Date(startDate) : undefined,
+      endDate   ? new Date(endDate)   : undefined,
+    );
   }
 
   /**
    * GET /compliance/export/audit
-   * Downloads audit events as a CSV file.
+   * Downloads audit events as a CSV file — no row cap (full trail).
+   * Optional: ?startDate=2026-01-01&endDate=2026-03-31 for period filtering.
    */
   @Get('export/audit')
-  async exportAudit(@Res() res: Response) {
-    const csv = await this.complianceService.exportAuditCsv();
+  async exportAudit(
+    @Req() req: any,
+    @Res() res: Response,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const csv = await this.complianceService.exportAuditCsv(
+      req.user.id,
+      startDate ? new Date(startDate) : undefined,
+      endDate   ? new Date(endDate)   : undefined,
+    );
     const filename = `audit_trail_${new Date().toISOString().split('T')[0]}.csv`;
 
     res.setHeader('Content-Type', 'text/csv');
@@ -68,8 +91,8 @@ export class ComplianceController {
    * IFRS 9 Stage distribution report â€” committee pack ready.
    */
   @Get('reports/ifrs9-stages')
-  getIfrs9StageReport() {
-    return this.complianceService.getIfrs9StageReport();
+  getIfrs9StageReport(@Req() req: any) {
+    return this.complianceService.getIfrs9StageReport(req.user.id);
   }
 
   /**
@@ -77,8 +100,8 @@ export class ComplianceController {
    * Fallback engine incident report for MRM governance.
    */
   @Get('reports/fallback-incidents')
-  getFallbackIncidents(@Query('limit') limit?: string) {
-    return this.complianceService.getFallbackIncidents(limit ? parseInt(limit, 10) : 100);
+  getFallbackIncidents(@Req() req: any, @Query('limit') limit?: string) {
+    return this.complianceService.getFallbackIncidents(req.user.id, limit ? parseInt(limit, 10) : 100);
   }
 
   /**
@@ -86,8 +109,8 @@ export class ComplianceController {
    * ML override activity report â€” MRM sign-off track.
    */
   @Get('reports/overrides')
-  getOverrideActivityReport(@Query('limit') limit?: string) {
-    return this.complianceService.getOverrideActivityReport(limit ? parseInt(limit, 10) : 100);
+  getOverrideActivityReport(@Req() req: any, @Query('limit') limit?: string) {
+    return this.complianceService.getOverrideActivityReport(req.user.id, limit ? parseInt(limit, 10) : 100);
   }
 
   /**
@@ -95,7 +118,7 @@ export class ComplianceController {
    * Portfolio ECL summary by sector â€” regulatory reporting ready.
    */
   @Get('reports/portfolio')
-  getPortfolioReport() {
-    return this.complianceService.getPortfolioReport();
+  getPortfolioReport(@Req() req: any) {
+    return this.complianceService.getPortfolioReport(req.user.id);
   }
 }

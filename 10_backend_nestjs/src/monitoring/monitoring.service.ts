@@ -1,14 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ScoringService } from '../scoring/scoring.service';
+import { EventsBroadcasterService } from './events-broadcaster.service';
 import { ModelStatus, ArtifactCategory } from '@prisma/client';
 
 const PSI_WARN = 0.10;
 const PSI_CRITICAL = 0.25;
-const QUALITY_WARN_THRESHOLD = 50;     // payloadQualityScore below this is a warning
-const FALLBACK_RATE_WARN = 0.10;       // 10%+ fallback usage triggers a governance review
+const QUALITY_WARN_THRESHOLD = 50;
+const FALLBACK_RATE_WARN = 0.10;
 
 @Injectable()
 export class MonitoringService {
@@ -18,9 +19,10 @@ export class MonitoringService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly scoring: ScoringService,
+    private readonly broadcaster: EventsBroadcasterService,
   ) {}
 
-  // â”€â”€ Automated Drift Evaluation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Automated Drift Evaluation â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   @Cron(CronExpression.EVERY_HOUR)
   async evaluateModelDrift() {
@@ -60,12 +62,21 @@ export class MonitoringService {
           newValue: { status: newStatus, psi: model.psi, reasons },
         });
 
-        await this.prisma.alert.create({
+        const alert = await this.prisma.alert.create({
           data: {
             severity: newStatus === 'DEGRADED' ? 'CRITICAL' : 'WARNING',
-            message: `Model ${model.registry.name} (${model.versionTag}) â†’ ${newStatus}`,
+            message: `Model ${model.registry.name} (${model.versionTag}) -> ${newStatus}`,
             detail: reasons.join('; '),
           },
+        });
+
+        this.broadcaster.emit('alert.created', {
+          alertId: alert.id,
+          severity: alert.severity,
+          message: alert.message,
+          detail: alert.detail,
+          modelId: model.id,
+          modelStatus: newStatus,
         });
 
         this.logger.warn(`[MONITORING] ${model.id} transitioned to ${newStatus}: ${reasons.join(', ')}`);
@@ -73,49 +84,55 @@ export class MonitoringService {
     }
   }
 
-  // â”€â”€ MLOps Python Engine Metric Ingestion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ MLOps Python Engine Metric Ingestion â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-  @Cron('*/30 * * * * *') // Every 30 seconds for live demo visibility
+  @Cron('*/30 * * * * *') // Every 30 seconds
   async fetchAndIngestPythonMetrics() {
-    this.logger.log('[MONITORING] Fetching real-time metrics from Python MLOps Engine...');
+    const scoringUrl = process.env.SCORING_SERVICE_URL || 'http://localhost:8000';
 
     const activeModel = await this.prisma.modelVersion.findFirst({
       where: { status: { in: ['HEALTHY', 'WARNING'] } },
       orderBy: { createdAt: 'desc' },
     });
-
     if (!activeModel) return;
 
-    // Simulate metrics with slight jitter to create realistic time-series graphs
-    const baseAuc = activeModel.auc > 0 ? activeModel.auc : 0.85;
-    const baseKs = activeModel.ks > 0 ? activeModel.ks : 0.45;
-    const basePsi = activeModel.psi > 0 ? activeModel.psi : 0.05;
+    // Fetch real operational counters from the Python /metrics endpoint.
+    // If the Python service is unreachable, skip -- do NOT substitute fabricated data.
+    let pythonMetrics: Record<string, any> | null = null;
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const apiKey = process.env.SCORING_API_KEY || '';
+      const headers: Record<string, string> = {};
+      if (apiKey) headers['X-Api-Key'] = apiKey;
 
-    // Random walk with boundaries
-    const auc = Math.min(0.95, Math.max(0.65, baseAuc + (Math.random() * 0.02 - 0.01)));
-    const ks = Math.min(0.80, Math.max(0.20, baseKs + (Math.random() * 0.04 - 0.02)));
+      const res = await fetch(`${scoringUrl}/metrics`, { signal: controller.signal, headers });
+      clearTimeout(timeout);
+      if (res.ok) pythonMetrics = await res.json();
+    } catch {
+      this.logger.warn('[MONITORING] Python /metrics unreachable -- skipping metric ingestion cycle.');
+      return;
+    }
 
-    // Occasional drift spike
-    const isDriftSpike = Math.random() > 0.95;
-    const psi = Math.max(0.01, basePsi + (isDriftSpike ? (Math.random() * 0.15) : (Math.random() * 0.01 - 0.005)));
+    if (!pythonMetrics) return;
+
+    this.logger.log(
+      `[MONITORING] Python metrics: inferences=${pythonMetrics.inference_count} ` +
+      `fallbacks=${pythonMetrics.fallback_count} errors=${pythonMetrics.error_count}`
+    );
 
     await this.ingestMetrics(activeModel.id, {
-      inferenceVolume: Math.floor(Math.random() * 50) + 10,
-      errorRate: Math.random() < 0.05 ? 0.01 : 0.0,
-      latencyP50: 25 + Math.random() * 10,
-      latencyP99: 45 + Math.random() * 30,
-      criticalFeatures: [
-        { feature: 'debt_to_income', psi: psi * 0.8 },
-        { feature: 'revolving_util', psi: psi * 0.4 },
-        { feature: 'missed_payments_6m', psi: psi * 0.3 }
-      ],
-      auc,
-      ks,
-      psi
+      inferenceVolume: pythonMetrics.inference_count ?? 0,
+      errorRate: pythonMetrics.error_rate ?? 0,
+      // Latency and drift come from the real model -- use stored values until a
+      // dedicated /drift endpoint is implemented on the Python side.
+      latencyP50: 0,
+      latencyP99: 0,
+      criticalFeatures: [],
     });
   }
 
-  // â”€â”€ Scoring Event Ingestion (called per-decision) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Scoring Event Ingestion (called per-decision) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   /**
    * Records per-inference quality signals into ModelMetrics.
@@ -169,7 +186,7 @@ export class MonitoringService {
     }
   }
 
-  // â”€â”€ Historical Data Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Historical Data Endpoints â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   async getLatestMetrics() {
     const versions = await this.prisma.modelVersion.findMany({
@@ -397,7 +414,7 @@ export class MonitoringService {
       const alert = await this.prisma.alert.create({
         data: {
           severity: 'CRITICAL',
-          message: `Model Drift Detected â€” PSI ${maxPsi.toFixed(3)} exceeds critical threshold`,
+          message: `Model Drift Detected â€" PSI ${maxPsi.toFixed(3)} exceeds critical threshold`,
           detail: `Model version ${modelVersionId} requires immediate investigation.`,
         },
       });
@@ -415,7 +432,7 @@ export class MonitoringService {
       await this.prisma.alert.create({
         data: {
           severity: 'WARNING',
-          message: `PSI Warning â€” ${maxPsi.toFixed(3)} is elevated`,
+          message: `PSI Warning â€" ${maxPsi.toFixed(3)} is elevated`,
           detail: `Monitor model version ${modelVersionId} closely.`,
         },
       });
@@ -425,7 +442,7 @@ export class MonitoringService {
     return { log };
   }
 
-  // â”€â”€ Model Governance & MRM (Phase B) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Model Governance & MRM (Phase B) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
   async updateModelGovernance(id: string, data: {
     artifactCategory?: ArtifactCategory;

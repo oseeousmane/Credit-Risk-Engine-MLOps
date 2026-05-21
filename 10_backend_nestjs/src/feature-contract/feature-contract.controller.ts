@@ -3,6 +3,9 @@ import { FeatureContractService } from './feature-contract.service';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('feature-contract')
 @Controller('feature-contract')
@@ -21,7 +24,8 @@ export class FeatureContractController {
   }
 
   @Post('validate')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ANALYST, Role.MANAGER, Role.CRO, Role.ADMIN)
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Validate a feature payload against the contract' })
   validatePayload(@Body() payload: Record<string, any>) {

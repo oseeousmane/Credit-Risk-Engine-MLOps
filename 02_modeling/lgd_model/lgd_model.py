@@ -107,6 +107,8 @@ class LGDModel:
 
     def __init__(self, segments: Optional[Dict] = None):
         self.segments = segments or LGD_SEGMENTS
+        # _rng is retained for workout_lgd_simulation only (scenario analysis tool).
+        # The point estimate in estimate() is deterministic — same inputs always yield same LGD.
         self._rng = np.random.default_rng(42)
         self._audit_log: List[Dict] = []
 
@@ -134,16 +136,14 @@ class LGDModel:
         """
         segment = self.segments.get(collateral_type, self.segments["unsecured"])
 
-        # Estimation de base via distribution Beta
         mean = segment["mean_lgd"]
         std = segment["std_lgd"]
 
-        # Paramètres Beta à partir de mean/std
-        alpha, beta_param = self._beta_params(mean, std)
-        lgd_sample = self._rng.beta(alpha, beta_param)
-
-        # Application des floors/caps
-        lgd_estimate = np.clip(lgd_sample, segment["floor"], segment["cap"])
+        # Deterministic point estimate: use segment mean LGD directly.
+        # Stochastic beta sampling was replaced because non-deterministic LGD
+        # violates reproducibility requirements for regulatory capital (same
+        # inputs must always yield the same ECL — BCBS supervisory expectation).
+        lgd_estimate = np.clip(mean, segment["floor"], segment["cap"])
 
         # Ajustement par taux de couverture (collateral coverage ratio)
         if ead > 0 and collateral_value > 0:

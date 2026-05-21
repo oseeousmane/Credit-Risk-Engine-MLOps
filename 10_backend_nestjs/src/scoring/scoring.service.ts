@@ -6,7 +6,7 @@ import { OrchestrationService } from './orchestration.service';
 
 /**
  * Business payload sent to Python. Domain-driven, not Kaggle-driven.
- * Python's feature_pipeline.py handles the transformation to the 158-column model vector.
+ * Python's feature_pipeline.py handles the transformation to the current 157-column model vector.
  */
 export interface ScoreRequest {
   applicationId: string;
@@ -75,12 +75,13 @@ export interface ScoreResult {
   inferenceTimestamp: string;
 }
 
+// Thresholds aligned with DEMO_VS_PROD_BENCHMARK §5 and main.py apply_decision_policy().
+// Any change here MUST be mirrored in 03_risk_engine/main.py.
 const POLICY = {
-  AUTO_APPROVE_MAX_PD: 0.5,
+  AUTO_APPROVE_MAX_PD: 0.8,   // was 0.5 — misaligned with main engine Elite tier (<= 0.8%)
   AUTO_REJECT_MIN_PD: 6.0,
   AUTO_APPROVE_MAX_EXPOSURE: 50,
   REVIEW_MIN_EXPOSURE: 100,
-  // Payload quality threshold: below this triggers an explicit warning
   LOW_QUALITY_IMPUTED_THRESHOLD: 120,
 };
 
@@ -88,14 +89,18 @@ const POLICY = {
 export class ScoringService {
   private readonly logger = new Logger(ScoringService.name);
   private readonly scoringUrl: string;
-  private readonly timeoutMs = 8000; // 8s for richer payload processing
+  private readonly scoringApiKey: string;
+  private readonly timeoutMs = 8000;
 
   constructor(
     private readonly orchestrator: OrchestrationService,
     private readonly config: ConfigService,
   ) {
-    // Resolved from validated Joi schema â€” fails fast at boot if missing/malformed
     this.scoringUrl = this.config.get<string>('integrations.scoringServiceUrl') ?? 'http://localhost:8000';
+    this.scoringApiKey = this.config.get<string>('integrations.scoringApiKey') ?? '';
+    if (!this.scoringApiKey) {
+      this.logger.warn('[SECURITY] SCORING_API_KEY not configured — Python scoring endpoint is unauthenticated.');
+    }
   }
 
   async score(req: ScoreRequest): Promise<ScoreResult & { engine: 'PYTHON' | 'FALLBACK'; activeVersion: string }> {
@@ -164,11 +169,16 @@ export class ScoringService {
       grace_period_months: req.gracePeriodMonths ?? 0,
     });
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.scoringApiKey) {
+      headers['X-Api-Key'] = this.scoringApiKey;
+    }
+
     let response: Response;
     try {
       response = await fetch(`${this.scoringUrl}/score`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body,
         signal: controller.signal,
       });

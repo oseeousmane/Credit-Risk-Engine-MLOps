@@ -31,6 +31,7 @@ const mockPrisma = {
 
 const mockJwt = {
   sign: jest.fn().mockReturnValue('mock.jwt.token'),
+  verify: jest.fn(),
 };
 
 const mockAudit = {
@@ -84,6 +85,7 @@ describe('AuthService', () => {
         ...mockUser,
         passwordHash: hash,
       });
+      mockPrisma.user.update.mockResolvedValue({ failedLoginAttempts: 1 });
 
       await expect(service.login('analyst@riskengine.com', 'wrong-password'))
         .rejects.toThrow(UnauthorizedException);
@@ -144,13 +146,18 @@ describe('AuthService', () => {
         passwordHash: sha256Hash,
         passwordAlgorithm: 'SHA256',
       });
+      mockPrisma.user.update.mockResolvedValue({ failedLoginAttempts: 1 });
 
       await expect(service.login('analyst@riskengine.com', 'wrong-password'))
         .rejects.toThrow(UnauthorizedException);
 
-      // Migration must NOT happen on failed auth
-      expect(mockPrisma.user.update).not.toHaveBeenCalled();
-      expect(mockAudit.log).not.toHaveBeenCalled();
+      // Migration must NOT happen on failed auth — recordFailedAttempt() is allowed
+      expect(mockPrisma.user.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ passwordAlgorithm: 'BCRYPT' }) }),
+      );
+      expect(mockAudit.log).not.toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: 'AUTH_LEGACY_MIGRATION' }),
+      );
     });
   });
 
@@ -189,5 +196,38 @@ describe('AuthService', () => {
       const isValid = await bcrypt.compare('test-password', hash);
       expect(isValid).toBe(true);
     }, 15000);
+  });
+
+  describe('resolveSessionFromCookie', () => {
+    it('should return access_token and user when cookie is valid', async () => {
+      const cookieHeader = 'auth_token=valid.jwt.here; other_cookie=foo';
+      mockJwt.verify.mockReturnValue({ sub: mockUser.id, email: mockUser.email, role: mockUser.role });
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+
+      const result = await service.resolveSessionFromCookie(cookieHeader);
+
+      expect(result).not.toBeNull();
+      expect(result!.access_token).toBe('valid.jwt.here');
+      expect(result!.user.id).toBe(mockUser.id);
+    });
+
+    it('should return null when auth_token cookie is absent', async () => {
+      const result = await service.resolveSessionFromCookie('other_cookie=foo');
+      expect(result).toBeNull();
+      expect(mockJwt.verify).not.toHaveBeenCalled();
+    });
+
+    it('should return null when jwt.verify throws (expired or tampered token)', async () => {
+      mockJwt.verify.mockImplementation(() => { throw new Error('invalid signature'); });
+      const result = await service.resolveSessionFromCookie('auth_token=bad.token');
+      expect(result).toBeNull();
+    });
+
+    it('should return null when token is valid but user no longer exists in DB', async () => {
+      mockJwt.verify.mockReturnValue({ sub: 'deleted-user-id', email: 'x@x.com', role: 'ANALYST' });
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      const result = await service.resolveSessionFromCookie('auth_token=valid.jwt.here');
+      expect(result).toBeNull();
+    });
   });
 });

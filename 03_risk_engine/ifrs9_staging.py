@@ -106,8 +106,15 @@ class IFRS9StagingEngine:
     SICR_PD_RELATIVE_THRESHOLD = 2.0    # Doublement de la PD → SICR
     SICR_PD_ABSOLUTE_THRESHOLD = 0.03   # Augmentation absolue > 3pp → SICR
     DPD_STAGE_2_THRESHOLD = 30          # Jours de retard → Stage 2
-    DPD_STAGE_3_THRESHOLD = 90          # Jours de retard → Stage 3
-    DEFAULT_PD_THRESHOLD = 0.999        # PD → considéré en défaut
+    DPD_STAGE_3_THRESHOLD = 90          # Jours de retard → Stage 3 (critère primaire — IFRS 9 §B5.5.37)
+    # PD backstop secondaire pour Stage 3 (IFRS 9 "unlikely to pay" proxy).
+    # Critère primaire = DPD ≥ 90 jours. Ce seuil de 20% est le backstop
+    # quantitatif conservateur — aligné pratiques CEMAC et BCBS guidance 2017.
+    # L'ancienne valeur 0.999 rendait ce critère inopérant.
+    DEFAULT_PD_THRESHOLD = 0.20         # PD > 20% → défaut probable (backstop secondaire)
+    # Taux de référence BEAC pour l'actualisation des ECL lifetime (proxy CEMAC).
+    # À remplacer par l'EIR contractuel réel lors de la promotion CHALLENGER.
+    REFERENCE_RATE = 0.08               # 8% — taux directeur BEAC
 
     def __init__(self, config_path: Optional[str] = None):
         """
@@ -193,6 +200,7 @@ class IFRS9StagingEngine:
         previous_stage: Optional[int] = None,
         remaining_maturity_years: float = 5.0,
         forward_looking_scalar: float = 1.0,
+        effective_interest_rate: Optional[float] = None,
     ) -> StagingResult:
         """
         Classifie une exposition dans un stade IFRS 9 et calcule la provision ECL.
@@ -219,7 +227,7 @@ class IFRS9StagingEngine:
         # ── 1. Critères de défaut (Stage 3) ─────────────────────
         if pd_current >= self.DEFAULT_PD_THRESHOLD:
             stage = Stage.STAGE_3
-            reasons.append("DEFAULT: PD >= 99.9%")
+            reasons.append(f"DEFAULT: PD >= {self.DEFAULT_PD_THRESHOLD:.0%} (backstop secondaire — unlikely to pay)")
         
         if days_past_due >= self.DPD_STAGE_3_THRESHOLD:
             stage = Stage.STAGE_3
@@ -260,6 +268,7 @@ class IFRS9StagingEngine:
             ead=ead,
             remaining_maturity_years=remaining_maturity_years,
             forward_looking_scalar=forward_looking_scalar,
+            effective_interest_rate=effective_interest_rate,
         )
 
         result = StagingResult(
@@ -306,32 +315,42 @@ class IFRS9StagingEngine:
         ead: float,
         remaining_maturity_years: float,
         forward_looking_scalar: float,
+        effective_interest_rate: Optional[float] = None,
     ) -> tuple:
         """
         Calcul de l'Expected Credit Loss selon le stade IFRS 9.
-        
-        Stage 1 : ECL 12 mois = PD_12m × LGD × EAD
-        Stage 2 : ECL Lifetime = PD_lifetime × LGD × EAD
-        Stage 3 : ECL = LGD × EAD (défaut avéré)
+
+        Stage 1 : ECL 12 mois = PD_12m × LGD × EAD (pas de discounting — horizon court)
+        Stage 2 : ECL Lifetime discounté à l'EIR (IFRS 9 §5.5.17, §B5.5.44)
+        Stage 3 : ECL = LGD × EAD discounté à l'EIR (IFRS 9 §B5.5.44)
+
+        Le discounting lifetime utilise l'approximation mid-maturity :
+            discount_factor = 1 / (1 + EIR)^(T/2)
+        En l'absence d'EIR contractuel, on utilise REFERENCE_RATE (proxy BEAC 8%).
         """
+        eir = effective_interest_rate if effective_interest_rate is not None else self.REFERENCE_RATE
+
         if stage == Stage.STAGE_1:
-            # ECL 12 mois
-            # Approximation PD 12 mois (déjà calibrée comme TTC annuelle)
             pd_12m = min(pd, 1.0)
             ecl = pd_12m * lgd * ead * forward_looking_scalar
             horizon = "12_MONTH"
 
         elif stage == Stage.STAGE_2:
-            # ECL Lifetime — approximation via marginal PD cumulée
-            # PD_lifetime ≈ 1 - (1 - PD_annual)^maturity
+            # ECL Lifetime — PD cumulée sur la maturité résiduelle
             pd_lifetime = 1 - (1 - pd) ** remaining_maturity_years
             pd_lifetime = min(pd_lifetime, 1.0)
-            ecl = pd_lifetime * lgd * ead * forward_looking_scalar
+            ecl_undiscounted = pd_lifetime * lgd * ead * forward_looking_scalar
+            # Actualisation à la valeur présente — approximation mid-maturity (IFRS 9 §B5.5.44)
+            discount_factor = 1.0 / (1 + eir) ** (remaining_maturity_years / 2) if eir > 0 else 1.0
+            ecl = ecl_undiscounted * discount_factor
             horizon = "LIFETIME"
 
         elif stage == Stage.STAGE_3:
-            # Défaut avéré — ECL = LGD × EAD
-            ecl = lgd * ead * forward_looking_scalar
+            # Défaut avéré — ECL = LGD × EAD actualisé
+            ecl_undiscounted = lgd * ead * forward_looking_scalar
+            # Pour Stage 3, le recouvrement est attendu dans T/2 années (approx.)
+            discount_factor = 1.0 / (1 + eir) ** (remaining_maturity_years / 2) if eir > 0 else 1.0
+            ecl = ecl_undiscounted * discount_factor
             horizon = "LIFETIME"
 
         else:

@@ -6,6 +6,7 @@ import { PipelineService } from './pipeline.service';
 import { PipelineStage, Role } from '@prisma/client';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(Role.ANALYST, Role.MANAGER, Role.CRO, Role.ADMIN)
 @Controller('pipeline')
 export class PipelineController {
   constructor(private readonly pipelineService: PipelineService) {}

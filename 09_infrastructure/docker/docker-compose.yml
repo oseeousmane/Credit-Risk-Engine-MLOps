@@ -13,15 +13,14 @@ services:
       context: ../..
       dockerfile: 09_infrastructure/docker/Dockerfile
     container_name: credit-risk-engine
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - ENVIRONMENT=development
       - LOG_LEVEL=info
       - PYTHONPATH=/app
     volumes:
       - ../../config:/app/config:ro
-      - model-artifacts:/app/02_modeling/pd_model/artifacts
       - monitoring-data:/app/06_monitoring
       - governance-logs:/app/07_governance/audit_logs
     restart: unless-stopped
@@ -57,8 +56,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  model-artifacts:
-    driver: local
   monitoring-data:
     driver: local
   governance-logs:

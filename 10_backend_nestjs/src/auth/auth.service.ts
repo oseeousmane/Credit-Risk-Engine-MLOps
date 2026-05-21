@@ -1,9 +1,9 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import * as bcrypt from 'bcryptjs';
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { Role } from '@prisma/client';
 
@@ -14,6 +14,10 @@ const LEGACY_SHA256_BRIDGE_ENABLED = true;
 
 // SHA-256 pattern: 64 hex characters, NO bcrypt prefix
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+
+// ─── Account Lockout Policy ────────────────────────────────────────────────────
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
 
 @Injectable()
 export class AuthService {
@@ -48,6 +52,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // ─── Lockout check ────────────────────────────────────────────────────────
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(`Account locked. Try again in ${minutesLeft} minute(s).`);
+    }
+
     // â”€â”€â”€ [LEGACY_SHA256_BRIDGE] â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (LEGACY_SHA256_BRIDGE_ENABLED && user.passwordHash && SHA256_PATTERN.test(user.passwordHash)) {
       this.logger.warn(
@@ -55,7 +65,10 @@ export class AuthService {
       );
 
       const sha256Hash = createHash('sha256').update(password).digest('hex');
-      if (user.passwordHash !== sha256Hash) {
+      const storedBuf = Buffer.from(user.passwordHash, 'utf8');
+      const computedBuf = Buffer.from(sha256Hash, 'utf8');
+      if (storedBuf.length !== computedBuf.length || !timingSafeEqual(storedBuf, computedBuf)) {
+        await this.recordFailedAttempt(user.id);
         throw new UnauthorizedException('Invalid credentials');
       }
 
@@ -91,9 +104,13 @@ export class AuthService {
       }
       const isValid = await bcrypt.compare(password, user.passwordHash);
       if (!isValid) {
+        await this.recordFailedAttempt(user.id);
         throw new UnauthorizedException('Invalid credentials');
       }
     }
+
+    // ─── Reset lockout counters on successful auth ─────────────────────────
+    await this.clearFailedAttempts(user.id);
 
     const payload = {
       sub: user.id,
@@ -105,10 +122,16 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
 
-    // @TODO: Security Hardening - Refresh Token Implementation
-    // For a strict 15-minute access_token TTL, implement a secure HttpOnly refresh token:
-    // const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d', secret: process.env.REFRESH_SECRET });
-    // await this.prisma.user.update({ where: { id: user.id }, data: { currentHashedRefreshToken: bcrypt(refreshToken) } });
+    // Refresh token — signed with REFRESH_SECRET (separate key), stored as bcrypt hash
+    const refreshToken = this.jwtService.sign(
+      { sub: user.id },
+      { secret: this.config.get<string>('auth.refreshSecret')!, expiresIn: this.config.get<string>('auth.refreshTtl') || '7d' } as JwtSignOptions,
+    );
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { hashedRefreshToken },
+    });
 
     this.logger.log(
       `[AUTH] Login success: ${email} | role=${user.role} | algo=${user.passwordAlgorithm}`,
@@ -116,7 +139,7 @@ export class AuthService {
 
     return {
       access_token: accessToken,
-      // refresh_token: refreshToken, // Uncomment when fully migrating the frontend to interceptors
+      refresh_token: refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -124,9 +147,51 @@ export class AuthService {
         role: user.role,
         counterpartyId: user.counterpartyId ?? null,
         clientFirm: user.clientFirm ?? null,
-        passwordAlgorithm: user.passwordAlgorithm,
       },
     };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    let payload: { sub: string };
+    try {
+      payload = this.jwtService.verify<{ sub: string }>(refreshToken, {
+        secret: this.config.get<string>('auth.refreshSecret')!,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true, role: true, name: true, counterpartyId: true, hashedRefreshToken: true },
+    });
+
+    if (!user?.hashedRefreshToken) {
+      throw new UnauthorizedException('Session revoked. Please log in again.');
+    }
+
+    const isValid = await bcrypt.compare(refreshToken, user.hashedRefreshToken);
+    if (!isValid) {
+      // Token reuse detected — invalidate session entirely
+      await this.prisma.user.update({ where: { id: user.id }, data: { hashedRefreshToken: null } });
+      throw new UnauthorizedException('Refresh token reuse detected. Session terminated.');
+    }
+
+    // Rotate: issue new access + refresh tokens
+    const newPayload = { sub: user.id, email: user.email, role: user.role, name: user.name, counterpartyId: user.counterpartyId ?? null };
+    const newAccessToken = this.jwtService.sign(newPayload);
+    const newRefreshToken = this.jwtService.sign(
+      { sub: user.id },
+      { secret: this.config.get<string>('auth.refreshSecret')!, expiresIn: this.config.get<string>('auth.refreshTtl') || '7d' } as JwtSignOptions,
+    );
+    const newHashedRefreshToken = await bcrypt.hash(newRefreshToken, 10);
+    await this.prisma.user.update({ where: { id: user.id }, data: { hashedRefreshToken: newHashedRefreshToken } });
+
+    return { access_token: newAccessToken, refresh_token: newRefreshToken };
+  }
+
+  async logout(userId: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { hashedRefreshToken: null } });
   }
 
   // â”€â”€â”€ [SSO / OIDC INTEGRATION] â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -223,5 +288,82 @@ export class AuthService {
       migrationComplete: legacy === 0,
       bridgeSafeToRemove: legacy === 0,
     };
+  }
+
+  /**
+   * Resolves an HttpOnly auth_token cookie into an explicit { access_token, user } payload.
+   * Used by the OIDC callback flow: the frontend has no direct access to HttpOnly cookies,
+   * so it calls GET /auth/session (with credentials: 'include') to exchange the cookie for
+   * a token it can store in localStorage and use as a Bearer header on subsequent requests.
+   */
+  async resolveSessionFromCookie(cookieHeader: string): Promise<{ access_token: string; user: any } | null> {
+    const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]+)/);
+    const token = match?.[1];
+    if (!token) return null;
+
+    try {
+      const payload = this.jwtService.verify<{ sub: string; email: string; role: string }>(token);
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          counterpartyId: true,
+          authProvider: true,
+        },
+      });
+      if (!user) return null;
+      return { access_token: token, user };
+    } catch {
+      return null;
+    }
+  }
+
+  // ─── Account Lockout Helpers ───────────────────────────────────────────────
+
+  private async recordFailedAttempt(userId: string): Promise<void> {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: { increment: 1 } },
+      select: { failedLoginAttempts: true },
+    });
+
+    if (updated.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+      const lockedUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { lockedUntil },
+      });
+      await this.audit.log({
+        eventType: 'ACCOUNT_LOCKED',
+        entityType: 'User',
+        entityId: userId,
+        newValue: { lockedUntil: lockedUntil.toISOString(), attempts: updated.failedLoginAttempts },
+      });
+      this.logger.warn(`[AUTH] Account locked: id=${userId} after ${MAX_FAILED_ATTEMPTS} failed attempts`);
+    }
+  }
+
+  private async clearFailedAttempts(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
+  }
+
+  async unlockAccount(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
+    await this.audit.log({
+      eventType: 'ACCOUNT_UNLOCKED',
+      entityType: 'User',
+      entityId: userId,
+      newValue: { unlockedAt: new Date().toISOString() },
+    });
+    this.logger.log(`[AUTH] Account manually unlocked by admin: id=${userId}`);
   }
 }

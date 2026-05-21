@@ -347,6 +347,13 @@ model User {
   passwordMigratedAt DateTime?
   role               Role      @default(ANALYST)
 
+  // Refresh token (bcrypt hash stored — never the raw token)
+  hashedRefreshToken String?
+
+  // Account lockout
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   // Federation Readiness
   authProvider AuthProvider @default(LOCAL)
   externalId   String?      @unique // ID from OIDC/SAML provider
@@ -450,8 +457,9 @@ model Application {
   amortizationType  String? // e.g., BULLET, LINEAR, ANNUITY
   gracePeriodMonths Int?    @default(0)
 
-  currentStage PipelineStage @default(SUBMITTED)
-  pd           Float         @default(0.0)
+  currentStage    PipelineStage @default(SUBMITTED)
+  pd              Float         @default(0.0)
+  pdAtOrigination Float?        // PD at initial recognition — immutable after first scoring. Used as SICR denominator (IFRS 9).
 
   counterpartyId String
   counterparty   Counterparty @relation(fields: [counterpartyId], references: [id])
@@ -1241,6 +1249,28 @@ model FairnessMetric {
 }
 
 // ----------------------------------------------------------------------
+// Microfinance Recon & Adapters
+// ----------------------------------------------------------------------
+
+model TransactionRecord {
+  id               String   @id @default(uuid())
+  internalRef      String   @unique
+  providerRef      String?
+  amount           Float
+  currency         String   @default("XAF")
+  direction        String   // "OUTBOUND" (disbursement) or "INBOUND" (repayment)
+  status           String   // "PENDING", "SUCCESS", "FAILED"
+  isLiveMode       Boolean  @default(false)
+  loanAccountId    String?
+  disbursementId   String?  @unique
+  repaymentEventId String?  @unique
+  metadata         Json?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ----------------------------------------------------------------------
 // Governance & Configuration
 // ----------------------------------------------------------------------
 
@@ -1279,4 +1309,32 @@ model AdminSetting {
   group     String? // e.g. 'scoring_policy', 'notifications'
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+// ── Outbound Webhooks ─────────────────────────────────────────────────────────
+
+model WebhookSubscription {
+  id          String   @id @default(uuid())
+  url         String
+  secret      String   // HMAC-SHA256 signing key — never returned in API responses
+  events      String[] // e.g. ["decision.approved", "decision.rejected"]
+  active      Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id             String              @id @default(uuid())
+  subscriptionId String
+  subscription   WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  event          String
+  payload        Json
+  statusCode     Int?
+  success        Boolean
+  attemptCount   Int                 @default(1)
+  responseBody   String?
+  createdAt      DateTime            @default(now())
 }

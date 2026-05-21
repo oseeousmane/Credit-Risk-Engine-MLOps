@@ -19,13 +19,14 @@ import { FeatureAnalyticsModule } from './feature-analytics/feature-analytics.mo
 import { ModelRegistryModule } from './model-registry/model-registry.module';
 import { FeatureContractModule } from './feature-contract/feature-contract.module';
 import { MicrofinanceModule } from './microfinance/microfinance.module';
+import { WebhookModule } from './webhook/webhook.module';
+import { ReportingModule } from './reporting/reporting.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/config.schema';
-import { PrismaService } from './prisma/prisma.service';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 @Module({
@@ -53,6 +54,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
     ModelRegistryModule,
     FeatureContractModule,
     MicrofinanceModule,
+    WebhookModule,
+    ReportingModule,
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ([
@@ -77,7 +80,6 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
   controllers: [AppController],
   providers: [
     AppService,
-    PrismaService, // exposed at root level for AppController health probes
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

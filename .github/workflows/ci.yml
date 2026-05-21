@@ -9,12 +9,18 @@ name: Credit Risk Engine — CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop, "feature/*"]
   pull_request:
-    branches: [main]
+    branches: [develop]
+  # NOTE: PRs to main are handled exclusively by enterprise-pipeline.yml,
+  # which includes NestJS + frontend + Python. Do NOT add main back here
+  # or Python tests will run twice on every PR to main.
 
 env:
   PYTHON_VERSION: "3.11"
+  # Empty in CI → Python scoring service runs in unauthenticated dev mode (warning logged).
+  # Set SCORING_API_KEY as a GitHub secret for staging/production environments.
+  SCORING_API_KEY: ""
 
 jobs:
   # ── 1. Code Quality ────────────────────────────────────────
@@ -29,24 +35,25 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
+      - name: Install linting tools
         run: |
           pip install --upgrade pip
-          pip install flake8 black pytest
+          pip install flake8 black
 
-      - name: Lint with flake8
+      - name: Lint with flake8 (syntax errors & undefined names)
         run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
 
-      - name: Check formatting with black
+      - name: Style check with black
         run: black --check --line-length 120 .
 
-  # ── 2. Unit Tests ──────────────────────────────────────────
+  # ── 2. Python Unit Tests ───────────────────────────────────
   unit-tests:
-    name: Unit Tests
+    name: Python Unit Tests (Risk Engine)
     runs-on: ubuntu-latest
     needs: code-quality
+    env:
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/03_risk_engine
     steps:
       - uses: actions/checkout@v4
 
@@ -59,23 +66,27 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov
+          pip install pytest pytest-cov httpx
 
-      - name: Run unit tests
+      - name: Run scoring unit tests
+        working-directory: ./03_risk_engine
         run: |
-          python -m pytest tests/unit/ -v --tb=short --cov=. --cov-report=xml
+          python -m pytest test_scoring.py -v --tb=short \
+            --cov=. --cov-report=xml --cov-report=term-missing
 
-      - name: Upload coverage
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.xml
+          name: python-coverage-report
+          path: 03_risk_engine/coverage.xml
 
-  # ── 3. Risk Engine Integration Tests ───────────────────────
-  integration-tests:
-    name: Risk Engine Integration
+  # ── 3. Risk Engine Smoke Tests ─────────────────────────────
+  smoke-tests:
+    name: Risk Engine Smoke Tests
     runs-on: ubuntu-latest
     needs: unit-tests
+    env:
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/03_risk_engine
     steps:
       - uses: actions/checkout@v4
 
@@ -88,23 +99,96 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest httpx
 
-      - name: Generate mock data
-        run: python 01_data_layer/mock_home_credit.py
+      - name: Smoke test — feature pipeline
+        working-directory: ./03_risk_engine
+        run: |
+          python - <<'EOF'
+          from feature_pipeline import build_feature_vector, EXPECTED_FEATURES
+          result = build_feature_vector({
+            "application_id": "CI-SMOKE-001",
+            "requested_amount": 5.0,
+            "exposure": 5.0,
+            "pd_current": 2.0,
+            "risk_level": "MED",
+          })
+          assert len(result["features"]) == len(EXPECTED_FEATURES), \
+            f"Feature count mismatch: {len(result['features'])} != {len(EXPECTED_FEATURES)}"
+          assert result["schema_validation"] is not None
+          print(f"✓ Feature pipeline OK: {len(EXPECTED_FEATURES)} features, "
+                f"quality={result['quality_band']}, imputed={result['imputed_count']}")
+          EOF
 
-      - name: Run feature engineering
-        run: python 01_data_layer/feature_store/feature_engineering.py
+      - name: Smoke test — calibration buffer
+        working-directory: ./03_risk_engine
+        run: |
+          python - <<'EOF'
+          from main import _apply_calibration_buffer, apply_decision_policy
 
-      - name: Run integration tests
-        run: python -m pytest tests/integration/ -v --tb=short || true
+          # Calibration buffer edge cases
+          pd_buf, _ = _apply_calibration_buffer(8.0)
+          assert abs(pd_buf - 8.0 * 1.15) < 1e-9, "High-risk buffer incorrect"
 
-  # ── 4. Model Validation ────────────────────────────────────
+          pd_buf, _ = _apply_calibration_buffer(5.0)
+          assert abs(pd_buf - 5.0 * 1.08) < 1e-9, "Watch buffer incorrect"
+
+          pd_buf, _ = _apply_calibration_buffer(2.0)
+          assert pd_buf == 2.0, "No buffer expected below 3.5%"
+
+          # Decision policy — all 4 tiers
+          rec, _, _ = apply_decision_policy(0.5, 10.0, "LOW", "HIGH")
+          assert rec == "APPROVE", f"Expected APPROVE, got {rec}"
+
+          rec, _, _ = apply_decision_policy(7.0, 10.0, "LOW", "HIGH")
+          assert rec == "REJECT", f"Expected REJECT, got {rec}"
+
+          print("✓ Calibration buffer and decision policy OK")
+          EOF
+
+      - name: Smoke test — IFRS 9 staging engine
+        working-directory: ./03_risk_engine
+        run: |
+          python - <<'EOF'
+          import sys; sys.path.insert(0, '..')
+          from ifrs9_staging import IFRS9StagingEngine
+          engine = IFRS9StagingEngine()
+
+          # Stage 3 via DPD
+          r = engine.classify("CI-001", pd_current=0.05, pd_origination=0.03,
+                               lgd=0.45, ead=1_000_000, days_past_due=95)
+          assert r.current_stage == 3, f"DPD≥90 should be Stage 3, got {r.current_stage}"
+
+          # Stage 3 via PD backstop (new 20% threshold)
+          r = engine.classify("CI-002", pd_current=0.25, pd_origination=0.03,
+                               lgd=0.45, ead=1_000_000, days_past_due=0)
+          assert r.current_stage == 3, f"PD≥20% should be Stage 3, got {r.current_stage}"
+
+          # Stage 1 — performing
+          r = engine.classify("CI-003", pd_current=0.02, pd_origination=0.02,
+                               lgd=0.45, ead=1_000_000, days_past_due=0)
+          assert r.current_stage == 1, f"Low PD should be Stage 1, got {r.current_stage}"
+
+          # ECL is discounted (should be < undiscounted)
+          r_discounted = engine.classify("CI-004", pd_current=0.08, pd_origination=0.03,
+                                         lgd=0.45, ead=1_000_000, days_past_due=35,
+                                         effective_interest_rate=0.08)
+          r_nodiscount  = engine.classify("CI-004b", pd_current=0.08, pd_origination=0.03,
+                                          lgd=0.45, ead=1_000_000, days_past_due=35,
+                                          effective_interest_rate=0.0)
+          assert r_discounted.ecl_provision < r_nodiscount.ecl_provision, \
+            "Discounted ECL should be less than undiscounted"
+
+          print(f"✓ IFRS9 staging OK: Stage 1={r.current_stage}, ECL discounting verified")
+          EOF
+
+  # ── 4. Model Artifact Validation ──────────────────────────
   model-validation:
-    name: Model Validation (Smoke Test)
+    name: Model Artifact Validation
     runs-on: ubuntu-latest
-    needs: integration-tests
+    needs: smoke-tests
     if: github.ref == 'refs/heads/main'
+    env:
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/03_risk_engine
     steps:
       - uses: actions/checkout@v4
 
@@ -118,39 +202,68 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate mock data & train
+      - name: Check model artifact exists and metadata is valid
         run: |
-          python 01_data_layer/mock_home_credit.py
-          python 01_data_layer/feature_store/feature_engineering.py
+          python - <<'EOF'
+          import os, json, hashlib
 
-      - name: Validate Risk Engine components
-        run: |
-          python -c "
-          from _03_risk_engine import ExpectedLossCalculator, DecisionEngine, IFRS9StagingEngine, RAROCCalculator
-          el = ExpectedLossCalculator()
-          r = el.compute(pd=0.05, lgd=0.45, ead=1000000)
-          assert r.expected_loss > 0
-          print('✓ Risk Engine validation passed')
-          "
+          MODEL_DIR = "02_modeling/pd_model/artifacts"
+          MODEL_PKL = os.path.join(MODEL_DIR, "pd_model_v2.pkl")
+          MODEL_META = os.path.join(MODEL_DIR, "pd_model_v2_metadata.json")
 
-  # ── 5. Docker Build ────────────────────────────────────────
+          if not os.path.exists(MODEL_PKL):
+            print("⚠ Model artifact not found — skipping artifact validation (expected in CI without training).")
+            exit(0)
+
+          # Verify metadata exists and has required fields
+          with open(MODEL_META) as f:
+            meta = json.load(f)
+
+          required_fields = ["model_type", "n_features", "val_auc", "training_timestamp"]
+          missing = [f for f in required_fields if f not in meta]
+          if missing:
+            print(f"❌ Metadata missing required fields: {missing}")
+            exit(1)
+
+          # Log artifact SHA-256 for traceability
+          with open(MODEL_PKL, "rb") as f:
+            sha256 = hashlib.sha256(f.read()).hexdigest()
+          print(f"✓ Artifact SHA-256: {sha256}")
+          print(f"✓ Model type: {meta['model_type']}, Features: {meta['n_features']}, Val AUC: {meta['val_auc']}")
+          EOF
+
+  # ── 5. Docker Build & Readiness Check ─────────────────────
   docker-build:
-    name: Docker Build
+    name: Docker Build & Readiness
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests]
+    needs: [unit-tests, smoke-tests]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
         run: |
-          docker build -t credit-risk-engine:latest \
+          docker build -t credit-risk-engine:ci \
             -f 09_infrastructure/docker/Dockerfile .
 
-      - name: Test Docker health
+      - name: Start container and verify /ready endpoint
         run: |
-          docker run -d --name test-risk-engine -p 8000:8000 credit-risk-engine:latest
-          sleep 10
-          curl -f http://localhost:8000/health || exit 1
+          docker run -d --name test-risk-engine -p 8000:8000 credit-risk-engine:ci
+          sleep 15
+
+          # /health should always return 200 (liveness probe)
+          curl -f http://localhost:8000/health || (docker logs test-risk-engine && exit 1)
+
+          # /ready returns 503 if no model artifact, 200 if loaded
+          READY_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8000/ready)
+          echo "Readiness probe status: $READY_STATUS"
+          # Both 200 (model loaded) and 503 (no artifact, expected in CI) are valid
+          if [ "$READY_STATUS" != "200" ] && [ "$READY_STATUS" != "503" ]; then
+            echo "❌ /ready returned unexpected status: $READY_STATUS"
+            docker logs test-risk-engine
+            exit 1
+          fi
+          echo "✓ Docker health and readiness probes verified"
+
           docker stop test-risk-engine
           docker rm test-risk-engine

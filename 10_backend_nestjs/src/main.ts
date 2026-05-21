@@ -5,14 +5,26 @@ import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import session from 'express-session';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { StructuredLoggerService } from './common/logger/structured-logger.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const structuredLogger = new StructuredLoggerService();
+  const app = await NestFactory.create(AppModule, { logger: structuredLogger });
   const config = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
   const isProduction = config.get<string>('environment') === 'production';
+
+  app.use(
+    session({
+      secret: config.get<string>('auth.sessionSecret')!,
+      resave: false,
+      saveUninitialized: false,
+    }),
+  );
 
   // â”€â”€ Global API Prefix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   app.setGlobalPrefix('api/v1', {
@@ -42,6 +54,9 @@ async function bootstrap() {
       disableErrorMessages: isProduction, // institutional posture: mask error details in prod
     }),
   );
+
+  // â”€â”€ Global Exception Filter (x-request-id correlation) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // â”€â”€ Global Upstream Timeout Interceptor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const reflector = app.get(Reflector);
@@ -81,6 +96,8 @@ async function bootstrap() {
     });
     logger.log('ðŸ“– Swagger UI: http://localhost:' + (config.get<number>('port') || 3001) + '/api/docs');
   }
+
+  app.enableShutdownHooks();
 
   const port = config.get<number>('port') || 3001;
   await app.listen(port);

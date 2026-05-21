@@ -1,0 +1,60 @@
+{
+  "navbar": {
+    "platform": "Plateforme",
+    "compliance": "Conformité",
+    "developers": "Développeurs",
+    "company": "Entreprise",
+    "requestDemo": "Demander une Démo",
+    "signIn": "Connexion",
+    
+    "menu": {
+      "platform": {
+        "intelligence": "Intelligence des Risques",
+        "intelligenceDesc": "Analyses et métriques de portefeuille",
+        "portfolio": "Gestion de Portefeuille",
+        "portfolioDesc": "Surveillance des expositions en temps réel",
+        "decisioning": "Prise de Décision",
+        "decisioningDesc": "Approbations de crédit automatisées",
+        "mlops": "Monitoring & MLOps",
+        "mlopsDesc": "Performance et dérive des modèles",
+        "stress": "Stress Tests",
+        "stressDesc": "Simulations de scénarios macroéconomiques",
+        "clientPortal": "Portail Client",
+        "clientPortalDesc": "Réception sécurisée des demandes"
+      },
+      "compliance": {
+        "ifrs9": "IFRS 9 / CECL",
+        "ifrs9Desc": "Calculs automatisés des ECL",
+        "basel": "Bâle III",
+        "baselDesc": "Optimisation des RWA et du capital",
+        "audit": "Pistes d'Audit",
+        "auditDesc": "Journaux de décisions immuables"
+      },
+      "developers": {
+        "api": "Référence API",
+        "apiDesc": "Intégration via endpoints REST",
+        "sdk": "SDK Python",
+        "sdkDesc": "Outils de science des données"
+      },
+      "company": {
+        "about": "À Propos",
+        "aboutDesc": "Notre histoire et direction",
+        "security": "Sécurité",
+        "securityDesc": "Protection de niveau entreprise",
+        "contact": "Contact Commercial",
+        "contactDesc": "Contactez notre équipe"
+      }
+    }
+  },
+  "home": {
+    "hero": {
+      "badge": "Entreprise v4.2",
+      "titlePart1": "Le standard du",
+      "titlePart2": "risque de crédit",
+      "titlePart3": "algorithmique.",
+      "description": "Plateforme institutionnelle unifiant la prise de décision à haute fréquence, la surveillance continue des portefeuilles et une conformité réglementaire absolue.",
+      "primaryBtn": "Demander une démo",
+      "secondaryBtn": "Explorer l'architecture"
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "contract_meta": {
+    "version": "2.0.0",
+    "status": "DEMO_VALIDATION_PASS",
+    "description": "Formal 157-feature data contract between Octaix Platform, Bank Upstream Systems, and the current PD model artifact. Based on Home Credit 2016-2018 public dataset; not yet validated on proprietary CEMAC bank data.",
+    "target_model_category": "DEMO_BASELINE",
+    "total_feature_count": 157,
+    "effective_date": "2026-04-27",
+    "approved_by": "Model Risk Management (MRM) — Demo Pilot Only"
+  },
+  "entity_mappings": {
+    "Counterparty": {
+      "source": "Core Banking System (CBS) / CRM",
+      "attributes": [
+        { "name": "AMT_INCOME_TOTAL", "description": "Annual gross revenue / turnover", "type": "NUMERIC", "mandatory": true },
+        { "name": "DAYS_EMPLOYED", "description": "Days since business registration / employment start", "type": "INTEGER", "mandatory": true },
+        { "name": "NAME_INCOME_TYPE", "description": "Type of income source (Corporate, Associate, etc.)", "type": "CATEGORICAL", "mandatory": true },
+        { "name": "ORGANIZATION_TYPE", "description": "Industry sector classification", "type": "CATEGORICAL", "mandatory": true }
+      ]
+    },
+    "Application": {
+      "source": "Octaix Origination Layer",
+      "attributes": [
+        { "name": "AMT_CREDIT", "description": "Requested loan amount", "type": "NUMERIC", "mandatory": true },
+        { "name": "AMT_ANNUITY", "description": "Calculated annual repayment amount", "type": "NUMERIC", "mandatory": true },
+        { "name": "NAME_CONTRACT_TYPE", "description": "Loan product type (Cash vs Revolving)", "type": "CATEGORICAL", "mandatory": true }
+      ]
+    },
+    "CreditBureau": {
+      "source": "External Credit Bureau (API)",
+      "attributes": [
+        { "name": "BUREAU_DAYS_CREDIT_COUNT", "description": "Total number of active bureau records", "type": "INTEGER", "mandatory": false },
+        { "name": "BUREAU_AMT_CREDIT_SUM_SUM", "description": "Total outstanding external debt", "type": "NUMERIC", "mandatory": false },
+        { "name": "BUREAU_CREDIT_UTILIZATION", "description": "Ratio of credit used vs credit limits", "type": "PERCENTAGE", "mandatory": false }
+      ]
+    }
+  },
+  "canonical_feature_definitions": [
+    { "id": "EXT_SOURCE_1", "description": "Score from External Credit Agency 1 (Primary Regulator Score)", "tier": "TIER_1_CRITICAL", "type": "NUMERIC", "mandatory": true, "imputation_allowed": false },
+    { "id": "EXT_SOURCE_2", "description": "Score from External Credit Agency 2 (Secondary Bureau)", "tier": "TIER_1_CRITICAL", "type": "NUMERIC", "mandatory": true, "imputation_allowed": false },
+    { "id": "EXT_SOURCE_3", "description": "Score from Internal Behavioral Model", "tier": "TIER_1_CRITICAL", "type": "NUMERIC", "mandatory": true, "imputation_allowed": false },
+    { "id": "DEBT_TO_INCOME", "description": "Debt to Income Ratio", "tier": "TIER_1_CRITICAL", "type": "NUMERIC", "mandatory": true, "imputation_allowed": false },
+    { "id": "DAYS_EMPLOYED", "description": "Employment/Business Registration duration", "tier": "TIER_1_CRITICAL", "type": "INTEGER", "mandatory": true, "imputation_allowed": false },
+    { "id": "AMT_CREDIT", "description": "Total credit requested", "tier": "TIER_1_CRITICAL", "type": "NUMERIC", "mandatory": true, "imputation_allowed": false },
+    { "id": "AMT_INCOME_TOTAL", "description": "Total income/revenue", "tier": "TIER_1_CRITICAL", "type": "NUMERIC", "mandatory": true, "imputation_allowed": false },
+    { "id": "BUREAU_CREDIT_UTILIZATION", "description": "Credit utilization ratio across all bureau lines", "tier": "TIER_1_CRITICAL", "type": "NUMERIC", "mandatory": true, "imputation_allowed": false },
+    { "id": "AMT_ANNUITY", "description": "Calculated annuity", "tier": "TIER_2_IMPORTANT", "type": "NUMERIC", "mandatory": false, "imputation_allowed": true },
+    { "id": "CREDIT_TO_INCOME_RATIO", "description": "Ratio of credit to income", "tier": "TIER_2_IMPORTANT", "type": "NUMERIC", "mandatory": false, "imputation_allowed": true },
+    { "id": "FLAG_DOCUMENT_SUM", "description": "Number of submitted verification documents", "tier": "TIER_3_SUPPLEMENTARY", "type": "INTEGER", "mandatory": false, "imputation_allowed": true },
+    { "id": "FLAG_CONTACT_SUM", "description": "Number of verified contact methods", "tier": "TIER_3_SUPPLEMENTARY", "type": "INTEGER", "mandatory": false, "imputation_allowed": true }
+  ],
+  "imputation_policy": {
+    "max_allowed_imputation_rate": 0.40,
+    "critical_non_nullable_fields": [
+      "EXT_SOURCE_1", 
+      "EXT_SOURCE_2", 
+      "EXT_SOURCE_3", 
+      "DEBT_TO_INCOME", 
+      "DAYS_EMPLOYED", 
+      "AMT_CREDIT", 
+      "AMT_INCOME_TOTAL", 
+      "BUREAU_CREDIT_UTILIZATION"
+    ],
+    "quality_bands": {
+      "HIGH": { "max_imputed_features": 15 },
+      "MEDIUM": { "max_imputed_features": 63 },
+      "LOW": { "max_imputed_features": 157 }
+    }
+  }
+}

@@ -1,8 +1,12 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { StressTestingService } from './stress-testing.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
 @Controller('scenarios')
 export class StressTestingController {
   constructor(private readonly stressTestingService: StressTestingService) {}

@@ -144,22 +144,32 @@ export class RiskMathService {
     const reasons: string[] = [];
 
     // â”€â”€ Stage 3: Credit Impaired (Default) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // IFRS 9 Appendix A: Default / Credit Impaired indicators
-    if (daysPastDue >= 90 || pdCurrent >= 100) {
+    // IFRS 9 Appendix A: Default / Credit Impaired indicators.
+    // Primary criterion: DPD >= 90 (irrefutable IFRS 9 presumption, §5.5.11).
+    // Secondary backstop: PD >= 20% ("unlikely to pay" proxy — BCBS 2017 guidance, COBAC alignment).
+    // Previous threshold (PD >= 100%) rendered the PD backstop inoperative.
+    if (daysPastDue >= 90 || pdCurrent >= 20.0) {
       stage = IFRS9Stage.STAGE_3;
-      reasons.push(daysPastDue >= 90 ? 'Default: DPD >= 90' : 'Default: PD at 100%');
+      reasons.push(daysPastDue >= 90 ? 'Default: DPD >= 90 days (primary criterion)' : 'Default: PD >= 20% (unlikely-to-pay backstop)');
       const reason = reasons.join('; ');
       return { currentStage: stage, sicrTriggered: true, stagingReasons: reasons, reason };
     }
 
     // â”€â”€ Stage 2: SICR (Significant Increase) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Threshold 1: PD Relative Increase (Standard threshold: 2x increase)
+    // Threshold 1a: PD Relative Increase (Standard threshold: 2x increase — IFRS 9 §B5.5.17)
+    // Threshold 1b: PD Absolute Increase (> 3pp — prevents false negatives on low initial PDs)
+    // Both are independent OR conditions per IFRS 9 §B5.5.17 guidance (not combined AND).
     const relIncrease = pdOrigination > 0 ? (pdCurrent / pdOrigination) : 1;
     const absIncrease = pdCurrent - pdOrigination;
 
-    if (relIncrease >= 2.0 && absIncrease >= 1.0) {
+    if (relIncrease >= 2.0) {
       sicrTriggered = true;
       reasons.push(`SICR: PD relative increase >= 2.0x (${relIncrease.toFixed(1)}x)`);
+    }
+
+    if (absIncrease >= 3.0) {
+      sicrTriggered = true;
+      reasons.push(`SICR: PD absolute increase >= 3pp (${absIncrease.toFixed(1)}pp)`);
     }
 
     // Threshold 2: 30 DPD Backstop (IFRS 9.5.5.11)
@@ -205,5 +215,89 @@ export class RiskMathService {
     const ttcPD = (1 / (1 + Math.exp(-logitTTC))) * 100;
 
     return Math.max(0.01, ttcPD);
+  }
+
+  /**
+   * Basel III Risk-Weighted Assets (RWA) — Foundation IRB Corporate Formula.
+   * Reference: BCBS d424 §55–60 (Basel III: Finalising post-crisis reforms, Dec 2017).
+   *
+   * RWA = 12.5 × K × EAD
+   * K = LGD × [N((R^0.5 × N⁻¹(0.999) + N⁻¹(PD)) / (1-R)^0.5) - PD × LGD]
+   *   × maturity adjustment
+   *
+   * @param pdPercent     PD in percent scale (0–100)
+   * @param lgd           LGD as decimal (0–1)
+   * @param ead           Exposure At Default (currency units)
+   * @param maturityYears Effective maturity M (1–5 years; Basel default 2.5)
+   */
+  calculateRWA(
+    pdPercent: number,
+    lgd: number,
+    ead: number,
+    maturityYears: number = 2.5,
+  ): { rwa: number; capitalRequirement: number; k: number; correlation: number } {
+    const pd = Math.max(pdPercent / 100, 0.0003); // Basel floor: 0.03%
+    const M = Math.min(Math.max(maturityYears, 1), 5);
+
+    // Asset correlation R — Basel III corporate formula (BCBS d424 §55)
+    const e50pd = Math.exp(-50 * pd);
+    const e50 = Math.exp(-50);
+    const R = 0.12 * (1 - e50pd) / (1 - e50) + 0.24 * (1 - (1 - e50pd) / (1 - e50));
+
+    // Maturity adjustment b(PD) — Basel III §57
+    const b = (0.11852 - 0.05478 * Math.log(pd)) ** 2;
+
+    // Φ⁻¹ approximation (Acklam 2003 rational approximation)
+    const normInv = (p: number): number => {
+      const a = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2,
+                  1.383577518672690e2, -3.066479806614716e1, 2.506628277459239];
+      const b_ = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2,
+                   6.680131188771972e1, -1.328068155288572e1];
+      const c = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838,
+                  -2.549732539343734, 4.374664141464968, 2.938163982698783];
+      const d = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416];
+      const pLow = 0.02425; const pHigh = 1 - pLow;
+      let q: number, z: number;
+      if (p < pLow) {
+        q = Math.sqrt(-2 * Math.log(p));
+        z = (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+            ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+      } else if (p <= pHigh) {
+        q = p - 0.5; const r = q * q;
+        z = (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q /
+            (((((b_[0]*r+b_[1])*r+b_[2])*r+b_[3])*r+b_[4])*r+1);
+      } else {
+        q = Math.sqrt(-2 * Math.log(1 - p));
+        z = -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+              ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+      }
+      return z;
+    };
+
+    // Φ approximation (Horner form, max error ~7.5e-8)
+    const normCdf = (x: number): number => {
+      const t = 1 / (1 + 0.2316419 * Math.abs(x));
+      const p = t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+      const approx = 1 - (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * x * x) * p;
+      return x >= 0 ? approx : 1 - approx;
+    };
+
+    // Capital requirement K (Basel III §56 — Vasicek ASRF model)
+    const sqrtR = Math.sqrt(R);
+    const sqrtOneMinusR = Math.sqrt(1 - R);
+    const k = lgd * normCdf((normInv(pd) + sqrtR * normInv(0.999)) / sqrtOneMinusR) - pd * lgd;
+
+    // Maturity-adjusted K (Basel III §57)
+    const kAdj = Math.max(k, 0) * (1 + (M - 2.5) * b) / (1 - 1.5 * b);
+
+    const capitalRequirement = kAdj * ead;
+    const rwa = 12.5 * capitalRequirement;
+
+    this.logger.debug(
+      `RWA: PD=${(pd*100).toFixed(2)}% LGD=${(lgd*100).toFixed(1)}% ` +
+      `R=${(R*100).toFixed(2)}% K=${(kAdj*100).toFixed(3)}% RWA=${rwa.toFixed(2)}`
+    );
+
+    return { rwa, capitalRequirement, k: kAdj, correlation: R };
   }
 }

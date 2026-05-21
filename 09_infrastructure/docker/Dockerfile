@@ -27,6 +27,8 @@ RUN groupadd -r riskengine && useradd -r -g riskengine riskengine
 
 WORKDIR /app
 
+ENV PYTHONPATH="/app:/app/03_risk_engine"
+
 # Copy installed packages
 COPY --from=builder /install /usr/local
 
@@ -62,7 +64,7 @@ LABEL maintainer="Credit Risk Analytics" \
       description="Credit Risk Engine API — COBAC Compliant" \
       regulatory.framework="Basel_III_IFRS9"
 
-# Run with uvicorn
-CMD ["python", "-m", "uvicorn", "05_api_layer.main:app", \
+# Run the canonical lineage-aware scoring service used by NestJS /score.
+CMD ["python", "-m", "uvicorn", "03_risk_engine.main:app", \
      "--host", "0.0.0.0", "--port", "8000", \
      "--workers", "2", "--log-level", "info"]

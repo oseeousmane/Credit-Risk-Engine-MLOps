@@ -16,15 +16,19 @@ import {
 import {
   AlternativeDataSourceType,
   BorrowerSegment,
+  BorrowerStatus,
   CollectionActionStatus,
   CollectionActionType,
   ConsentCaptureChannel,
   ConsentPurpose,
   ConsentSourceType,
   DecisionStatus,
+  DelinquencyStatus,
   DisbursementChannel,
   DisbursementStatus,
   FieldVisitOutcome,
+  FieldVisitStatus,
+  LoanAccountStatus,
   LoanOfferStatus,
   MicroLoanApplicationStatus,
   MicroLoanProductType,
@@ -721,4 +725,297 @@ export class CreateAlternativeDataFeatureSnapshotDto {
 
   @IsObject()
   lineage!: Record<string, unknown>;
+}
+
+export class RenewLoanDto {
+  @IsString()
+  borrowerId!: string;
+
+  @IsOptional()
+  @IsString()
+  policyId?: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  requestedAmount!: number;
+
+  @IsOptional()
+  @IsString()
+  purpose?: string;
+
+  @IsOptional()
+  @IsString()
+  channel?: string;
+}
+
+export class EscalateDelinquencyDto {
+  @IsOptional()
+  @IsString()
+  severity?: string;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+}
+
+export class CureDelinquencyDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+}
+
+export class WriteOffLoanAccountDto {
+  @IsString()
+  reason!: string;
+
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+}
+
+export class CompleteCollectionActionDto {
+  @IsEnum(CollectionActionStatus)
+  status!: CollectionActionStatus;
+
+  @IsOptional()
+  @IsString()
+  outcome?: string;
+
+  @IsOptional()
+  @IsDateString()
+  nextActionAt?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+export class FairnessWindowDto {
+  @IsOptional()
+  @IsDateString()
+  windowStart?: string;
+
+  @IsOptional()
+  @IsDateString()
+  windowEnd?: string;
+
+  @IsOptional()
+  @IsEnum(BorrowerSegment)
+  segment?: BorrowerSegment;
+}
+
+export class ConsentCoverageDto {
+  @IsOptional()
+  @IsEnum(BorrowerSegment)
+  segment?: BorrowerSegment;
+
+  @IsOptional()
+  @IsEnum(ConsentSourceType)
+  sourceType?: ConsentSourceType;
+}
+
+export class AltDataLineageQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  borrowerId?: string;
+
+  @IsOptional()
+  @IsEnum(AlternativeDataSourceType)
+  sourceType?: AlternativeDataSourceType;
+
+  @IsOptional()
+  @IsString()
+  applicationId?: string;
+}
+
+export class LoanAccountQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(BorrowerSegment)
+  segment?: BorrowerSegment;
+
+  @IsOptional()
+  @IsEnum(LoanAccountStatus)
+  status?: LoanAccountStatus;
+}
+
+export class DelinquencyQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(BorrowerSegment)
+  segment?: BorrowerSegment;
+
+  @IsOptional()
+  @IsEnum(DelinquencyStatus)
+  status?: DelinquencyStatus;
+}
+
+export class CollectionActionQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(BorrowerSegment)
+  segment?: BorrowerSegment;
+
+  @IsOptional()
+  @IsEnum(CollectionActionStatus)
+  status?: CollectionActionStatus;
+}
+
+export class PortfolioAnalyticsQueryDto {
+  @IsOptional()
+  @IsDateString()
+  windowStart?: string;
+
+  @IsOptional()
+  @IsDateString()
+  windowEnd?: string;
+}
+
+export class CancelApplicationDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class SubmitSupervisorDecisionDto {
+  @IsEnum(DecisionStatus)
+  status!: DecisionStatus;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  approvedAmount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  tenorDays?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  interestRate?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  overrideFlag?: boolean;
+
+  @IsOptional()
+  @IsString()
+  overrideReason?: string;
+
+  @IsOptional()
+  @IsObject()
+  conditions?: Record<string, unknown>;
+}
+
+export class DeclineOfferDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class CancelOfferDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class UpdateBorrowerStatusDto {
+  @IsEnum(BorrowerStatus)
+  status!: BorrowerStatus;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class DisbursementQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsEnum(DisbursementStatus)
+  status?: DisbursementStatus;
+
+  @IsOptional()
+  @IsString()
+  borrowerId?: string;
+}
+
+export class FieldVisitQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsEnum(FieldVisitStatus)
+  status?: FieldVisitStatus;
+
+  @IsOptional()
+  @IsString()
+  applicationId?: string;
+
+  @IsOptional()
+  @IsString()
+  assignedToId?: string;
+}
+
+export class ReapplyDto {
+  @IsString()
+  borrowerId!: string;
+
+  @IsOptional()
+  @IsString()
+  policyId?: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  requestedAmount!: number;
+
+  @IsOptional()
+  @IsString()
+  purpose?: string;
+
+  @IsOptional()
+  @IsEnum(MicroLoanProductType)
+  productType?: MicroLoanProductType;
+
+  @IsOptional()
+  @IsString()
+  channel?: string;
+}
+
+export class RetryDisbursementDto {
+  @IsEnum(DisbursementChannel)
+  channel!: DisbursementChannel;
+
+  @IsOptional()
+  @IsString()
+  provider?: string;
+
+  @IsOptional()
+  @IsString()
+  providerReference?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  amount?: number;
 }

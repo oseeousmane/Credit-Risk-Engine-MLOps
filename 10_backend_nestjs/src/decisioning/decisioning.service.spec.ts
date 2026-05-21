@@ -6,6 +6,7 @@ import { ScoringService } from '../scoring/scoring.service';
 import { PipelineService } from '../pipeline/pipeline.service';
 import { RiskMathService } from '../risk-math/risk-math.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
+import { WebhookDispatcherService } from '../webhook/webhook-dispatcher.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // â”€â”€ Mocks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -119,6 +120,10 @@ describe('DecisioningService', () => {
             assignStage: jest.fn().mockReturnValue({ currentStage: 'STAGE_1' }),
           },
         },
+        {
+          provide: WebhookDispatcherService,
+          useValue: { dispatch: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -173,7 +178,7 @@ describe('DecisioningService', () => {
       expect(mockPipeline.moveStage).toHaveBeenCalledWith(
         'app-uuid-001',
         'APPROVED',
-        expect.objectContaining({ role: 'ADMIN' }),
+        expect.objectContaining({ role: 'MANAGER' }),
       );
     });
   });

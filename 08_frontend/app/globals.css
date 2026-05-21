@@ -1,148 +1,309 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@import "tailwindcss";
+/* ─── Reset ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@theme {
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
+/* ─── Design Tokens ──────────────────────────────────────── */
 :root {
-  /* LIGHT MODE (Clean, Professional, Linear-like) */
-  --bg-primary: #fcfcfc;
-  --bg-secondary: #f3f4f6;
-  --bg-card: #ffffff;
-  --bg-card-hover: #fafafa;
-  --bg-elevated: #e5e7eb;
-  
-  --border-subtle: rgba(0, 0, 0, 0.08); /* sharper borders */
-  --border-active: rgba(0, 0, 0, 0.15);
-  
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
-  
-  --accent-blue: #0070f3; /* Vercel blue */
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-rose: #e11d48;
-  
-  --shadow-card: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
-  --shadow-intense: 0 12px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  
-  /* Glassmorphism Light */
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(0, 0, 0, 0.05);
-}
+  /* Backgrounds */
+  --bg-primary:  #0a0a0a;
+  --bg-card:     #0f0f0f;
+  --bg-elevated: #141414;
+  --bg-hover:    rgba(255, 255, 255, 0.04);
 
-.dark {
-  /* DARK MODE (Scale AI / Vercel premium dark) */
-  --bg-primary: #000000;
-  --bg-secondary: #0a0a0a;
-  --bg-card: #0a0a0a;
-  --bg-card-hover: #111111;
-  --bg-elevated: #1a1a1a;
-  
-  --border-subtle: rgba(255, 255, 255, 0.12); /* Brighter border for crisp lines */
-  --border-active: rgba(255, 255, 255, 0.3);
-  
-  --text-primary: #ffffff;
+  /* Borders */
+  --border:       rgba(255, 255, 255, 0.07);
+  --border-hover: rgba(255, 255, 255, 0.14);
+  --border-focus: rgba(62, 207, 142, 0.5);
+
+  /* Text */
+  --text-primary:   #ffffff;
   --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
-  
-  --accent-blue: #3b82f6; /* scale AI blue */
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
-  
-  --shadow-card: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 20px -5px rgba(0,0,0,0.5);
-  --shadow-intense: 0 0 0 1px rgba(255,255,255,0.1), 0 12px 40px -10px rgba(0,0,0,0.8), 0 0 40px -10px rgba(59, 130, 246, 0.15);
-  
-  /* Glassmorphism Dark */
-  --glass-bg: rgba(10, 10, 10, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-muted:     #71717a;
+  --text-faint:     #3f3f46;
+
+  /* ✅ Brand accent — Supabase Green */
+  --brand:           #3ECF8E;
+  --brand-dim:       rgba(62, 207, 142, 0.12);
+  --brand-border:    rgba(62, 207, 142, 0.25);
+  --brand-glow:      0 0 28px rgba(62, 207, 142, 0.25);
+  --brand-text:      #3ECF8E;
+
+  /* Semantic accents */
+  --accent-emerald: #3ECF8E;
+  --accent-blue:    #3b82f6;
+  --accent-amber:   #f59e0b;
+  --accent-rose:    #f43f5e;
+  --accent-purple:  #8b5cf6;
+
+  /* Typography scale */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* ─── Base ───────────────────────────────────────────────── */
+html { color-scheme: dark; }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
+  background: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-feature-settings: "cv11", "ss01", "cv09";
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
 }
 
-/* AI Premium Radial Background */
-.bg-radial-premium {
-  position: relative;
-}
-.bg-radial-premium::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 600px;
-  background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 0;
-}
-.bg-radial-premium > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* Glassmorphism Panel Focus (Linear/Vercel style) */
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-card);
-  transition: all 0.3s ease;
-}
-.glass-panel:hover {
-  box-shadow: var(--shadow-intense);
-  border-color: var(--border-subtle); /* subtle highlight on hover */
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* ─── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(62, 207, 142, 0.25); }
 
-/* Recharts Overrides for Dual Theme (Refined) */
+/* ─── Typography Utilities ───────────────────────────────── */
+.font-mono { font-family: var(--font-mono); }
+
+/* Supabase-style display headings */
+.text-display {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-family: var(--font-sans);
+}
+
+.text-brand { color: var(--brand); }
+
+/* ─── Button System ──────────────────────────────────────── */
+
+/* Primary — solid brand green */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+  color: #0a0a0a;
+  background: var(--brand);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: var(--brand-glow);
+}
+.btn-primary:active { transform: scale(0.98); }
+
+/* Secondary — dark background with border */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.btn-secondary:active { transform: scale(0.98); }
+
+/* Ghost — no background */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+.btn-ghost:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+/* Danger */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+.btn-danger:hover { background: rgba(244, 63, 94, 0.2); }
+
+/* ─── Card Tokens ────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.2s ease;
+}
+.card:hover { border-color: var(--border-hover); }
+
+.card-glow {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-glow:hover {
+  border-color: var(--brand-border);
+  box-shadow: 0 0 0 1px var(--brand-border), 0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* ─── Page Entry Animation ───────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter { animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ─── Recharts Overrides ─────────────────────────────────── */
+.recharts-text { fill: #52525b !important; font-family: var(--font-sans) !important; font-size: 11px !important; }
+.recharts-cartesian-axis-line { display: none !important; }
+.recharts-cartesian-axis-tick-line { display: none !important; }
+.recharts-cartesian-grid line { stroke: rgba(255,255,255,0.04) !important; }
+.recharts-tooltip-wrapper { outline: none !important; }
 .recharts-default-tooltip {
-  background-color: var(--bg-card) !important;
-  border: 1px solid var(--border-subtle) !important;
-  border-radius: 8px !important;
-  box-shadow: var(--shadow-intense) !important;
-  backdrop-filter: blur(12px) !important;
+  background: #0f0f0f !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(12px);
 }
-.recharts-tooltip-item {
-  color: var(--text-primary) !important;
-  font-weight: 500 !important;
+
+/* ─── Kanban ─────────────────────────────────────────────── */
+.kanban-col { overflow-y: auto; max-height: calc(100vh - 280px); }
+.kanban-col::-webkit-scrollbar { width: 3px; }
+
+/* ─── Risk Color Utilities ───────────────────────────────── */
+.risk-low    { color: var(--brand); }
+.risk-med    { color: #f59e0b; }
+.risk-high   { color: #f43f5e; }
+.risk-critical { color: #ef4444; }
+
+/* ─── Glow Effects ───────────────────────────────────────── */
+.glow-brand  { box-shadow: var(--brand-glow); }
+.glow-blue   { box-shadow: 0 0 24px rgba(59,130,246,0.15); }
+.glow-rose   { box-shadow: 0 0 24px rgba(244,63,94,0.15); }
+
+/* ─── Number Formatting ─────────────────────────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ─── Progress Bars ──────────────────────────────────────── */
+@keyframes progressIn { from { width: 0; } }
+.progress-bar { animation: progressIn 0.8s ease both; }
+
+/* ─── Card Hover ─────────────────────────────────────────── */
+.card-hover-lift {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 }
-.recharts-text {
-  fill: var(--text-muted) !important;
-  font-size: 11px !important;
-  font-family: var(--font-sans) !important;
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
-.recharts-cartesian-axis-line {
-  display: none !important;
+
+/* ─── Mockup / Hero Animations ───────────────────────────── */
+@keyframes mockupEnter {
+  from { opacity: 0; transform: translateY(32px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.recharts-cartesian-axis-tick-line {
-  display: none !important;
+.animate-mockup-enter { animation: mockupEnter 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s both; }
+
+@keyframes kpiEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.recharts-cartesian-grid-horizontal line, 
-.recharts-cartesian-grid-vertical line {
-  stroke: var(--border-subtle) !important;
-  stroke-dasharray: 4 4 !important;
+.animate-kpi-enter { opacity: 0; animation: kpiEnter 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+
+@keyframes tableEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-table-enter { animation: tableEnter 0.5s cubic-bezier(0.16,1,0.3,1) 0.35s both; }
+
+@keyframes rowEnter {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-row-enter { opacity: 0; animation: rowEnter 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+
+@keyframes chartEnter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-chart-enter { animation: chartEnter 0.5s ease 0.65s both; }
+
+@keyframes barGrow {
+  from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+  to   { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+}
+.animate-bar-grow { opacity: 0; animation: barGrow 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* ─── Navbar Animations ──────────────────────────────────── */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-down { animation: fadeInDown 0.18s cubic-bezier(0.16,1,0.3,1) both; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: fadeIn 0.2s ease both; }
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-fade-in-right { animation: fadeInRight 0.25s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* ─── Input Focus ────────────────────────────────────────── */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.08);
 }

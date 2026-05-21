@@ -9,9 +9,14 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 async function main() {
-  console.log('ðŸš€ Seeding RiskEngine database...')
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ Seed is BLOCKED in production. Aborting to prevent data loss.');
+    process.exit(1);
+  }
 
-  // â”€â”€ 0. Clean slate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  console.log('🚀 Seeding RiskEngine database...')
+
+  // ── 0. Clean slate ──â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   await prisma.alert.deleteMany()
   await prisma.scenario.deleteMany()
   await prisma.modelMetrics.deleteMany()
@@ -258,8 +263,8 @@ async function main() {
       const qualityBase = 45 + ((30 - i) * 1.5) + (Math.random() * 20);
       const qualityScore = Math.min(100, Math.round(qualityBase));
       const qBand = qualityScore >= 75 ? 'HIGH' : qualityScore >= 50 ? 'MEDIUM' : 'LOW';
-      const raw = Math.round((qualityScore / 100) * 158);
-      const imputed = Math.max(0, 158 - raw - 20);
+      const raw = Math.round((qualityScore / 100) * 157);
+      const imputed = Math.max(0, 157 - raw - 20);
       const imputedFeats = [];
       if (imputed > 0) imputedFeats.push('dti_proxy');
       if (imputed > 10) imputedFeats.push('cash_flow_est');
@@ -344,7 +349,7 @@ async function main() {
       oot_period_end: new Date('2025-06-30'),
       validationStatus: 'VALIDATED_PASS_WITH_CAVEATS',
       trainingTimestamp: new Date('2024-06-30'),
-      featureSchemaVersion: 'v2.0.0_158_features'
+      featureSchemaVersion: 'v2.0.0_157_features'
     }
   })
 

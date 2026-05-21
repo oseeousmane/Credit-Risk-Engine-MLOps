@@ -17,7 +17,7 @@ export class OidcStrategy extends PassportStrategy(Strategy, 'oidc') {
       userInfoURL: `${configService.get<string>('oidc.issuerUrl')}/me`,
       clientID: configService.get<string>('oidc.clientId')!,
       clientSecret: configService.get<string>('oidc.clientSecret')!,
-      callbackURL: 'http://localhost:3001/api/v1/auth/oidc/callback',
+      callbackURL: configService.get<string>('oidc.callbackUrl')!,
       scope: 'openid profile email',
     });
   }

@@ -12,8 +12,11 @@ export const configValidationSchema = Joi.object({
 
   // --- Security Secrets ---
   JWT_SECRET: Joi.string().required().min(32),
+  SESSION_SECRET: Joi.string().required().min(32),
+  REFRESH_SECRET: Joi.string().required().min(32).invalid(Joi.ref('JWT_SECRET')),
   JWT_TTL_DEV: Joi.string().default('24h'),
-  JWT_TTL_PROD: Joi.string().default('1h'),
+  JWT_TTL_PROD: Joi.string().default('15m'),
+  REFRESH_TTL: Joi.string().default('7d'),
 
   // --- Institutional Policy Toggles ---
   THROTTLE_LIMIT_SHORT: Joi.number().default(100),
@@ -25,10 +28,17 @@ export const configValidationSchema = Joi.object({
 
   // Scoring Service Integration
   SCORING_SERVICE_URL: Joi.string().uri().default('http://localhost:8000'),
+  // API key sent in X-Api-Key header to authenticate NestJS → Python calls.
+  // Required in production. If absent, Python warns and allows (dev mode only).
+  SCORING_API_KEY: Joi.string().optional(),
 
   // --- SSO / OIDC Configuration ---
   OIDC_ISSUER_URL: Joi.string().uri().optional(),
   OIDC_CLIENT_ID: Joi.string().optional(),
   OIDC_CLIENT_SECRET: Joi.string().optional(),
-  OIDC_ALLOWED_DOMAINS: Joi.string().default('riskengine.com,bank.local'), // Comma-separated list for auto-provisioning
+  OIDC_CALLBACK_URL: Joi.string().uri().optional(),
+  OIDC_ALLOWED_DOMAINS: Joi.string().allow('').default('riskengine.com,bank.local'), // Comma-separated list for auto-provisioning; empty string = no SSO-gating in dev
+
+  // --- Microfinance Integration ---
+  MOMO_LIVE_MODE: Joi.boolean().default(false),
 });

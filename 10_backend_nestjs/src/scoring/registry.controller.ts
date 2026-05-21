@@ -12,6 +12,7 @@ import { Role } from '@prisma/client';
  * request-review) are scoped to RISK_MANAGER and CRO roles.
  */
 @UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(Role.ANALYST, Role.MANAGER, Role.CRO, Role.ADMIN)
 @Controller('registry')
 export class RegistryController {
   constructor(private readonly registryService: RegistryService) {}
@@ -38,28 +39,28 @@ export class RegistryController {
   }
 
   /** POST /registry/promote/:id â€” Promote a version to champion */
-  @Roles(Role.MANAGER, Role.CRO)
+  @Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
   @Post('promote/:id')
   promoteToChampion(@Param('id') id: string, @Req() req: any) {
     return this.registryService.promoteToChampion(id, req.user?.id);
   }
 
   /** POST /registry/challenger/:id â€” Mark a version as shadow/challenger */
-  @Roles(Role.MANAGER, Role.CRO)
+  @Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
   @Post('challenger/:id')
   markAsChallenger(@Param('id') id: string, @Req() req: any) {
     return this.registryService.markAsChallenger(id, req.user?.id);
   }
 
   /** POST /registry/archive/:id â€” Archive a deprecated model version */
-  @Roles(Role.MANAGER, Role.CRO)
+  @Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
   @Post('archive/:id')
   archiveModel(@Param('id') id: string, @Req() req: any) {
     return this.registryService.archiveModel(id, req.user?.id);
   }
 
   /** POST /registry/request-review/:id â€” Flag a model for governance review */
-  @Roles(Role.MANAGER, Role.CRO)
+  @Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
   @Post('request-review/:id')
   requestReview(
     @Param('id') id: string,
@@ -73,7 +74,7 @@ export class RegistryController {
    * POST /registry/retrain/:id â€” Trigger retraining hook (Airflow-compatible)
    * Emits an auditable retraining request. Future: calls Airflow REST API.
    */
-  @Roles(Role.MANAGER, Role.CRO)
+  @Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
   @Post('retrain/:id')
   requestRetraining(
     @Param('id') id: string,

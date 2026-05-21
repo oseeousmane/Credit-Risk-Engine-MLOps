@@ -1,0 +1,60 @@
+{
+  "navbar": {
+    "platform": "Platform",
+    "compliance": "Compliance",
+    "developers": "Developers",
+    "company": "Company",
+    "requestDemo": "Request Demo",
+    "signIn": "Sign In",
+    
+    "menu": {
+      "platform": {
+        "intelligence": "Risk Intelligence",
+        "intelligenceDesc": "Advanced portfolio analytics & metrics",
+        "portfolio": "Portfolio Management",
+        "portfolioDesc": "Monitor global exposures in real-time",
+        "decisioning": "Decisioning",
+        "decisioningDesc": "Automate credit approvals",
+        "mlops": "Monitoring & MLOps",
+        "mlopsDesc": "Model performance and drift",
+        "stress": "Stress Testing",
+        "stressDesc": "Macroeconomic scenario simulations",
+        "clientPortal": "Client Portal",
+        "clientPortalDesc": "Secure application intake"
+      },
+      "compliance": {
+        "ifrs9": "IFRS 9 / CECL",
+        "ifrs9Desc": "Automated ECL calculations",
+        "basel": "Basel III",
+        "baselDesc": "RWA and Capital optimization",
+        "audit": "Audit Trails",
+        "auditDesc": "Immutable decision logs"
+      },
+      "developers": {
+        "api": "API Reference",
+        "apiDesc": "Integrate via REST endpoints",
+        "sdk": "Python SDK",
+        "sdkDesc": "Data science tools and pipelines"
+      },
+      "company": {
+        "about": "About Us",
+        "aboutDesc": "Our story and leadership",
+        "security": "Security",
+        "securityDesc": "Enterprise-grade protection",
+        "contact": "Contact Sales",
+        "contactDesc": "Get in touch with our team"
+      }
+    }
+  },
+  "home": {
+    "hero": {
+      "badge": "Enterprise v4.2",
+      "titlePart1": "The standard for",
+      "titlePart2": "algorithmic",
+      "titlePart3": "credit risk.",
+      "description": "Institutional-grade platform unifying high-frequency decisioning, continuous portfolio monitoring, and absolute regulatory compliance.",
+      "primaryBtn": "Request Enterprise Demo",
+      "secondaryBtn": "Explore Architecture"
+    }
+  }
+}

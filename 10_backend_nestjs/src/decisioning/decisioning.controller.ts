@@ -1,17 +1,21 @@
-import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { DecisioningService } from './decisioning.service';
-import { DecisionStatus } from '@prisma/client';
+import { DecisionStatus, Role } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { PaginationDto } from '../common/dto/query.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(Role.ANALYST, Role.MANAGER, Role.CRO, Role.ADMIN)
 @Controller('decisions')
 export class DecisioningController {
   constructor(private readonly decisioningService: DecisioningService) {}
 
   @Get()
-  findAll() {
-    return this.decisioningService.findAll();
+  findAll(@Query() query: PaginationDto) {
+    return this.decisioningService.findAll(query);
   }
 
   @Get(':id')
@@ -26,6 +30,7 @@ export class DecisioningController {
   }
 
   @Throttle({ scoring: { limit: 20, ttl: 60000 } })
+  @Roles(Role.MANAGER, Role.CRO, Role.ADMIN)
   @Post('submit/:applicationId')
   submitDecision(
     @Param('applicationId') applicationId: string,
