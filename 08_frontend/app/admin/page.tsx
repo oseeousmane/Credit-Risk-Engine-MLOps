@@ -46,9 +46,6 @@ function fmtExposure(v: number | null | undefined): string {
   return `$${v.toFixed(1)}M`
 }
 
-function fmtPct(v: number | null | undefined, d = 2): string {
-  return v == null ? '—' : `${(v * 100).toFixed(d)}%`
-}
 
 function safeDate(val: any, style: 'short' | 'time' = 'time'): string {
   if (!val) return '—'
@@ -369,6 +366,7 @@ function PortfolioOverview({ kpis, summary, eclTrend }: { kpis: any; summary: an
 
 // ── Top 5 Concentrations ───────────────────────────────────────────────────────
 function TopConcentrations({ data, isLoading, kpis }: { data: any[]; isLoading: boolean; kpis: any }) {
+  const router = useRouter()
   const stageColor = (s: string) =>
     s === 'STAGE_3' ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' :
     s === 'STAGE_2' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
@@ -412,8 +410,7 @@ function TopConcentrations({ data, isLoading, kpis }: { data: any[]; isLoading: 
             </thead>
             <tbody>
               {data.map((c: any, i: number) => (
-                <Link href={`/counterparty/${c.id}`} key={c.id} legacyBehavior>
-                  <tr className="border-b border-white/[0.03] hover:bg-white/[0.025] transition-colors cursor-pointer group">
+                  <tr key={c.id} onClick={() => router.push(`/counterparty/${c.id}`)} className="border-b border-white/[0.03] hover:bg-white/[0.025] transition-colors cursor-pointer group">
                     <td className="px-4 py-3">
                       <span className={`text-[11px] font-black tabular-nums ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-zinc-300' : 'text-zinc-600'}`}>
                         #{i + 1}
@@ -454,7 +451,6 @@ function TopConcentrations({ data, isLoading, kpis }: { data: any[]; isLoading: 
                       <span className={`text-[11px] font-bold ${riskColor(c.riskLevel ?? '')}`}>{c.riskLevel ?? '—'}</span>
                     </td>
                   </tr>
-                </Link>
               ))}
             </tbody>
           </table>
