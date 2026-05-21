@@ -438,8 +438,8 @@ function TopConcentrations({ data, isLoading, kpis }: { data: any[]; isLoading: 
                       </div>
                     </td>
                     <td className="px-4 py-3 font-mono whitespace-nowrap">
-                      <span className={`font-bold ${(c.pd1y ?? 0) > 0.06 ? 'text-rose-400' : (c.pd1y ?? 0) > 0.03 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                        {c.pd1y != null ? `${(c.pd1y * 100).toFixed(2)}%` : '—'}
+                      <span className={`font-bold ${(c.pd1y ?? 0) > 6 ? 'text-rose-400' : (c.pd1y ?? 0) > 3 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {c.pd1y != null ? `${c.pd1y.toFixed(2)}%` : '—'}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-zinc-400 whitespace-nowrap">{fmtExposure(c.ecl)}</td>
@@ -656,14 +656,14 @@ function RightPanel({ alerts, auditEvents, summary }: { alerts: any[]; auditEven
         ) : (
           <div className="divide-y divide-white/[0.03]">
             {auditEvents.slice(0, 4).map((a: any, i: number) => {
-              const { Icon, color } = activityIcon(a.action)
+              const { Icon, color } = activityIcon(a.eventType)
               return (
                 <div key={i} className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] transition-all cursor-pointer">
                   <div className="w-6 h-6 rounded-lg bg-white/[0.05] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
                     <Icon className={`w-3 h-3 ${color}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[10.5px] font-semibold text-white leading-tight truncate">{a.action ?? '—'}</div>
+                    <div className="text-[10.5px] font-semibold text-white leading-tight truncate">{a.eventType ?? '—'}</div>
                     <div className="text-[9px] text-zinc-500 mt-0.5 truncate">{a.entityType ?? ''}</div>
                   </div>
                   <span className="text-[8px] text-zinc-600 font-mono flex-shrink-0">{safeDate(a.createdAt, 'time')}</span>
