@@ -1,9 +1,8 @@
 'use client'
-import * as React from 'react'
 import { useState } from 'react'
 import { Download, ShieldCheck, FileText, FileCode2, Loader2, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { SectionHeader, StatusBadge } from '@/components/ui'
+import { SectionHeader } from '@/components/ui'
 import { fetchApi } from '@/lib/api-client'
 
 // ── Status helpers ─────────────────────────────────────────────────────────
@@ -59,11 +58,6 @@ export default function CompliancePage() {
   const auditQuery = useQuery({
     queryKey: ['compliance-audit'],
     queryFn: () => fetchApi('/compliance/audit?limit=50'),
-  })
-
-  const fallbackQuery = useQuery({
-    queryKey: ['compliance-fallback'],
-    queryFn: () => fetchApi('/compliance/reports/fallback-incidents'),
   })
 
   const overrideQuery = useQuery({
@@ -204,18 +198,20 @@ export default function CompliancePage() {
                     </div>
                     <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.04]">
                        <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Approvals</div>
-                       <div className="text-xl font-bold text-emerald-400">{overrideQuery.data?.totalApproved || 0}</div>
+                       <div className="text-xl font-bold text-emerald-400">
+                         {overrideQuery.data?.overrideDecisions?.filter((o: any) => o.finalStatus?.startsWith('APPROVE')).length || 0}
+                       </div>
                     </div>
                  </div>
                  <div className="space-y-3">
-                   {overrideQuery.data?.recentOverrides?.slice(0, 5).map((o: any) => (
-                     <div key={o.id} className="border-b border-white/[0.06] pb-3 last:border-0 last:pb-0">
+                   {overrideQuery.data?.overrideDecisions?.slice(0, 5).map((o: any) => (
+                     <div key={o.decisionId} className="border-b border-white/[0.06] pb-3 last:border-0 last:pb-0">
                        <div className="flex justify-between items-center mb-1">
                          <span className="text-xs font-bold text-white">App {o.applicationId?.slice(0,8)}</span>
-                         <span className="text-[10px] font-mono text-zinc-500">{new Date(o.createdAt).toLocaleDateString()}</span>
+                         <span className="text-[10px] font-mono text-zinc-500">{new Date(o.decidedAt).toLocaleDateString()}</span>
                        </div>
                        <div className="text-[11px] text-zinc-400 mb-1">
-                         <span className="text-zinc-500">Overridden by:</span> {o.decisionMakerId}
+                         <span className="text-zinc-500">Overridden by:</span> {o.decidedBy}
                        </div>
                        <div className="text-[11px] text-amber-400 italic">"{o.overrideReason}"</div>
                      </div>

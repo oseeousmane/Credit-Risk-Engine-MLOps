@@ -34,7 +34,7 @@ export default function DecisioningPage() {
         body: JSON.stringify({ overrideStatus: status, overrideReason: reason }),
       }),
     onSuccess: (data) => {
-      setSuccessMsg(`Decision recorded: ${data.status}`)
+      setSuccessMsg(`Decision recorded: ${data.decision?.status}`)
       setJustification('')
       setError('')
       queryClient.invalidateQueries({ queryKey: ['pipeline-groups'] })
@@ -85,7 +85,7 @@ export default function DecisioningPage() {
                     : 'bg-white/[0.04] border-white/[0.08] text-zinc-400 hover:text-white hover:bg-white/[0.08]'
                 }`}
               >
-                {app.counterparty?.name} — {app.reqId}
+                {app.counterparty?.name || 'Unknown'} — {app.reqId}
                 <span className={`ml-2 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ${app.currentStage === 'COMMITTEE_REVIEW' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}>
                   {app.currentStage}
                 </span>
@@ -141,21 +141,21 @@ export default function DecisioningPage() {
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4">Probability of Default</span>
                     <div className="flex items-end gap-3 mb-6">
-                      <span className="text-5xl font-black tabular-nums">{selectedApp.pd.toFixed(2)}<span className="text-3xl text-zinc-500">%</span></span>
+                      <span className="text-5xl font-black tabular-nums">{(selectedApp.pd ?? 0).toFixed(2)}<span className="text-3xl text-zinc-500">%</span></span>
                     </div>
                     <div className="mt-auto">
                       <div className="h-1.5 bg-white/[0.06] rounded-full relative">
-                        <div className="absolute top-0 left-0 h-full bg-blue-500 rounded-full" style={{ width: `${Math.min((selectedApp.pd / 6) * 100, 100)}%` }} />
+                        <div className="absolute top-0 left-0 h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(((selectedApp.pd ?? 0) / 6) * 100, 100)}%` }} />
                       </div>
                       <div className="flex justify-between text-[9px] text-zinc-600 mt-1">
-                        <span>0%</span><span>{selectedApp.pd.toFixed(2)}%</span><span>6% (Reject)</span>
+                        <span>0%</span><span>{(selectedApp.pd ?? 0).toFixed(2)}%</span><span>6% (Reject)</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4">Requested Amount</span>
                     <div className="flex items-end gap-1 mb-6">
-                      <span className="text-5xl font-black tabular-nums">${selectedApp.requestedAmount}</span>
+                      <span className="text-5xl font-black tabular-nums">${(selectedApp.requestedAmount ?? 0).toFixed(1)}</span>
                       <span className="text-3xl font-black text-zinc-500 mb-0.5">M</span>
                     </div>
                   </div>
