@@ -34,8 +34,7 @@ interface ScoringHealth {
 }
 
 export default function MonitoringPage() {
-  const [stressScenario, setStressScenario] = React.useState(false)
-  const { connectionState, lastEvent } = useMonitoringSSE()
+  const { connectionState } = useMonitoringSSE()
 
   // Latest snapshot per model version
   const metricsQuery = useQuery({
@@ -100,7 +99,7 @@ export default function MonitoringPage() {
   // Build chart data from REAL backend history
   const perfTrend = history.length > 0
     ? [...history].reverse().map((log, i) => ({
-        t: i === history.length - 1 ? 'Now' : new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        t: i === 0 ? 'Now' : new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         auc: log.auc,
         ks: log.ks,
         psi: log.psi,

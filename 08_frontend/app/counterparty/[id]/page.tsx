@@ -1,10 +1,10 @@
 'use client'
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Download, ChevronRight, Activity, Target, FileText, Loader2, AlertCircle, AlertTriangle, Building2, TrendingUp, ShieldAlert, ArrowLeft, Wallet, Scale, History, BarChart3 } from 'lucide-react'
+import { Download, Activity, Target, FileText, Loader2, AlertCircle, AlertTriangle, Building2, TrendingUp, ShieldAlert, ArrowLeft, Wallet, Scale, BarChart3 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '@/lib/api-client'
-import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area, BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ComposedChart } from 'recharts'
+import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ComposedChart, Bar } from 'recharts'
 
 export default function CounterpartyDetailPage() {
   const params = useParams()
@@ -153,12 +153,12 @@ export default function CounterpartyDetailPage() {
                 <div className="h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={[
-                      { t: 'Jan', cp: cp.pd1y * 1.15, bm: 0.29 },
-                      { t: 'Feb', cp: cp.pd1y * 1.10, bm: 0.28 },
-                      { t: 'Mar', cp: cp.pd1y * 1.05, bm: 0.28 },
-                      { t: 'Apr', cp: cp.pd1y * 1.02, bm: 0.28 },
-                      { t: 'May', cp: cp.pd1y * 1.01, bm: 0.27 },
-                      { t: 'Jun', cp: cp.pd1y, bm: 0.28 },
+                      { t: 'Jan', cp: cp.pd1y * 1.15, bm: 2.9 },
+                      { t: 'Feb', cp: cp.pd1y * 1.10, bm: 2.8 },
+                      { t: 'Mar', cp: cp.pd1y * 1.05, bm: 2.8 },
+                      { t: 'Apr', cp: cp.pd1y * 1.02, bm: 2.8 },
+                      { t: 'May', cp: cp.pd1y * 1.01, bm: 2.7 },
+                      { t: 'Jun', cp: cp.pd1y, bm: 2.8 },
                     ]} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
                       <XAxis dataKey="t" tick={{ fontSize: 10, fill: '#52525b', fontWeight: 600 }} tickLine={false} axisLine={false} />
@@ -233,7 +233,7 @@ export default function CounterpartyDetailPage() {
                   </div>
                   <div className="flex justify-between items-center border-t border-white/[0.06] pt-4">
                     <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full border border-zinc-500" /> Undrawn</span>
-                    <span className="font-bold text-white tabular-nums">${(cp.expLimit - cp.exposure).toFixed(1)}M</span>
+                    <span className="font-bold text-white tabular-nums">${Math.max(0, cp.expLimit - cp.exposure).toFixed(1)}M</span>
                   </div>
                 </div>
               </div>

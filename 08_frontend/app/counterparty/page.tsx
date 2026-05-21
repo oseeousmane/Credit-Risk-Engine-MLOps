@@ -38,9 +38,11 @@ function useCountUp(target: number, duration = 1200, delay = 0) {
 function KPICards({ kpis }: { kpis: any }) {
   const animatedTotal = useCountUp(kpis?.totalCounterparties || 0, 800, 100)
   const animatedWatchlist = useCountUp(kpis?.watchlistEntities || 0, 800, 200)
-  const exposureInB = (kpis?.totalExposure || 0) / 1000
-  const animatedExp = useCountUp(exposureInB, 900, 300)
+  const exposureRaw = kpis?.totalExposure || 0
+  const animatedExp = useCountUp(Math.round(exposureRaw), 900, 300)
   const avgPd = kpis?.avgPD || 0
+
+  const fmtExp = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}B` : `$${v.toFixed(1)}M`
 
   const cards = [
     {
@@ -57,7 +59,7 @@ function KPICards({ kpis }: { kpis: any }) {
     },
     {
       label: 'Total Exposure',
-      value: `$${animatedExp.toFixed(1)}B`,
+      value: fmtExp(animatedExp > 0 ? animatedExp : exposureRaw),
       icon: TrendingUp, iconColor: 'text-amber-400', iconBg: 'bg-amber-500/10 border-amber-500/20',
       accent: '#f59e0b'
     },
