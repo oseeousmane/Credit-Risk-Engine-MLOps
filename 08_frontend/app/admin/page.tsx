@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
@@ -14,28 +14,24 @@ import {
 
 function useCountUp(target: number, duration = 1200, delay = 0) {
   const [v, setV] = useState(0)
-  const prevRef = useRef(0)
 
   useEffect(() => {
-    if (target === prevRef.current) return
-    prevRef.current = target
+    if (target === 0) { setV(0); return }
     let alive = true
     let reqId: number
-    const startVal = v
     const t = setTimeout(() => {
       const s = performance.now()
       const tick = (now: number) => {
         if (!alive) return
         const p = Math.min((now - s) / duration, 1)
-        setV(startVal + Math.floor((1 - Math.pow(1 - p, 3)) * (target - startVal)))
+        setV(Math.floor((1 - Math.pow(1 - p, 3)) * target))
         if (p < 1) reqId = requestAnimationFrame(tick)
         else setV(target)
       }
       reqId = requestAnimationFrame(tick)
     }, delay)
     return () => { alive = false; clearTimeout(t); if (reqId) cancelAnimationFrame(reqId) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target])
+  }, [target, duration, delay])
   return v
 }
 
@@ -76,7 +72,7 @@ function KPICards({ kpis, summary }: { kpis: any; summary: any }) {
   const cards = [
     {
       label: 'Total Portfolio (EAD)',
-      value: exposureRaw > 0 ? fmtExposure(exposureInt / 10) : fmtExposure(exposureRaw),
+      value: fmtExposure(exposureInt > 0 ? exposureInt / 10 : exposureRaw),
       delta: summary?.model?.status ?? 'ML actif',
       deltaUp: true,
       sub: 'Exposition au Risque',
@@ -88,7 +84,7 @@ function KPICards({ kpis, summary }: { kpis: any; summary: any }) {
     },
     {
       label: 'ECL Portefeuille (IFRS 9)',
-      value: eclRaw > 0 ? fmtExposure(eclInt / 10) : fmtExposure(eclRaw),
+      value: fmtExposure(eclInt > 0 ? eclInt / 10 : eclRaw),
       delta: `Coverage ${coverageRatio.toFixed(2)}%`,
       deltaUp: coverageRatio >= 1,
       sub: 'Provision stock cumulée',
@@ -102,7 +98,7 @@ function KPICards({ kpis, summary }: { kpis: any; summary: any }) {
     },
     {
       label: 'PD Moyen Portfolio',
-      value: pdRaw > 0 ? `${(pdInt / 100).toFixed(2)}%` : '—',
+      value: pdRaw > 0 ? `${((pdInt > 0 ? pdInt : Math.round(pdRaw * 100)) / 100).toFixed(2)}%` : '—',
       delta: gini != null ? `Gini ${gini.toFixed(1)}%` : 'ML actif',
       deltaUp: gini != null ? gini >= 45 : true,
       sub: 'portfolio-wide (1Y)',
@@ -365,7 +361,7 @@ function PortfolioOverview({ kpis, summary, eclTrend }: { kpis: any; summary: an
 }
 
 // ── Top 5 Concentrations ───────────────────────────────────────────────────────
-function TopConcentrations({ data, isLoading, kpis }: { data: any[]; isLoading: boolean; kpis: any }) {
+function TopConcentrations({ data, isLoading }: { data: any[]; isLoading: boolean }) {
   const router = useRouter()
   const stageColor = (s: string) =>
     s === 'STAGE_3' ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' :
@@ -808,7 +804,7 @@ export default function AdminOverviewPage() {
 
           <KPICards kpis={kpis} summary={summary} />
           <PortfolioOverview kpis={kpis} summary={summary} eclTrend={eclTrend} />
-          <TopConcentrations data={topExp} isLoading={topExpQ.isLoading} kpis={kpis} />
+          <TopConcentrations data={topExp} isLoading={topExpQ.isLoading} />
           <DecisionTable queue={queue} isLoading={queueQ.isLoading} router={router} />
         </div>
 
