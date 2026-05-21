@@ -283,52 +283,87 @@ export class ComplianceService {
    * Sector-level exposure and ECL summary ready for committee reporting.
    */
   /**
-   * ECL Monthly Trend — real data from Decision.scoringSnapshot.ecl grouped by month.
-   * Returns up to 12 months of ECL + EAD evolution for the CRO dashboard chart.
+   * ECL Monthly Trend.
+   * Primary: Decision.scoringSnapshot.ecl grouped by decidedAt month.
+   * Fallback: if no scored decisions exist, reconstructs trend from Counterparty.expectedLoss
+   * grouped by createdAt — shows portfolio ECL build-up over time.
    */
   async getEclTrend(months = 12) {
     const since = new Date();
     since.setMonth(since.getMonth() - months);
 
     const decisions = await this.prisma.decision.findMany({
-      where: {
-        decidedAt: { gte: since },
-        scoringSnapshot: { not: undefined },
-      },
+      where: { decidedAt: { gte: since } },
       select: { decidedAt: true, scoringSnapshot: true },
       orderBy: { decidedAt: 'asc' },
     });
 
-    // Group by YYYY-MM
+    // Group by YYYY-MM — only include decisions that have ecl in their snapshot
     const byMonth: Record<string, { ecls: number[]; eads: number[] }> = {};
     for (const d of decisions) {
       if (!d.decidedAt) continue;
       const snap = d.scoringSnapshot as any;
-      const ecl = snap?.ecl;
-      const ead = snap?.ead;
+      const ecl = snap?.ecl ?? snap?.expectedLoss;
+      const ead = snap?.ead ?? snap?.exposure;
       if (ecl == null) continue;
-      const key = d.decidedAt.toISOString().slice(0, 7); // "2026-05"
+      const key = d.decidedAt.toISOString().slice(0, 7);
       if (!byMonth[key]) byMonth[key] = { ecls: [], eads: [] };
-      byMonth[key].ecls.push(ecl);
-      if (ead != null) byMonth[key].eads.push(ead);
+      byMonth[key].ecls.push(Number(ecl));
+      if (ead != null) byMonth[key].eads.push(Number(ead));
     }
 
     const sorted = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b));
 
-    // Running cumulative ECL (IFRS 9 stock, not flow)
-    let cumulativeEcl = 0;
-    return sorted.map(([month, data]) => {
+    if (sorted.length > 0) {
+      let cumulativeEcl = 0;
+      return sorted.map(([month, data]) => {
+        const monthEcl = data.ecls.reduce((s, v) => s + v, 0);
+        cumulativeEcl += monthEcl;
+        return {
+          month,
+          label: new Date(month + '-01').toLocaleString('fr-FR', { month: 'short', year: '2-digit' }),
+          newEcl: parseFloat(monthEcl.toFixed(3)),
+          cumulativeEcl: parseFloat(cumulativeEcl.toFixed(3)),
+          avgEad: data.eads.length > 0
+            ? parseFloat((data.eads.reduce((s, v) => s + v, 0) / data.eads.length).toFixed(3))
+            : null,
+          count: data.ecls.length,
+          source: 'decisions',
+        };
+      });
+    }
+
+    // ── Fallback: build trend from counterparty.expectedLoss grouped by createdAt ──
+    const counterparties = await this.prisma.counterparty.findMany({
+      select: { createdAt: true, expectedLoss: true, exposure: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const cpByMonth: Record<string, { ecls: number[]; eads: number[] }> = {};
+    for (const c of counterparties) {
+      const ecl = c.expectedLoss;
+      if (ecl == null || ecl === 0) continue;
+      const key = c.createdAt.toISOString().slice(0, 7);
+      if (!cpByMonth[key]) cpByMonth[key] = { ecls: [], eads: [] };
+      cpByMonth[key].ecls.push(ecl);
+      cpByMonth[key].eads.push(c.exposure ?? 0);
+    }
+
+    const cpSorted = Object.entries(cpByMonth).sort(([a], [b]) => a.localeCompare(b));
+    if (cpSorted.length === 0) return [];
+
+    let cumEcl = 0;
+    return cpSorted.map(([month, data]) => {
       const monthEcl = data.ecls.reduce((s, v) => s + v, 0);
-      cumulativeEcl += monthEcl;
+      cumEcl += monthEcl;
       return {
-        month: month.slice(0, 7),
+        month,
         label: new Date(month + '-01').toLocaleString('fr-FR', { month: 'short', year: '2-digit' }),
         newEcl: parseFloat(monthEcl.toFixed(3)),
-        cumulativeEcl: parseFloat(cumulativeEcl.toFixed(3)),
-        avgEad: data.eads.length > 0
-          ? parseFloat((data.eads.reduce((s, v) => s + v, 0) / data.eads.length).toFixed(3))
-          : null,
+        cumulativeEcl: parseFloat(cumEcl.toFixed(3)),
+        avgEad: parseFloat((data.eads.reduce((s, v) => s + v, 0) / data.eads.length).toFixed(3)),
         count: data.ecls.length,
+        source: 'counterparties',
       };
     });
   }

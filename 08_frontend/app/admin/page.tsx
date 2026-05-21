@@ -63,14 +63,14 @@ function safeDate(val: any, style: 'short' | 'time' = 'time'): string {
 function KPICards({ kpis, summary }: { kpis: any; summary: any }) {
   const exposureRaw = kpis?.totalExposure ?? 0
   const eclRaw      = kpis?.totalEL ?? 0
-  const pdRaw       = kpis?.avgPD ?? 0          // fraction e.g. 0.0182
+  const pdRaw       = kpis?.avgPD ?? 0          // already in % form, e.g. 2.1040 = 2.10%
   const pendingRaw  = summary?.pendingDecisions ?? 0
   const coverageRatio = exposureRaw > 0 ? (eclRaw / exposureRaw) * 100 : 0
 
   // count-up targets in integer space
   const exposureInt = useCountUp(Math.round(exposureRaw * 10), 900, 200)
   const eclInt      = useCountUp(Math.round(eclRaw * 10),      1000, 300)
-  const pdInt       = useCountUp(Math.round(pdRaw * 10000),    900,  400)
+  const pdInt       = useCountUp(Math.round(pdRaw * 100),      900,  400)  // ×100 for int precision
   const decisions   = useCountUp(pendingRaw,                   800,  500)
 
   const overrideRate = summary?.overrideRate ?? null
@@ -105,7 +105,7 @@ function KPICards({ kpis, summary }: { kpis: any; summary: any }) {
     },
     {
       label: 'PD Moyen Portfolio',
-      value: pdRaw > 0 ? `${(pdInt / 10000 * 100).toFixed(2)}%` : '—',
+      value: pdRaw > 0 ? `${(pdInt / 100).toFixed(2)}%` : '—',
       delta: gini != null ? `Gini ${gini.toFixed(1)}%` : 'ML actif',
       deltaUp: gini != null ? gini >= 45 : true,
       sub: 'portfolio-wide (1Y)',
@@ -303,8 +303,10 @@ function PortfolioOverview({ kpis, summary, eclTrend }: { kpis: any; summary: an
             <div className="text-[13px] font-bold text-white">ECL Trend — 12 mois</div>
             <div className="text-[10px] text-zinc-500 mt-0.5">
               {eclTrend.length > 0
-                ? `Données réelles · ${eclTrend.length} mois · scoringSnapshot ML`
-                : 'En attente de décisions ML scorées'}
+                ? eclTrend[0]?.source === 'counterparties'
+                  ? `Données contreparties · ${eclTrend.length} mois · ECL cumulé portfolio`
+                  : `Données ML scorées · ${eclTrend.length} mois · scoringSnapshot`
+                : 'En attente de données ECL'}
             </div>
           </div>
           <div className="flex items-center gap-1.5 px-2 py-1 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-full">
