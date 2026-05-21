@@ -1,7 +1,6 @@
 'use client'
-import * as React from 'react'
 import { useState, useEffect } from 'react'
-import { CheckCircle2, AlertTriangle, ArrowRight, Loader2, GitMerge, TrendingUp, Clock, Activity, FileText, X, ChevronRight } from 'lucide-react'
+import { CheckCircle2, ArrowRight, Loader2, GitMerge, TrendingUp, Clock, Activity, FileText, X, ChevronRight } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchApi } from '@/lib/api-client'
 
@@ -116,24 +115,21 @@ export default function PipelinePage() {
   })
 
   const scoreMutation = useMutation({
-    mutationFn: (id: string) => 
+    mutationFn: (id: string) =>
       fetchApi(`/decisions/submit/${id}`, { method: 'POST' }),
-    onSuccess: (_, id) => {
-      moveStageMutation.mutate({ id, stage: 'COMMITTEE_REVIEW' })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pipeline-groups'] })
     }
   })
 
   const manualDecisionMutation = useMutation({
-    mutationFn: ({ id, status, reason }: { id: string, status: string, reason: string }) => 
+    mutationFn: ({ id, status, reason }: { id: string, status: string, reason: string }) =>
       fetchApi(`/decisions/submit/${id}`, {
         method: 'POST',
         body: JSON.stringify({ overrideStatus: status, overrideReason: reason }),
       }),
-    onSuccess: (_, { id, status }) => {
-      moveStageMutation.mutate({ 
-        id, 
-        stage: status === 'REJECT' ? 'REJECTED' : 'FINAL_APPROVAL' 
-      })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pipeline-groups'] })
       setOverrideReason('')
       setIsRejecting(false)
       setSelectedAppId(null)
@@ -270,7 +266,7 @@ export default function PipelinePage() {
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">Requested</div>
                   </td>
                   <td className="py-5">
-                    <div className="text-[14px] font-black tabular-nums text-[#3ECF8E]">{app.pd.toFixed(2)}%</div>
+                    <div className="text-[14px] font-black tabular-nums text-[#3ECF8E]">{(app.pd ?? 0).toFixed(2)}%</div>
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">RTG: <span className="text-white">{app.counterparty?.internalRating}</span></div>
                   </td>
                   <td className="py-5">
@@ -342,7 +338,7 @@ export default function PipelinePage() {
                 <div className="p-4 bg-[#3ECF8E]/[0.03] rounded-2xl border border-[#3ECF8E]/20 flex flex-col relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-tr from-[#3ECF8E]/10 to-transparent pointer-events-none" />
                   <span className="relative text-[10px] font-bold text-[#3ECF8E] uppercase tracking-widest mb-1">PD (1Y)</span>
-                  <span className="relative text-xl font-black tabular-nums text-[#3ECF8E]">{selectedApp.pd.toFixed(2)}%</span>
+                  <span className="relative text-xl font-black tabular-nums text-[#3ECF8E]">{(selectedApp.pd ?? 0).toFixed(2)}%</span>
                 </div>
                 <div className="p-4 bg-white/[0.02] rounded-2xl border border-white/[0.04] flex flex-col">
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Rating</span>

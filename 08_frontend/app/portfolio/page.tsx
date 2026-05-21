@@ -1,15 +1,12 @@
 'use client'
-import * as React from 'react'
 import { useState } from 'react'
 import { LineChart, Line, ResponsiveContainer, Tooltip, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts'
 import { Filter, Download, ChevronLeft, ChevronRight, Bot, Loader2 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {
-  KPIBlock, StatusBadge, LiveBadge, SectionHeader, SidePanel, Sparkline,
-  ProgressBar
+  KPIBlock, StatusBadge, LiveBadge, SectionHeader, Sparkline,
 } from '@/components/ui'
 import { fetchApi } from '@/lib/api-client'
-import { riskLevelColor, fmtPct, fmt } from '@/lib/utils'
 
 const RISK_LEVELS = ['ALL', 'LOW', 'MED', 'HIGH', 'CRITICAL'] as const
 const SECTORS = ['ALL', 'Aerospace', 'Utilities', 'Healthcare', 'Transport', 'Technology', 'Energy', 'Retail', 'Transportation', 'Manufacturing']
@@ -103,7 +100,7 @@ export default function PortfolioPage() {
           <>
             <KPIBlock
               label="Total Exposure"
-              value={<span className="tabular-nums">${((kpis?.totalExposure || 0) / 1000).toFixed(1)}B</span>}
+              value={<span className="tabular-nums">{(() => { const v = kpis?.totalExposure || 0; return v >= 1000 ? `$${(v / 1000).toFixed(1)}B` : `$${v.toFixed(1)}M` })()}</span>}
               delta={2.4}
               deltaLabel="% vs last quarter"
               accent="blue"
@@ -259,7 +256,7 @@ export default function PortfolioPage() {
                         >
                           <td className="px-5 py-3.5 font-semibold text-white whitespace-nowrap">{c.name}</td>
                           <td className="px-5 py-3.5 text-zinc-400">{c.sector}</td>
-                          <td className="px-5 py-3.5 font-mono font-semibold text-white tabular-nums">${c.exposure}M</td>
+                          <td className="px-5 py-3.5 font-mono font-semibold text-white tabular-nums">${(c.exposure ?? 0).toFixed(1)}M</td>
                           <td className="px-5 py-3.5">
                             <span className={`font-mono font-bold tabular-nums ${riskColor(c.riskLevel)}`}>
                               {c.pd1y.toFixed(2)}%
@@ -341,10 +338,10 @@ export default function PortfolioPage() {
                  {/* KPIs */}
                  <div className="p-4 grid grid-cols-2 gap-3 border-b border-white/[0.06]">
                    {[
-                     { label: 'CURRENT EXP', value: `$${selectedQuery.data.exposure}M` },
-                     { label: 'EXP LIMIT', value: `$${selectedQuery.data.expLimit}M` },
-                     { label: 'PD (1Y)', value: `${selectedQuery.data.pd1y.toFixed(2)}%`, color: selectedQuery.data.riskLevel === 'LOW' ? 'text-emerald-400' : selectedQuery.data.riskLevel === 'MED' ? 'text-amber-400' : 'text-rose-400' },
-                     { label: 'EXPECTED LOSS', value: `$${selectedQuery.data.expectedLoss}M` },
+                     { label: 'CURRENT EXP', value: `$${(selectedQuery.data.exposure ?? 0).toFixed(1)}M` },
+                     { label: 'EXP LIMIT', value: selectedQuery.data.expLimit > 0 ? `$${(selectedQuery.data.expLimit).toFixed(1)}M` : '—' },
+                     { label: 'PD (1Y)', value: `${(selectedQuery.data.pd1y ?? 0).toFixed(2)}%`, color: selectedQuery.data.riskLevel === 'LOW' ? 'text-emerald-400' : selectedQuery.data.riskLevel === 'MED' ? 'text-amber-400' : 'text-rose-400' },
+                     { label: 'EXPECTED LOSS', value: `$${(selectedQuery.data.expectedLoss ?? 0).toFixed(2)}M` },
                    ].map(({ label, value, color }) => (
                      <div key={label} className="bg-white/[0.03] rounded-lg p-3">
                        <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 mb-1">{label}</div>
@@ -360,7 +357,7 @@ export default function PortfolioPage() {
                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Algorithmic Insights</span>
                    </div>
                    <div className="text-[12px] text-zinc-400 leading-relaxed">
-                     Facility utilization is currently at <span className="text-white font-semibold">{selectedQuery.data.facilityUtilization}%</span>. 
+                     Facility utilization is currently at <span className="text-white font-semibold">{selectedQuery.data.expLimit > 0 ? ((selectedQuery.data.exposure / selectedQuery.data.expLimit) * 100).toFixed(1) : '—'}%</span>.
                      Expected loss computed via real-time endpoints.
                    </div>
                  </div>
