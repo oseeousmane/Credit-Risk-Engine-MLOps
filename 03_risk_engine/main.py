@@ -55,6 +55,7 @@ explainer = None
 model_version_tag = "fallback_rule_engine_v1"
 model_type = "unavailable"
 model_artifact_sha256: str = ""
+model_categorical_features: list = []
 
 
 def _compute_file_sha256(path: str) -> str:
@@ -68,7 +69,7 @@ def _compute_file_sha256(path: str) -> str:
 
 @app.on_event("startup")
 def load_model_artifacts():
-    global model, explainer, model_version_tag, model_type, model_artifact_sha256
+    global model, explainer, model_version_tag, model_type, model_artifact_sha256, model_categorical_features
     try:
         if os.path.exists(MODEL_PATH):
             # ── Integrity check: compute artifact SHA-256 before loading ──────
@@ -82,6 +83,7 @@ def load_model_artifacts():
                     metadata = json.load(f)
                 stored_sha256 = metadata.get("model_artifact_sha256")
                 model_type = metadata.get("model_type", "ML_MODEL")
+                model_categorical_features = metadata.get("categorical_features", [])
             else:
                 model_type = type(joblib.load(MODEL_PATH)).__name__
 
@@ -103,7 +105,13 @@ def load_model_artifacts():
 
             model = joblib.load(MODEL_PATH)
             model_version_tag = f"{model_type.lower()}_pd_model_v2"
-            explainer = shap.TreeExplainer(model)
+            # TreeExplainer needs the raw tree model, not a CalibratedClassifierCV wrapper.
+            # Unwrap: CalibratedClassifierCV → FrozenEstimator → LightGBM/XGBoost
+            _shap_target = model
+            if hasattr(model, 'estimator'):
+                _inner = model.estimator
+                _shap_target = _inner.estimator if hasattr(_inner, 'estimator') else _inner
+            explainer = shap.TreeExplainer(_shap_target)
             logger.info(f"Loaded {model_type} artifact and SHAP explainer ({len(EXPECTED_FEATURES)} features).")
         else:
             logger.error(f"Model artifact not found at {MODEL_PATH}. Fallback mode active.")
@@ -190,14 +198,24 @@ def run_model_inference(pipeline_result: dict, exposure: float):
     features_dict = pipeline_result["features"]
     df = pd.DataFrame([features_dict])[EXPECTED_FEATURES]
 
+    # Re-apply category dtype so LightGBM sees the same feature types as training
+    for col in model_categorical_features:
+        if col in df.columns:
+            df[col] = df[col].astype('category')
+
     pd_score = float(model.predict_proba(df)[0][1] * 100)
 
     shap_values = explainer.shap_values(df)
-    shap_impacts = shap_values[0] if len(np.array(shap_values).shape) > 2 else shap_values
+    # SHAP >= 0.40 returns a list [class0_arr, class1_arr] for binary classifiers,
+    # each of shape (n_samples, n_features). Use class 1 (default/positive).
+    if isinstance(shap_values, list):
+        shap_row = np.array(shap_values[1])[0]   # shape: (n_features,)
+    else:
+        shap_row = np.array(shap_values)[0]       # shape: (n_features,)
 
     drivers = []
-    for feat_name, impact in zip(EXPECTED_FEATURES, shap_impacts):
-        if abs(impact) > 0.0001:
+    for feat_name, impact in zip(EXPECTED_FEATURES, shap_row):
+        if abs(float(impact)) > 0.0001:
             lineage_tag = pipeline_result["lineage"].get(feat_name, "IMPUTED")
             drivers.append({
                 "label": feat_name,

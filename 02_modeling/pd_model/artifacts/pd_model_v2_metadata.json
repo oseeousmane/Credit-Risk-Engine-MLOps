@@ -1,16 +1,16 @@
 {
-  "model_type": "LightGBM",
+  "model_type": "LightGBM + IsotonicCalibration",
   "n_features": 157,
-  "n_train_samples": 209106,
-  "n_val_samples": 36902,
+  "n_train_samples": 199882,
+  "n_val_samples": 46126,
   "best_iteration": 3,
-  "train_auc": 0.757987,
-  "val_auc": 0.737126,
-  "train_brier": 0.073098,
-  "val_brier": 0.073231,
-  "train_logloss": 0.274738,
-  "val_logloss": 0.275451,
-  "default_rate_train": 0.080729,
+  "train_auc": 0.756772,
+  "val_auc": 0.747132,
+  "train_brier": 0.068956,
+  "val_brier": 0.068526,
+  "train_logloss": 0.248908,
+  "val_logloss": 0.248914,
+  "default_rate_train": 0.081193,
   "hyperparameters": {
     "objective": "binary",
     "metric": [
@@ -27,7 +27,7 @@
     "colsample_bytree": 0.8,
     "reg_alpha": 0.1,
     "reg_lambda": 1.0,
-    "scale_pos_weight": 11.38706237782122,
+    "scale_pos_weight": 11.31634727956128,
     "random_state": 42,
     "n_jobs": -1,
     "verbose": -1
@@ -49,5 +49,11 @@
     "WALLSMATERIAL_MODE",
     "EMERGENCYSTATE_MODE"
   ],
-  "training_timestamp": "2026-04-19T18:10:01.933899"
+  "is_calibrated": true,
+  "training_timestamp": "2026-05-21T10:41:08.219826",
+  "data_hash_sha256": "8208d91e6130f934",
+  "data_source_path": "C:\\Users\\Del_Koyday\\Desktop\\RCB\\02_modeling\\pd_model\\..\\..\\01_data_layer\\curated\\curated_dataset.parquet",
+  "split_strategy": "temporal_walkforward",
+  "model_type_requested": "lightgbm",
+  "model_artifact_sha256": "e7f3b83d410ec9e9e1d1daea136942ec88b9a195497f20c578f44b856ca291d3"
 }

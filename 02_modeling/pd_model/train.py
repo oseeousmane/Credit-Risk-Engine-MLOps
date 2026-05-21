@@ -329,8 +329,13 @@ class PDModelTrainer:
 
         # Calibration Isotonique (Validation Empirique)
         logger.info("Entraînement de la surcouche Calibrator (Isotonic)...")
-        # Pre-fit because we already trained base_model. We wrap it and fit on Validation set to calibrate!
-        calibrated_model = CalibratedClassifierCV(base_model, method='isotonic', cv='prefit')
+        try:
+            # sklearn >= 1.6: FrozenEstimator preserves already-fitted model through CV splits
+            from sklearn.frozen import FrozenEstimator
+            calibrated_model = CalibratedClassifierCV(FrozenEstimator(base_model), method='isotonic', cv=5)
+        except ImportError:
+            # sklearn < 1.6: cv='prefit' is the old API
+            calibrated_model = CalibratedClassifierCV(base_model, method='isotonic', cv='prefit')
         calibrated_model.fit(X_val, y_val)
 
         # Tester le modèle calibré sur le training set (par proxy) pour voir l'impact, 
@@ -586,7 +591,11 @@ class PDXGBTrainer(PDModelTrainer):
         logger.info(f"XGBoost brut — AUC: {base_auc:.4f}, Brier: {base_brier:.4f}")
 
         # Calibration isotonique (même logique que LightGBM trainer)
-        calibrated = CalibratedClassifierCV(base_model, method="isotonic", cv="prefit")
+        try:
+            from sklearn.frozen import FrozenEstimator
+            calibrated = CalibratedClassifierCV(FrozenEstimator(base_model), method='isotonic', cv=5)
+        except ImportError:
+            calibrated = CalibratedClassifierCV(base_model, method='isotonic', cv='prefit')
         calibrated.fit(X_val, y_val)
         val_pred_calib = calibrated.predict_proba(X_val)[:, 1]
         calib_brier = brier_score_loss(y_val, val_pred_calib)
