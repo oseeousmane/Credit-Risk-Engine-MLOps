@@ -1,12 +1,11 @@
 'use client'
-import * as React from 'react'
 import { useState, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts'
-import { Plus, Zap, LayoutDashboard, Brain, AlertTriangle, Loader2, Play, CheckCircle2, TrendingUp, TrendingDown, Users } from 'lucide-react'
+import { Zap, LayoutDashboard, Brain, AlertTriangle, Loader2, Play, CheckCircle2, TrendingUp, TrendingDown } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { SectionHeader, Sparkline } from '@/components/ui'
+import { SectionHeader } from '@/components/ui'
 import { fetchApi } from '@/lib/api-client'
 
 const DEFAULT_PARAMS = {
@@ -123,15 +122,17 @@ export default function StressTestingPage() {
                   </div>
                   <span className="text-sm font-black tabular-nums" style={{ color }}>{params[key as keyof typeof params]}{suffix}</span>
                 </div>
-                <div className="relative h-1.5 bg-white/[0.06] rounded-full overflow-hidden mb-1">
-                  <div className="absolute top-0 left-0 h-full rounded-full transition-all duration-200" style={{ backgroundColor: color, width: `${((params[key as keyof typeof params] as number) - min) / (max - min) * 100}%` }} />
+                <div className="relative h-4 flex items-center">
+                  <div className="absolute inset-x-0 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-200" style={{ backgroundColor: color, width: `${((params[key as keyof typeof params] as number) - min) / (max - min) * 100}%` }} />
+                  </div>
+                  <input
+                    type="range" min={min} max={max} step={step}
+                    value={params[key as keyof typeof params] as number}
+                    onChange={e => setParams(p => ({ ...p, [key]: parseFloat(e.target.value) }))}
+                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range" min={min} max={max} step={step}
-                  value={params[key as keyof typeof params] as number}
-                  onChange={e => setParams(p => ({ ...p, [key]: parseFloat(e.target.value) }))}
-                  className="w-full h-1.5 opacity-0 absolute -mt-2.5 cursor-pointer"
-                />
               </div>
             ))}
 

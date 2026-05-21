@@ -1,5 +1,5 @@
 'use client'
-import * as React from 'react'
+import { type ReactNode } from 'react'
 import { useState } from 'react'
 import { Play, RotateCcw, Loader2, AlertTriangle, BrainCircuit, ShieldCheck, TrendingUp, Activity } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
@@ -132,7 +132,6 @@ export default function ScoringPage() {
             <div className="space-y-3">
               <SelectField label="Secteur" value={form.sector} onChange={v => set('sector', v)} options={SECTORS} />
               <SelectField label="Rating interne" value={form.internalRating} onChange={v => set('internalRating', v)} options={RATINGS} />
-              <SelectField label="Niveau de risque" value={form.riskLevel} onChange={v => set('riskLevel', v)} options={RISK_LEVELS} />
               <Field label="Années d'activité" value={form.yearsInBusiness} onChange={v => set('yearsInBusiness', +v)} type="number" />
               <div className="flex items-center justify-between py-1">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Watchlist</span>
@@ -353,7 +352,7 @@ function SelectField({ label, value, onChange, options }: {
   )
 }
 
-function KPICard({ label, value, color, icon }: { label: string; value: React.ReactNode; color?: string; icon: React.ReactNode }) {
+function KPICard({ label, value, color, icon }: { label: string; value: ReactNode; color?: string; icon: ReactNode }) {
   return (
     <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-xl p-4">
       <div className="flex items-center justify-between mb-2">
