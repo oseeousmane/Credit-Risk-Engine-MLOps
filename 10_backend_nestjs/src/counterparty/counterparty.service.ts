@@ -53,6 +53,28 @@ export class CounterpartyService {
     });
   }
 
+  async getTopExposures(limit = 5) {
+    const all = await this.prisma.counterparty.findMany({
+      select: { id: true, name: true, sector: true, exposure: true, pd1y: true, expectedLoss: true, riskLevel: true, ifrs9Stage: true, internalRating: true },
+      orderBy: { exposure: 'desc' },
+      take: limit,
+    });
+    const totalExposure = await this.prisma.counterparty.aggregate({ _sum: { exposure: true } });
+    const total = totalExposure._sum.exposure ?? 1;
+    return all.map(c => ({
+      id: c.id,
+      name: c.name,
+      sector: c.sector,
+      exposure: Math.round(c.exposure * 10) / 10,
+      pct: Math.round((c.exposure / total) * 1000) / 10,
+      pd1y: Math.round(c.pd1y * 10000) / 10000,
+      ecl: Math.round(c.expectedLoss * 10) / 10,
+      riskLevel: c.riskLevel,
+      ifrs9Stage: c.ifrs9Stage,
+      internalRating: c.internalRating,
+    }));
+  }
+
   async getPortfolioKpis() {
     const counterparties = await this.prisma.counterparty.findMany({
       select: { exposure: true, pd1y: true, expectedLoss: true, riskLevel: true, watchlistFlag: true, ifrs9Stage: true },

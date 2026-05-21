@@ -22,6 +22,11 @@ export class CounterpartyController {
     return this.counterpartyService.getPortfolioKpis();
   }
 
+  @Get('top-exposures')
+  getTopExposures(@Query('limit') limit?: string) {
+    return this.counterpartyService.getTopExposures(limit ? parseInt(limit, 10) : 5);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.counterpartyService.findOne(id);
