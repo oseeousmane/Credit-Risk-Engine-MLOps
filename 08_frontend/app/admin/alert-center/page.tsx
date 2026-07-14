@@ -132,7 +132,8 @@ export default function AlertCenterPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1.5">
-                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${cfg.badge}`}>
+                      <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${cfg.badge}`}>
+                        <Icon className="w-2.5 h-2.5 flex-shrink-0" aria-hidden="true" />
                         {cfg.label}
                       </span>
                       <span className="text-[10px] font-mono text-zinc-600">{timeAgo(alert.createdAt)}</span>

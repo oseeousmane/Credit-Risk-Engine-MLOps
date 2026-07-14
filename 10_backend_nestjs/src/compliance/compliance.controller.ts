@@ -131,4 +131,34 @@ export class ComplianceController {
   getEclTrend(@Query('months') months?: string) {
     return this.complianceService.getEclTrend(months ? parseInt(months, 10) : 12);
   }
+
+  /**
+   * GET /compliance/ifrs9-staging
+   * Audit trail IFRS 9 persisté — source de vérité réglementaire COBAC.
+   * Remplace l'endpoint FastAPI /ifrs9-audit (session-only, deprecated).
+   *
+   * Query params :
+   *   from / to        — filtre par date (ISO 8601)
+   *   stage            — 1 | 2 | 3
+   *   applicationId    — filtre par dossier
+   *   limit / offset   — pagination (max 200)
+   */
+  @Get('ifrs9-staging')
+  getIfrs9StagingAudit(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('stage') stage?: string,
+    @Query('applicationId') applicationId?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.complianceService.getIfrs9StagingAudit({
+      from:          from ? new Date(from) : undefined,
+      to:            to   ? new Date(to)   : undefined,
+      stage:         stage ? parseInt(stage, 10) : undefined,
+      applicationId: applicationId ?? undefined,
+      limit:         limit  ? parseInt(limit,  10) : 50,
+      offset:        offset ? parseInt(offset, 10) : 0,
+    });
+  }
 }

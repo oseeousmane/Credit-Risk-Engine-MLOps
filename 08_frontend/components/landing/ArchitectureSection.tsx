@@ -23,7 +23,7 @@ const layers = [
     title: 'Intelligence Layer',
     icon: BrainCircuit,
     desc: 'Quantitative engine running PD/LGD/EAD models. Integrated SHAP explainability and PSI monitoring.',
-    color: '#3ECF8E'
+    color: '#3B7BFF'
   },
   {
     id: 'data',
@@ -40,7 +40,7 @@ export function ArchitectureSection() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-20">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-6 shadow-sm">
-            <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E]">The Layer Cake</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400">The Layer Cake</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight mb-5">
             Composable Architecture
@@ -71,9 +71,9 @@ export function ArchitectureSection() {
                 </div>
 
                 {/* Center Icon */}
-                <div className="relative z-10 w-20 h-20 rounded-2xl bg-[#050505] border border-white/[0.05] flex items-center justify-center flex-shrink-0 group-hover:border-[#3ECF8E]/20 group-hover:bg-[#3ECF8E]/5 transition-all duration-500 shadow-xl mx-0 md:mx-auto">
+                <div className="relative z-10 w-20 h-20 rounded-2xl bg-surface-0 border border-white/[0.05] flex items-center justify-center flex-shrink-0 group-hover:border-brand-400/20 group-hover:bg-brand-400/5 transition-all duration-500 shadow-xl mx-0 md:mx-auto">
                   <layer.icon className="w-8 h-8 transition-colors duration-500" style={{ color: layer.color }} />
-                  <div className="absolute inset-0 bg-[#3ECF8E]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-brand-400/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
 
                 {/* Right side (Mobile view, and Desktop alternate) */}

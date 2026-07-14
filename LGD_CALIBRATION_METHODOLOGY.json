@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "document_type": "LGD_CALIBRATION_METHODOLOGY",
+    "version": "1.0.0",
+    "status": "METHODOLOGY DEFINED — Calibration pending recovery data",
+    "effective_date": "2026-05-30",
+    "regulatory_references": [
+      "Basel III CRE36 — LGD Estimation",
+      "EBA/GL/2017/16 — LGD Estimation Guidelines",
+      "IFRS 9 §B5.5.55 — LGD in ECL",
+      "COBAC R-2010/01 §14 — Taux de provisionnement"
+    ]
+  },
+
+  "current_state": {
+    "model": "Tables statiques EBA/Basel (risk-math.service.ts)",
+    "lgd_by_collateral": {
+      "CASH":              0.05,
+      "SOVEREIGN_GUARANTEE": 0.08,
+      "REAL_ESTATE_PRIME":  0.20,
+      "REAL_ESTATE_STANDARD": 0.30,
+      "EQUIPMENT":          0.40,
+      "INVENTORY":          0.50,
+      "UNSECURED":          0.60,
+      "UNSECURED_CRITICAL": 0.85
+    },
+    "gap": "Ces valeurs sont des benchmarks marchés développés (EBA). En zone CEMAC, les délais judiciaires et la liquidité des actifs sont différents. Calibration locale obligatoire pour PROD_CHAMPION."
+  },
+
+  "cemac_context": {
+    "key_differences_from_europe": [
+      "Délais de réalisation des garanties : 24-60 mois (vs 12-18 mois en Europe)",
+      "Marché secondaire des actifs immobiliers : illiquid dans certaines zones CEMAC",
+      "Recouvrement judiciaire OHADA : procédures longues, résultats aléatoires",
+      "Garanties personnelles / cautions solidaires : recours limité en pratique",
+      "Taux d'intérêt élevés (EIR 15-35%) → coût d'actualisation impacte l'ECL significativement"
+    ],
+    "expected_lgd_ranges_cemac": {
+      "REAL_ESTATE": "30-50% (vs 20-30% Europe) — délais réalisation plus longs",
+      "EQUIPMENT":   "50-70% (vs 40-50% Europe) — dépréciation rapide + marché secondaire étroit",
+      "UNSECURED":   "70-90% (vs 60-70% Europe) — recouvrement judiciaire aléatoire",
+      "CASH_PLEDGE": "5-10% — similaire Europe (actif liquide)"
+    }
+  },
+
+  "calibration_methodology": {
+    "method": "workout_lgd",
+    "description": "LGD = 1 - (Recouvrements actualisés) / EAD à la date de défaut",
+
+    "steps": [
+      {
+        "step": 1,
+        "name": "Collecte des données de recouvrement",
+        "description": "Pour chaque crédit en défaut observé dans la fenêtre historique : collecter les flux de recouvrement (paiements partiels, réalisation de garantie, cession de créance) avec leurs dates.",
+        "data_required": ["date_defaut", "montant_ead_defaut", "flux_recouvrement[]", "date_flux[]", "couts_recouvrement"],
+        "minimum_defaults": 200,
+        "minimum_workout_months": 12
+      },
+      {
+        "step": 2,
+        "name": "Actualisation des flux",
+        "description": "Actualiser chaque flux de recouvrement au taux EIR contractuel (IFRS 9 §B5.5.44) ou au taux sans risque si EIR indisponible.",
+        "formula": "PV_flux = flux_t / (1 + EIR)^(t/12)",
+        "discount_rate_fallback": "Taux directeur BEAC (actuellement 5.25%)"
+      },
+      {
+        "step": 3,
+        "name": "Calcul LGD observée",
+        "description": "LGD_i = 1 - (sum(PV_flux_i) - couts_recouvrement_i) / EAD_i",
+        "note": "LGD peut dépasser 1.0 si les coûts de recouvrement > EAD (cas de dossiers très dégradés). Plafonner à 1.0."
+      },
+      {
+        "step": 4,
+        "name": "Segmentation",
+        "description": "Calculer la LGD moyenne par segment : type de garantie × secteur × maturité.",
+        "segments": [
+          "REAL_ESTATE × Corporate × < 5 ans",
+          "REAL_ESTATE × Corporate × >= 5 ans",
+          "EQUIPMENT × Corporate",
+          "UNSECURED × Corporate",
+          "UNSECURED × Microfinance",
+          "GUARANTEE_SOVEREIGN"
+        ],
+        "minimum_per_segment": 30
+      },
+      {
+        "step": 5,
+        "name": "Ajustement downturn",
+        "description": "Appliquer un multiplicateur downturn (Basel III CRE36.86) pour capturer les conditions de stress. En zone CEMAC, utiliser le pic de défauts observé sur la période historique disponible.",
+        "formula": "LGD_DT = LGD_mean × max(1.0, LGD_stress / LGD_mean)",
+        "default_multiplier": 1.20,
+        "note": "À calibrer sur données réelles. Facteur 1.20 conservateur par défaut."
+      },
+      {
+        "step": 6,
+        "name": "Floors prudentiels",
+        "description": "Appliquer les floors Basel III et le floor COBAC recommandé.",
+        "floors": {
+          "CORPORATE_UNSECURED_MIN": 0.45,
+          "RETAIL_UNSECURED_MIN":    0.35,
+          "REAL_ESTATE_PRIME_MIN":   0.10,
+          "CEMAC_CONSERVATIVE_MIN":  0.15
+        }
+      },
+      {
+        "step": 7,
+        "name": "Validation back-testing",
+        "description": "Comparer la LGD calibrée aux pertes réelles observées sur un échantillon de validation. Ratio attendu : 0.80 ≤ (Pertes_prédites / Pertes_réelles) ≤ 1.20.",
+        "trigger_recalibration": "Ratio > 1.30 ou < 0.70 pendant 2 trimestres consécutifs"
+      }
+    ]
+  },
+
+  "two_part_beta_model": {
+    "description": "LGDModelV2 (02_modeling/lgd_model/lgd_model_v2.py) implémente un modèle Two-Part Beta conforme aux bonnes pratiques EBA. Ce modèle est prêt à être entraîné sur données CEMAC réelles.",
+    "components": [
+      {
+        "part": 1,
+        "name": "P(LGD = 0) — Recouvrement total",
+        "model": "Régression logistique",
+        "features": ["type_garantie", "ratio_garantie_ead", "secteur", "anciennete"],
+        "status": "IMPLÉMENTÉ — entraîner sur données CEMAC"
+      },
+      {
+        "part": 2,
+        "name": "LGD | LGD > 0 — Montant de la perte",
+        "model": "Régression Beta (distribution bornée [0,1])",
+        "features": ["type_garantie", "ratio_garantie_ead", "delai_recouvrement", "secteur"],
+        "status": "IMPLÉMENTÉ — entraîner sur données CEMAC"
+      }
+    ],
+    "monte_carlo": {
+      "n_simulations": 10000,
+      "output": "Distribution complète LGD avec P05, P50, P95 → intervalles de confiance ECL"
+    }
+  },
+
+  "implementation_plan": {
+    "step_1": "Collecter 24 mois d'historique de recouvrement via CBS_CONNECTOR (voir CBS_CONNECTOR_SPEC.json)",
+    "step_2": "Exécuter 02_modeling/lgd_model/lgd_model_v2.py avec les données CBS",
+    "step_3": "Valider le back-testing (step 7 ci-dessus)",
+    "step_4": "Mettre à jour les tables LGD dans risk-math.service.ts ET expected_loss.py",
+    "step_5": "Documenter dans MODEL_GOVERNANCE_SPEC §4 + MRM sign-off",
+    "estimated_effort": "2-3 semaines avec accès CBS + 200+ dossiers en défaut observé"
+  }
+}

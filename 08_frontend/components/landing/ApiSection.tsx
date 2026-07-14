@@ -5,9 +5,9 @@ import { motion } from 'framer-motion'
 import { Terminal } from 'lucide-react'
 
 const codeTokens = [
-  { text: "curl", className: "text-[#3ECF8E]" },
+  { text: "curl", className: "text-brand-400" },
   { text: " -X POST ", className: "text-zinc-300" },
-  { text: "https://api.octaix.com/v1/decisioning/score", className: "text-[#3ECF8E]/80" },
+  { text: "https://api.octaix.com/v1/decisioning/score", className: "text-brand-400/80" },
   { text: " \\\n", className: "text-zinc-300" },
   { text: "  -H ", className: "text-zinc-300" },
   { text: "\"Authorization: Bearer sk_live_...\"", className: "text-zinc-400" },
@@ -19,15 +19,15 @@ const codeTokens = [
   { text: "'{\n", className: "text-zinc-300" },
   { text: "    \"counterparty_id\"", className: "text-zinc-400" },
   { text: ": ", className: "text-zinc-300" },
-  { text: "\"CP-9482\"", className: "text-[#3ECF8E]" },
+  { text: "\"CP-9482\"", className: "text-brand-400" },
   { text: ",\n", className: "text-zinc-300" },
   { text: "    \"requested_facility\"", className: "text-zinc-400" },
   { text: ": ", className: "text-zinc-300" },
-  { text: "5000000", className: "text-[#3ECF8E]" },
+  { text: "5000000", className: "text-brand-400" },
   { text: ",\n", className: "text-zinc-300" },
   { text: "    \"run_shap_explainability\"", className: "text-zinc-400" },
   { text: ": ", className: "text-zinc-300" },
-  { text: "true\n", className: "text-[#3ECF8E]" },
+  { text: "true\n", className: "text-brand-400" },
   { text: "  }'", className: "text-zinc-300" },
 ]
 
@@ -58,7 +58,7 @@ function AnimatedTerminal() {
       viewport={{ once: true }}
       onViewportEnter={() => setTimeout(() => setStartTyping(true), 800)}
       transition={{ duration: 0.8 }}
-      className="relative rounded-2xl overflow-hidden border border-white/[0.08] bg-[#050505] shadow-2xl"
+      className="relative rounded-2xl overflow-hidden border border-white/[0.08] bg-surface-0 shadow-2xl"
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.05] bg-[#0c0c0c]">
         <div className="flex gap-1.5">
@@ -83,14 +83,14 @@ function AnimatedTerminal() {
             )
           })}
           {(!showResponse || cursor < totalLength) && (
-            <span className="animate-pulse bg-[#3ECF8E] w-2 h-4 inline-block ml-1 align-middle opacity-80" />
+            <span className="animate-pulse bg-brand-400 w-2 h-4 inline-block ml-1 align-middle opacity-80" />
           )}
         </pre>
       </div>
       <div className={`border-t border-white/[0.05] bg-[#0c0c0c] p-4 text-[13px] font-mono transition-opacity duration-500 ${showResponse ? 'opacity-100' : 'opacity-0'}`}>
         <span className="text-zinc-500">// Response:</span>
         <br/>
-        <span className="text-[#3ECF8E]">{'{'} "status": "APPROVED", "pd_1y": 0.012, "lgd": 0.45 {'}'}</span>
+        <span className="text-brand-400">{'{'} "status": "APPROVED", "pd_1y": 0.012, "lgd": 0.45 {'}'}</span>
       </div>
     </motion.div>
   )
@@ -109,7 +109,7 @@ export function ApiSection() {
             transition={{ duration: 0.6 }}
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-6 shadow-sm">
-              <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E]">API-First</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400">API-First</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight mb-6">
               Built for Developers
@@ -126,7 +126,7 @@ export function ApiSection() {
                 "Granular API Keys & OAuth 2.0"
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-3 text-[14px] font-medium text-zinc-300">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-400" />
                   {item}
                 </li>
               ))}

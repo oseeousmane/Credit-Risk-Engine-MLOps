@@ -47,14 +47,14 @@ export function GovernanceSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           {/* Left: copy */}
           <div className="lg:sticky lg:top-24">
-            <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E] mb-5">{header.badge}</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400 mb-5">{header.badge}</div>
             <h2 className="text-3xl sm:text-4xl font-medium text-white mb-5 tracking-tight leading-tight">
               {header.title}{' '}
               <span className="text-zinc-500">{header.titleHighlight}</span>
             </h2>
             <p className="text-zinc-400 text-[15px] font-medium leading-relaxed mb-8">{header.desc}</p>
             {/* Visual accent block */}
-            <div className="bg-[#3ECF8E]/[0.02] border border-[#3ECF8E]/[0.06] rounded-2xl p-6">
+            <div className="bg-brand-400/[0.02] border border-brand-400/[0.06] rounded-2xl p-6">
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { label: 'JWT Auth', val: 'Token 15min TTL' },
@@ -80,11 +80,11 @@ export function GovernanceSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.5, delay: i * 0.05 }}
-                className="group relative flex items-start gap-4 bg-[#050505] border border-white/[0.03] rounded-xl p-5 hover:border-white/[0.08] transition-all duration-500 overflow-hidden"
+                className="group relative flex items-start gap-4 bg-surface-0 border border-white/[0.03] rounded-xl p-5 hover:border-white/[0.08] transition-all duration-500 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#3ECF8E]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 w-9 h-9 rounded-lg bg-white/[0.02] border border-white/[0.04] flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-all duration-500">
-                  <p.icon className="w-4 h-4 text-zinc-500 group-hover:text-[#3ECF8E] transition-colors duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 w-9 h-9 rounded-lg bg-white/[0.02] border border-white/[0.04] flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-all duration-500">
+                  <p.icon className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 transition-colors duration-500" />
                 </div>
                 <div className="relative z-10">
                   <h3 className="text-[15px] font-medium tracking-tight text-zinc-200 group-hover:text-white transition-colors duration-500 mb-1">{p.title}</h3>

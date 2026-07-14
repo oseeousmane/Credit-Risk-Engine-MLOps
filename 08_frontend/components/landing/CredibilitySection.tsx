@@ -50,15 +50,15 @@ export function CredibilitySection() {
   return (
     <section className="py-28 relative">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-white/[0.03] bg-[#050505]">
-          <div className="absolute top-0 right-0 w-[500px] h-[400px] bg-[#3ECF8E]/[0.03] rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-[#3ECF8E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+        <div className="relative overflow-hidden rounded-3xl border border-white/[0.03] bg-surface-0">
+          <div className="absolute top-0 right-0 w-[500px] h-[400px] bg-brand-400/[0.03] rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-brand-400/[0.02] rounded-full blur-[100px] pointer-events-none" />
           <div className="relative z-10 p-10 sm:p-14">
             <div className="max-w-3xl mb-12">
-              <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E] mb-5">{t.badge}</div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400 mb-5">{t.badge}</div>
               <h2 className="text-3xl sm:text-4xl lg:text-[2.5rem] font-medium text-white mb-5 tracking-tight leading-tight">
                 {t.title}{' '}
-                <span className="text-[#3ECF8E]">{t.titleHighlight}</span>
+                <span className="text-brand-400">{t.titleHighlight}</span>
               </h2>
               <p className="text-zinc-400 text-[15px] font-medium leading-relaxed">{t.desc}</p>
             </div>
@@ -73,8 +73,8 @@ export function CredibilitySection() {
                   variants={itemVariants}
                   className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.01] border border-white/[0.03] hover:border-white/[0.08] hover:bg-white/[0.02] transition-all duration-300 group"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-[#050505] border border-white/[0.04] flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-colors duration-300 shadow-sm">
-                    <h.icon className="w-3.5 h-3.5 text-zinc-500 group-hover:text-[#3ECF8E] transition-colors duration-300" />
+                  <div className="w-8 h-8 rounded-lg bg-surface-0 border border-white/[0.04] flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-colors duration-300 shadow-sm">
+                    <h.icon className="w-3.5 h-3.5 text-zinc-500 group-hover:text-brand-400 transition-colors duration-300" />
                   </div>
                   <div>
                     <div className="text-[13px] font-medium tracking-tight text-zinc-300 group-hover:text-white transition-colors duration-300 leading-snug mb-1">{h.label}</div>

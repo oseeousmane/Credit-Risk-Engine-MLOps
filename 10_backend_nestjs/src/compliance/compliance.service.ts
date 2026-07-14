@@ -45,7 +45,36 @@ export class ComplianceService {
     return updated;
   }
 
-  // â”€â”€ Tech Documents â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Pre-Scoring Compliance Checks ──
+
+  /**
+   * Vérifie la conformité de la garantie (Collatéral) par rapport au montant demandé.
+   * Lève un drapeau (Warning/Critical) si l'exposition n'est pas couverte selon
+   * la politique de crédit interne.
+   */
+  async checkCollateralCompliance(exposure: number, collateralValue: number, facilityType: string = 'UNSECURED'): Promise<{ isCompliant: boolean; message: string; flagLevel: 'NONE' | 'WARNING' | 'CRITICAL' }> {
+    const coverageRatio = collateralValue / exposure;
+    
+    if (facilityType === 'MORTGAGE') {
+      // Pour l'immobilier, on exige un LTV (Loan-To-Value) max de 80%, soit une couverture de 125%
+      if (coverageRatio < 1.25) {
+        return { isCompliant: false, message: 'Collatéral insuffisant pour un prêt hypothécaire (LTV > 80%)', flagLevel: 'CRITICAL' };
+      }
+    } else if (facilityType === 'SECURED') {
+      if (coverageRatio < 1.0) {
+        return { isCompliant: false, message: 'Prêt sécurisé mais collatéral inférieur à l\'exposition (Couverture < 100%)', flagLevel: 'WARNING' };
+      }
+    } else if (facilityType === 'UNSECURED') {
+      if (exposure > 50000) {
+        // Politique interne: Pas de prêt non-garanti supérieur à 50K
+        return { isCompliant: false, message: 'Prêt non-garanti excédant la limite autorisée de 50 000$', flagLevel: 'CRITICAL' };
+      }
+    }
+    
+    return { isCompliant: true, message: 'Conforme', flagLevel: 'NONE' };
+  }
+
+  // ── Tech Documents ──—————————————————————————————————————————————————————
 
   async getDocuments() {
     return this.prisma.techDocument.findMany({
@@ -413,6 +442,134 @@ export class ComplianceService {
           eclCoverage: d.totalExposure > 0 ? parseFloat(((d.totalECL / d.totalExposure) * 100).toFixed(2)) : 0,
         }))
         .sort((a, b) => b.totalECL - a.totalECL),
+    };
+  }
+
+  /**
+   * Regulatory Capital Report (Basel III)
+   * Approxime le RWA (Risk-Weighted Assets) et le capital minimum requis pour la COBAC/BCE.
+   */
+  async getRegulatoryCapitalReport(actorId: string) {
+    const counterparties = await this.prisma.counterparty.findMany({
+      select: {
+        sector: true, exposure: true, riskLevel: true
+      },
+    });
+
+    let totalRWA = 0;
+    let totalExposure = 0;
+
+    for (const c of counterparties) {
+      const exposure = c.exposure ?? 0;
+      totalExposure += exposure;
+      
+      // Simulation simplifiée des Risk Weights (RWA) Bâle III Standardisée
+      let weight = 1.0; // 100% Corporate Unrated
+      if (c.sector === 'RETAIL') weight = 0.75; // 75% Retail
+      else if (c.sector === 'REAL_ESTATE') weight = 0.35; // 35% Hypothécaire
+      else if (c.sector === 'GOVERNMENT') weight = 0.0; // 0% Souverain
+      
+      if (c.riskLevel === 'CRITICAL' || c.riskLevel === 'HIGH') {
+         weight = 1.5; // 150% pour les hauts risques
+      }
+      
+      totalRWA += (exposure * weight);
+    }
+
+    const minimumCapitalRatio = 0.08; // 8% de Bâle III
+    const minimumCapitalRequired = totalRWA * minimumCapitalRatio;
+
+    return {
+      reportType: 'BASEL_III_REGULATORY_CAPITAL',
+      generatedAt: new Date().toISOString(),
+      generatedBy: actorId,
+      metrics: {
+        totalExposure: Math.round(totalExposure * 10) / 10,
+        totalRWA: Math.round(totalRWA * 10) / 10,
+        rwaDensity: totalExposure > 0 ? parseFloat(((totalRWA / totalExposure) * 100).toFixed(2)) : 0,
+        minimumCapitalRequired: Math.round(minimumCapitalRequired * 10) / 10,
+        cet1RatioRequired: '4.5%', // Common Equity Tier 1 minimum légal
+      },
+      disclaimer: 'Rapport généré selon la méthode Standardisée Bâle III. Ne remplace pas la validation officielle du comité des risques.'
+    };
+  }
+
+  // ── IFRS 9 Staging Audit (COBAC) ──────────────────────────────────────────
+
+  async getIfrs9StagingAudit(params: {
+    from?: Date;
+    to?: Date;
+    stage?: number;
+    applicationId?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const { from, to, stage, applicationId, limit = 50, offset = 0 } = params;
+    const stageMap: Record<number, string> = { 1: 'STAGE_1', 2: 'STAGE_2', 3: 'STAGE_3' };
+
+    const where: any = {
+      ...(from || to ? { createdAt: { ...(from && { gte: from }), ...(to && { lte: to }) } } : {}),
+      ...(stage ? { stage: stageMap[stage] } : {}),
+      ...(applicationId ? { applicationId } : {}),
+    };
+
+    const [total, records] = await Promise.all([
+      this.prisma.ifrs9StagingAudit.count({ where }),
+      this.prisma.ifrs9StagingAudit.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: Math.min(limit, 200),
+        skip: offset,
+        select: {
+          id: true,
+          stagingId: true,
+          applicationId: true,
+          counterpartyId: true,
+          stage: true,
+          previousStage: true,
+          sicrTriggered: true,
+          stagingReasons: true,
+          pdCurrent: true,
+          pdOrigination: true,
+          lgdEstimate: true,
+          lgdMethod: true,
+          eclProvision: true,
+          eclHorizon: true,
+          eadEstimate: true,
+          eirUsed: true,
+          rwaEstimate: true,
+          modelVersion: true,
+          scoredBy: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    // Aggrégats COBAC
+    const stageDistribution = await this.prisma.ifrs9StagingAudit.groupBy({
+      by: ['stage'],
+      where,
+      _count: { stage: true },
+      _sum: { eclProvision: true, eadEstimate: true },
+    });
+
+    const totalECL = records.reduce((sum, r) => sum + r.eclProvision, 0);
+    const totalEAD = records.reduce((sum, r) => sum + r.eadEstimate, 0);
+
+    return {
+      meta: { total, limit, offset, from, to },
+      summary: {
+        totalECL: Math.round(totalECL),
+        totalEAD: Math.round(totalEAD),
+        coverageRatio: totalEAD > 0 ? parseFloat((totalECL / totalEAD * 100).toFixed(4)) : 0,
+        stageDistribution: stageDistribution.map(s => ({
+          stage: s.stage,
+          count: s._count.stage,
+          eclSum: Math.round(s._sum.eclProvision ?? 0),
+          eadSum: Math.round(s._sum.eadEstimate ?? 0),
+        })),
+      },
+      records,
     };
   }
 }

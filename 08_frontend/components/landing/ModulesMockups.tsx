@@ -8,7 +8,7 @@ function MockupShell({ title, label, module: mod, children }: {
 }) {
   return (
     <div className="relative">
-      <div className="absolute -inset-2 bg-[#3ECF8E]/5 blur-2xl rounded-3xl" />
+      <div className="absolute -inset-2 bg-brand-400/5 blur-2xl rounded-3xl" />
       <div className="relative bg-[#0a0a0a] border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl">
         {/* Window bar */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-white/[0.05] bg-[#0c0c0c]">
@@ -22,8 +22,8 @@ function MockupShell({ title, label, module: mod, children }: {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" />
-            <span className="text-[10px] text-[#3ECF8E] font-medium uppercase tracking-wider">{mod}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+            <span className="text-[10px] text-brand-400 font-medium uppercase tracking-wider">{mod}</span>
           </div>
         </div>
         {children}
@@ -51,28 +51,28 @@ export function RiskMockup() {
     return () => clearInterval(id)
   }, [])
   const entities = [
-    { name: 'Acme Heavy Industries',     rating: 'BBB', pd: '1.2%', stage: 'S1', exp: '$12.0M', green: false },
-    { name: 'Global Logistics Partners', rating: 'BB+', pd: '3.8%', stage: 'S2', exp: '$8.5M',  green: false },
-    { name: 'Meridian Capital Group',    rating: 'A−',  pd: '0.7%', stage: 'S1', exp: '$24.0M', green: true  },
+    { name: 'SOCOME Industries SA',    rating: 'BBB', pd: '1.2%', stage: 'S1', exp: '8,0 Mds XAF',  green: false },
+    { name: 'Trans-CEMAC Logistique',  rating: 'BB+', pd: '3.8%', stage: 'S2', exp: '5,6 Mds XAF',  green: false },
+    { name: 'Hydrocam Energy Group',   rating: 'A−',  pd: '0.7%', stage: 'S1', exp: '15,8 Mds XAF', green: true  },
   ]
   return (
     <MockupShell title="riskengine.bank" label="Portfolio Intelligence" module="CRO View">
       <div className="px-4 pt-4 pb-2 grid grid-cols-4 gap-2">
-        <KpiCard label="Total Exposure" value="$2.4B"  sub="+3.2% vs prev. quarter" />
-        <KpiCard label="ECL Stage 2"    value="$18.7M" sub="+1.1% Expected Credit Loss" />
-        <KpiCard label="Avg. PD"        value="1.82%"  sub="−0.14pp portfolio-wide" color="text-[#3ECF8E]" />
+        <KpiCard label="Total Exposure" value="1 580 Mds XAF" sub="+3,2% vs trim. précédent" />
+        <KpiCard label="ECL Stage 2"    value="12,3 Mds XAF"  sub="+1,1% Expected Credit Loss" />
+        <KpiCard label="Avg. PD"        value="1.82%"  sub="−0.14pp portfolio-wide" color="text-brand-400" />
         <KpiCard label="Stage 3"        value="3"      sub="entities" />
       </div>
       <div className="px-4 pb-4">
         <div className="bg-white/[0.015] border border-white/[0.04] rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.04]">
             <div className="flex items-center gap-2"><GitMerge className="w-3 h-3 text-zinc-500" /><span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">Active Portfolio</span></div>
-            <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" /><span className="text-[10px] text-[#3ECF8E] font-medium">Live</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" /><span className="text-[10px] text-brand-400 font-medium">Live</span></div>
           </div>
           {entities.map((e, i) => (
             <div key={i} className={`flex items-center gap-3 px-4 py-3 border-b border-white/[0.03] last:border-0 transition-colors duration-500 ${active === i ? 'bg-white/[0.03]' : ''}`}>
               <span className="text-[12px] text-zinc-200 font-medium flex-1 truncate">{e.name}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${e.green ? 'text-[#3ECF8E] border-[#3ECF8E]/30 bg-[#3ECF8E]/10' : 'text-amber-400 border-amber-400/30 bg-amber-400/10'}`}>{e.rating}</span>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${e.green ? 'text-brand-400 border-brand-400/30 bg-brand-400/10' : 'text-amber-400 border-amber-400/30 bg-amber-400/10'}`}>{e.rating}</span>
               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${e.stage === 'S2' ? 'text-amber-400 bg-amber-400/10' : 'text-zinc-400 bg-white/[0.04]'}`}>{e.stage}</span>
               <span className="text-[10px] text-zinc-500 font-mono">PD {e.pd}</span>
             </div>
@@ -105,7 +105,7 @@ export function DecisioningMockup() {
     <MockupShell title="riskengine.bank" label="Decision Workspace" module="Analyst / Manager">
       <div className="px-4 pt-4 pb-2 grid grid-cols-3 gap-2">
         <KpiCard label="Application" value="DC-4821" />
-        <KpiCard label="ML Score" value={`${score} / 1000`} color="text-[#3ECF8E]" />
+        <KpiCard label="ML Score" value={`${score} / 1000`} color="text-brand-400" />
         <KpiCard label="Model PD" value="1.24%" />
       </div>
       <div className="px-4 pb-2">
@@ -119,10 +119,10 @@ export function DecisioningMockup() {
               <div key={i} className={`transition-opacity duration-300 ${lit === i ? 'opacity-100' : 'opacity-60'}`}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[11px] text-zinc-300 font-medium">{d.label}</span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${d.impact === 'Positive' ? 'text-[#3ECF8E] bg-[#3ECF8E]/10' : d.impact === 'Negative' ? 'text-rose-400 bg-rose-400/10' : 'text-zinc-400 bg-white/[0.04]'}`}>{d.impact}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${d.impact === 'Positive' ? 'text-brand-400 bg-brand-400/10' : d.impact === 'Negative' ? 'text-rose-400 bg-rose-400/10' : 'text-zinc-400 bg-white/[0.04]'}`}>{d.impact}</span>
                 </div>
                 <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-700 ${d.impact === 'Positive' ? 'bg-[#3ECF8E]/60' : d.impact === 'Negative' ? 'bg-rose-400/60' : 'bg-zinc-500/60'}`} style={{ width: `${d.bar}%` }} />
+                  <div className={`h-full rounded-full transition-all duration-700 ${d.impact === 'Positive' ? 'bg-brand-400/60' : d.impact === 'Negative' ? 'bg-rose-400/60' : 'bg-zinc-500/60'}`} style={{ width: `${d.bar}%` }} />
                 </div>
               </div>
             ))}
@@ -130,7 +130,7 @@ export function DecisioningMockup() {
         </div>
       </div>
       <div className="px-4 pb-4 flex gap-2">
-        <div className="flex-1 flex items-center justify-center py-2 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-lg"><span className="text-[11px] font-bold text-[#3ECF8E] uppercase tracking-widest">Approve</span></div>
+        <div className="flex-1 flex items-center justify-center py-2 bg-brand-400/10 border border-brand-400/20 rounded-lg"><span className="text-[11px] font-bold text-brand-400 uppercase tracking-widest">Approve</span></div>
         <div className="flex-1 flex items-center justify-center py-2 bg-white/[0.03] border border-white/[0.06] rounded-lg"><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Escalate</span></div>
       </div>
     </MockupShell>
@@ -151,7 +151,7 @@ export function MonitoringMockup() {
   return (
     <MockupShell title="riskengine.bank" label="Model Operations" module="MLOps View">
       <div className="px-4 pt-4 pb-2 grid grid-cols-4 gap-2">
-        <KpiCard label="Model AUC"   value={`0.${auc}`} color="text-[#3ECF8E]" />
+        <KpiCard label="Model AUC"   value={`0.${auc}`} color="text-brand-400" />
         <KpiCard label="PSI Score"   value="0.12" />
         <KpiCard label="Latency p95" value="42ms" />
         <KpiCard label="Drift Alert" value="Moderate" color="text-amber-400" />
@@ -160,12 +160,12 @@ export function MonitoringMockup() {
         <div className="bg-white/[0.015] border border-white/[0.04] rounded-xl p-3.5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2"><Activity className="w-3 h-3 text-zinc-500" /><span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">AUC Trend — 20 inference cycles</span></div>
-            <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" /><span className="text-[10px] text-[#3ECF8E] font-medium">Live</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" /><span className="text-[10px] text-brand-400 font-medium">Live</span></div>
           </div>
           <div className="flex items-end gap-0.5 h-20">
             {bars.map((h, i) => (
               <div key={i} className="flex-1 flex flex-col justify-end">
-                <div className={`rounded-t-sm transition-all duration-1000 ${h < 80 ? 'bg-rose-400/50' : h < 84 ? 'bg-amber-400/40' : 'bg-[#3ECF8E]/40'}`} style={{ height: `${(h-60)*3}%`, opacity: 0.4+(i/bars.length)*0.6 }} />
+                <div className={`rounded-t-sm transition-all duration-1000 ${h < 80 ? 'bg-rose-400/50' : h < 84 ? 'bg-amber-400/40' : 'bg-brand-400/40'}`} style={{ height: `${(h-60)*3}%`, opacity: 0.4+(i/bars.length)*0.6 }} />
               </div>
             ))}
           </div>
@@ -198,7 +198,7 @@ export function ComplianceMockup() {
   return (
     <MockupShell title="riskengine.bank" label="Compliance Console" module="Governance">
       <div className="px-4 pt-4 pb-2 grid grid-cols-3 gap-2">
-        <KpiCard label="IFRS 9 Stage 1" value="187" sub="entities" color="text-[#3ECF8E]" />
+        <KpiCard label="IFRS 9 Stage 1" value="187" sub="entities" color="text-brand-400" />
         <KpiCard label="Stage 2" value="24" sub="entities" color="text-amber-400" />
         <KpiCard label="Audit Entries" value={tick % 2 === 0 ? '4,821' : '4,822'} sub="this quarter" />
       </div>
@@ -210,7 +210,7 @@ export function ComplianceMockup() {
           </div>
           {trails.map((t, i) => (
             <div key={i} className={`flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.03] last:border-0 transition-colors ${tick % 4 === i ? 'bg-white/[0.025]' : ''}`}>
-              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${t.type === 'approve' ? 'bg-[#3ECF8E]' : t.type === 'score' ? 'bg-blue-400' : t.type === 'ifrs' ? 'bg-amber-400' : 'bg-zinc-500'}`} />
+              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${t.type === 'approve' ? 'bg-brand-400' : t.type === 'score' ? 'bg-blue-400' : t.type === 'ifrs' ? 'bg-amber-400' : 'bg-zinc-500'}`} />
               <span className="text-[10px] font-mono text-zinc-400 flex-1">{t.action}</span>
               <span className="text-[10px] text-zinc-600 font-mono">{t.actor}</span>
               <span className="text-[10px] text-zinc-700 font-mono">{t.time}</span>
@@ -230,11 +230,11 @@ export function CounterpartyMockup() {
         <div className="bg-white/[0.015] border border-white/[0.04] rounded-xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.07] flex items-center justify-center"><Building2 className="w-4 h-4 text-zinc-400" /></div>
-            <div><div className="text-[13px] font-semibold text-white">Acme Heavy Industries</div><div className="text-[10px] text-zinc-600">LEI: 549300EXAMPLE · Manufacturing</div></div>
-            <span className="ml-auto text-[10px] font-bold px-2 py-1 rounded bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 text-[#3ECF8E]">BBB</span>
+            <div><div className="text-[13px] font-semibold text-white">SOCOME Industries SA</div><div className="text-[10px] text-zinc-600">LEI: 549300EXAMPLE · Industrie manufacturière</div></div>
+            <span className="ml-auto text-[10px] font-bold px-2 py-1 rounded bg-brand-400/10 border border-brand-400/20 text-brand-400">BBB</span>
           </div>
           <div className="grid grid-cols-3 gap-2 mb-4">
-            {[['Revenue','$340M'],['EBITDA','$48M'],['Leverage','3.2x'],['Total Debt','$154M'],['DPD 90d','0'],['Facilities','3 active']].map(([l,v],i) => (
+            {[['Chiffre d\'affaires','224 Mds XAF'],['EBITDA','32 Mds XAF'],['Levier','3,2x'],['Dette totale','102 Mds XAF'],['DPD 90j','0'],['Facilités','3 actives']].map(([l,v],i) => (
               <div key={i} className="text-center bg-white/[0.02] rounded-lg p-2">
                 <div className="text-[9px] text-zinc-600 uppercase tracking-wider mb-1">{l}</div>
                 <div className="text-[12px] font-bold text-zinc-200">{v}</div>
@@ -243,12 +243,12 @@ export function CounterpartyMockup() {
           </div>
           <div className="space-y-1.5">
             <div className="text-[9px] uppercase tracking-widest text-zinc-600 mb-2">Group Hierarchy</div>
-            {[{name:'Acme Group Holding SA',lvl:0,type:'Parent'},{name:'Acme Heavy Industries',lvl:1,type:'Active'},{name:'Acme Logistics Ltd',lvl:1,type:'Subsidiary'}].map((e,i) => (
+            {[{name:'Groupe SOCOME SA',lvl:0,type:'Parent'},{name:'SOCOME Industries SA',lvl:1,type:'Active'},{name:'SOCOME Logistique SARL',lvl:1,type:'Subsidiary'}].map((e,i) => (
               <div key={i} className="flex items-center gap-2" style={{ paddingLeft: `${e.lvl*16}px` }}>
                 {e.lvl > 0 && <div className="w-3 h-px bg-white/[0.08]" />}
-                <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border flex-1 ${e.type === 'Active' ? 'bg-[#3ECF8E]/[0.06] border-[#3ECF8E]/20' : 'bg-white/[0.02] border-white/[0.04]'}`}>
+                <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border flex-1 ${e.type === 'Active' ? 'bg-brand-400/[0.06] border-brand-400/20' : 'bg-white/[0.02] border-white/[0.04]'}`}>
                   <span className="text-[11px] text-zinc-300 font-medium">{e.name}</span>
-                  <span className={`ml-auto text-[9px] font-bold ${e.type === 'Active' ? 'text-[#3ECF8E]' : 'text-zinc-600'}`}>{e.type}</span>
+                  <span className={`ml-auto text-[9px] font-bold ${e.type === 'Active' ? 'text-brand-400' : 'text-zinc-600'}`}>{e.type}</span>
                 </div>
               </div>
             ))}
@@ -264,9 +264,9 @@ export function StressMockup() {
   const [s, setS] = useState(0)
   useEffect(() => { const id = setInterval(() => setS(x => (x+1)%3), 3000); return () => clearInterval(id) }, [])
   const scenarios = [
-    { label: 'Baseline', pdUp: '+0%',   ecl: '$0',      rwa: '+0%',  mig: '0' },
-    { label: 'Adverse',  pdUp: '+38%',  ecl: '+$12.4M', rwa: '+18%', mig: '14' },
-    { label: 'Severe',   pdUp: '+85%',  ecl: '+$28.1M', rwa: '+41%', mig: '37' },
+    { label: 'Baseline', pdUp: '+0%',   ecl: '0',              rwa: '+0%',  mig: '0' },
+    { label: 'Adverse',  pdUp: '+38%',  ecl: '+8,2 Mds XAF',   rwa: '+18%', mig: '14' },
+    { label: 'Severe',   pdUp: '+85%',  ecl: '+18,5 Mds XAF',  rwa: '+41%', mig: '37' },
   ]
   const sc = scenarios[s]
   const shocks = [['GDP Growth','2.1%',s===1?'−0.8%':s===2?'−3.2%':'2.1%'],['Unemployment','5.2%',s===1?'8.4%':s===2?'12.1%':'5.2%'],['Credit Spread','120bps',s===1?'280bps':s===2?'480bps':'120bps']]
@@ -275,14 +275,14 @@ export function StressMockup() {
       <div className="px-4 pt-4 pb-2">
         <div className="flex gap-1.5 mb-4">
           {scenarios.map((sc2,i) => (
-            <button key={i} onClick={() => setS(i)} className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${i===s ? i===0 ? 'bg-[#3ECF8E]/10 border-[#3ECF8E]/30 text-[#3ECF8E]' : i===1 ? 'bg-amber-400/10 border-amber-400/30 text-amber-400' : 'bg-rose-400/10 border-rose-400/30 text-rose-400' : 'bg-white/[0.02] border-white/[0.04] text-zinc-600'}`}>{sc2.label}</button>
+            <button key={i} onClick={() => setS(i)} className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${i===s ? i===0 ? 'bg-brand-400/10 border-brand-400/30 text-brand-400' : i===1 ? 'bg-amber-400/10 border-amber-400/30 text-amber-400' : 'bg-rose-400/10 border-rose-400/30 text-rose-400' : 'bg-white/[0.02] border-white/[0.04] text-zinc-600'}`}>{sc2.label}</button>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-2 mb-3">
           {[['PD Uplift',sc.pdUp],['ECL Delta',sc.ecl],['RWA Impact',sc.rwa],['Stage Migrations',`${sc.mig} entities`]].map(([l,v],i) => (
             <div key={i} className={`bg-white/[0.025] border rounded-lg p-3 transition-all duration-500 ${s>0 ? 'border-amber-400/20' : 'border-white/[0.05]'}`}>
               <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 mb-1.5">{l}</div>
-              <div className={`text-[15px] font-bold tabular-nums transition-all duration-500 ${s===2&&i>0?'text-rose-400':s===1&&i>0?'text-amber-400':'text-[#3ECF8E]'}`}>{v}</div>
+              <div className={`text-[15px] font-bold tabular-nums transition-all duration-500 ${s===2&&i>0?'text-rose-400':s===1&&i>0?'text-amber-400':'text-brand-400'}`}>{v}</div>
             </div>
           ))}
         </div>
@@ -294,7 +294,7 @@ export function StressMockup() {
                 <span className="text-[11px] text-zinc-500">{label}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-zinc-600 font-mono line-through">{base}</span>
-                  <span className={`text-[11px] font-bold font-mono transition-all duration-500 ${s===0?'text-[#3ECF8E]':s===1?'text-amber-400':'text-rose-400'}`}>{stressed}</span>
+                  <span className={`text-[11px] font-bold font-mono transition-all duration-500 ${s===0?'text-brand-400':s===1?'text-amber-400':'text-rose-400'}`}>{stressed}</span>
                 </div>
               </div>
             ))}

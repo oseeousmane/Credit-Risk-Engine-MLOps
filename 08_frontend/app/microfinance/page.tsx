@@ -1,6 +1,7 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle,
@@ -71,19 +72,19 @@ const statusTone: Record<string, string> = {
   FIELD_REVIEWED: 'border-cyan-500/25 bg-cyan-500/10 text-cyan-300',
   SCORED: 'border-purple-500/25 bg-purple-500/10 text-purple-300',
   SUPERVISOR_REVIEW: 'border-amber-500/25 bg-amber-500/10 text-amber-300',
-  APPROVED: 'border-[#3ECF8E]/25 bg-[#3ECF8E]/10 text-[#3ECF8E]',
-  APPROVED_WITH_CONDITIONS: 'border-[#3ECF8E]/25 bg-[#3ECF8E]/10 text-[#3ECF8E]',
+  APPROVED: 'border-brand-400/25 bg-brand-400/10 text-brand-400',
+  APPROVED_WITH_CONDITIONS: 'border-brand-400/25 bg-brand-400/10 text-brand-400',
   REJECTED: 'border-rose-500/25 bg-rose-500/10 text-rose-300',
-  ACTIVE: 'border-[#3ECF8E]/25 bg-[#3ECF8E]/10 text-[#3ECF8E]',
+  ACTIVE: 'border-brand-400/25 bg-brand-400/10 text-brand-400',
   CLOSED: 'border-zinc-500/25 bg-zinc-500/10 text-zinc-300',
   DEFAULTED: 'border-rose-500/30 bg-rose-500/15 text-rose-200',
   WRITTEN_OFF: 'border-zinc-500/30 bg-zinc-500/15 text-zinc-200',
   OPEN: 'border-rose-500/25 bg-rose-500/10 text-rose-300',
   ESCALATED: 'border-orange-500/25 bg-orange-500/10 text-orange-300',
-  CURED: 'border-[#3ECF8E]/25 bg-[#3ECF8E]/10 text-[#3ECF8E]',
-  ACCEPTED: 'border-[#3ECF8E]/25 bg-[#3ECF8E]/10 text-[#3ECF8E]',
-  ISSUED: 'border-[#3ECF8E]/25 bg-[#3ECF8E]/10 text-[#3ECF8E]',
-  SUCCESS: 'border-[#3ECF8E]/25 bg-[#3ECF8E]/10 text-[#3ECF8E]',
+  CURED: 'border-brand-400/25 bg-brand-400/10 text-brand-400',
+  ACCEPTED: 'border-brand-400/25 bg-brand-400/10 text-brand-400',
+  ISSUED: 'border-brand-400/25 bg-brand-400/10 text-brand-400',
+  SUCCESS: 'border-brand-400/25 bg-brand-400/10 text-brand-400',
   PENDING: 'border-white/10 bg-white/5 text-white/70',
 }
 
@@ -143,14 +144,24 @@ function Guardrail({ label, passed, detail }: { label: string; passed: boolean; 
 }
 
 function WorkflowStep({ icon: Icon, title, body, children }: { icon: React.ElementType; title: string; body: string; children?: React.ReactNode }) {
+  const match = title.match(/^(\d+)\.\s*(.+)$/)
+  const step = match?.[1]
+  const cleanTitle = match?.[2] ?? title
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-5">
+    <div className="card-glow p-5 transition-colors">
       <div className="mb-4 flex items-start gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#3ECF8E]/20 bg-[#3ECF8E]/10 text-[#3ECF8E]">
-          <Icon className="h-5 w-5" />
+        <div className="relative flex-shrink-0">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-brand-400/20 bg-brand-400/10 text-brand-400">
+            <Icon className="h-5 w-5" />
+          </div>
+          {step && (
+            <div className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-brand-400/30 bg-[#0d0d0d]">
+              <span className="text-[8px] font-black text-brand-400">{step}</span>
+            </div>
+          )}
         </div>
         <div>
-          <h3 className="text-[13px] font-bold text-white">{title}</h3>
+          <h3 className="text-[13px] font-bold text-white">{cleanTitle}</h3>
           <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">{body}</p>
         </div>
       </div>
@@ -173,6 +184,7 @@ export default function MicrofinancePage() {
   const [selectedBorrowerId, setSelectedBorrowerId] = React.useState<string | null>(null)
   const [selectedApplicationId, setSelectedApplicationId] = React.useState<string | null>(null)
   const [activePanel, setActivePanel] = React.useState<ActivePanel>('none')
+  const [activeTab, setActiveTab] = React.useState<'portfolio' | 'operations'>('portfolio')
   const [search, setSearch] = React.useState('')
   const [error, setError] = React.useState('')
   const [notice, setNotice] = React.useState('')
@@ -305,7 +317,7 @@ export default function MicrofinancePage() {
   })
 
   return (
-    <div className="mx-auto max-w-[1500px] space-y-6 p-4 pb-10 md:p-6">
+    <div className="mx-auto max-w-[1500px] space-y-6 p-4 pb-10 md:p-6" suppressHydrationWarning>
       <SectionHeader
         title="Microfinance Command"
         subtitle="Operational back-office for informal, thin-file and field-underwritten borrowers."
@@ -334,79 +346,130 @@ export default function MicrofinancePage() {
         <KPIBlock label="Collections" value={summaryQuery.data?.openDelinquencies ?? 0} sub={`${summaryQuery.data?.plannedCollectionActions ?? 0} planned actions`} accent="rose" />
       </div>
 
-      <PortfolioAnalyticsPanel analytics={analyticsQuery.data} isLoading={analyticsQuery.isLoading} />
-
-      <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
-        <section className="space-y-4">
-          <FairnessPanel fairness={fairnessQuery.data} isLoading={fairnessQuery.isLoading} />
-          <ConsentCoveragePanel coverage={consentQuery.data} isLoading={consentQuery.isLoading} />
-        </section>
-        <section className="space-y-5">
-          <AltDataLineagePanel records={lineageQuery.data?.data} isLoading={lineageQuery.isLoading} />
-        </section>
+      <div className="flex items-center gap-6 border-b border-white/[0.08] px-2">
+        <button
+          onClick={() => setActiveTab('portfolio')}
+          className={cn(
+            'relative pb-3 text-[13px] font-bold transition-colors',
+            activeTab === 'portfolio' ? 'text-brand-400' : 'text-zinc-500 hover:text-zinc-300'
+          )}
+        >
+          Portfolio Intelligence
+          {activeTab === 'portfolio' && (
+            <motion.div layoutId="mf-tab-indicator" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-brand-400 shadow-[0_0_8px_rgba(59,123,255,0.6)]" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('operations')}
+          className={cn(
+            'relative pb-3 text-[13px] font-bold transition-colors',
+            activeTab === 'operations' ? 'text-brand-400' : 'text-zinc-500 hover:text-zinc-300'
+          )}
+        >
+          Operations Workspace
+          {activeTab === 'operations' && (
+            <motion.div layoutId="mf-tab-indicator" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-brand-400 shadow-[0_0_8px_rgba(59,123,255,0.6)]" />
+          )}
+        </button>
       </div>
 
-      {isSupervisor && <SupervisorReviewQueue applications={applications.filter(a => a.status === 'SUPERVISOR_REVIEW')} supervisorForm={supervisorForm} setSupervisorForm={setSupervisorForm} supervisorTargetId={supervisorTargetId} setSupervisorTargetId={setSupervisorTargetId} isPending={submitSupervisorDecision.isPending} onSubmit={(id) => submitSupervisorDecision.mutate(id)} />}
+      <AnimatePresence mode="wait">
+        {activeTab === 'portfolio' && (
+          <motion.div
+            key="portfolio"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
+            <PortfolioAnalyticsPanel analytics={analyticsQuery.data} isLoading={analyticsQuery.isLoading} />
 
-      <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
-        <section className="space-y-4">
-          <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-4">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-[13px] font-bold text-white">Borrowers</h2>
-                <p className="text-[11px] text-zinc-500">Informal profiles, consent, applications and servicing exposure.</p>
-              </div>
-              <Users className="h-5 w-5 text-[#3ECF8E]" />
+            <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
+              <section className="space-y-4">
+                <FairnessPanel fairness={fairnessQuery.data} isLoading={fairnessQuery.isLoading} />
+                <ConsentCoveragePanel coverage={consentQuery.data} isLoading={consentQuery.isLoading} />
+              </section>
+              <section className="space-y-5">
+                <AltDataLineagePanel records={lineageQuery.data?.data} isLoading={lineageQuery.isLoading} />
+              </section>
             </div>
-            <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search borrower, phone or ID" className="mb-3 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-[#3ECF8E]/40" />
-            <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
-              {borrowersQuery.isLoading && <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>}
-              {borrowers.map(item => (
-                <button key={item.id} onClick={() => { setSelectedBorrowerId(item.id); setSelectedApplicationId(null) }} className={cn('group w-full rounded-xl border p-3 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#3ECF8E]/40 hover:bg-white/[0.04]', selectedBorrowerId === item.id ? 'border-[#3ECF8E]/50 bg-[#3ECF8E]/[0.08] shadow-[0_0_15px_rgba(62,207,142,0.15)]' : 'border-white/[0.07] bg-white/[0.025]')}>
-                  <div className="flex items-start justify-between gap-3">
+          </motion.div>
+        )}
+
+        {activeTab === 'operations' && (
+          <motion.div
+            key="operations"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
+            {isSupervisor && <SupervisorReviewQueue applications={applications.filter(a => a.status === 'SUPERVISOR_REVIEW')} supervisorForm={supervisorForm} setSupervisorForm={setSupervisorForm} supervisorTargetId={supervisorTargetId} setSupervisorTargetId={setSupervisorTargetId} isPending={submitSupervisorDecision.isPending} onSubmit={(id) => submitSupervisorDecision.mutate(id)} />}
+
+            <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
+              <section className="space-y-4">
+                <div className="card-glow p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                      <div className="font-bold text-white transition-colors group-hover:text-[#3ECF8E]">{item.fullName}</div>
-                      <div className="mt-1 text-[11px] text-zinc-500">{item.phone ?? 'No phone'} · {segmentLabels[item.segment]}</div>
+                      <h2 className="text-[13px] font-bold text-white">Borrowers</h2>
+                      <p className="text-[11px] text-zinc-500">Informal profiles, consent, applications and servicing exposure.</p>
                     </div>
-                    <span className={pill(item.status)}>{item.status}</span>
+                    <Users className="h-5 w-5 text-brand-400" />
                   </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] text-zinc-500">
-                    <span>{item.identityVerified ? 'KYC verified' : 'KYC pending'}</span>
-                    <span>{hasActiveConsent(item, 'MOBILE_MONEY', 'UNDERWRITING') ? 'MoMo consent' : 'No MoMo'}</span>
-                    <span>{item.applications?.length ?? 0} apps</span>
+                  <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search borrower, phone or ID" className="mb-3 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-brand-400/40" />
+                  <div className="max-h-[700px] space-y-2 overflow-y-auto pr-1">
+                    {borrowersQuery.isLoading && <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>}
+                    {borrowers.map(item => (
+                      <button key={item.id} onClick={() => { setSelectedBorrowerId(item.id); setSelectedApplicationId(null) }} className={cn('group w-full rounded-xl border p-3 text-left transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/40 hover:bg-white/[0.04]', selectedBorrowerId === item.id ? 'border-brand-400/50 bg-brand-400/[0.08] shadow-[0_0_15px_rgba(59,123,255,0.15)]' : 'border-white/[0.07] bg-white/[0.025]')}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-bold text-white transition-colors group-hover:text-brand-400">{item.fullName}</div>
+                            <div className="mt-1 text-[11px] text-zinc-500">{item.phone ?? 'No phone'} · {segmentLabels[item.segment]}</div>
+                          </div>
+                          <span className={pill(item.status)}>{item.status}</span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] text-zinc-500">
+                          <span>{item.identityVerified ? 'KYC verified' : 'KYC pending'}</span>
+                          <span>{hasActiveConsent(item, 'MOBILE_MONEY', 'UNDERWRITING') ? 'MoMo consent' : 'No MoMo'}</span>
+                          <span>{item.applications?.length ?? 0} apps</span>
+                        </div>
+                      </button>
+                    ))}
+                    {!borrowersQuery.isLoading && borrowers.length === 0 && <div className="rounded-xl border border-dashed border-white/[0.08] p-6 text-center text-sm text-zinc-500">No borrowers yet. Create the first informal profile.</div>}
                   </div>
-                </button>
-              ))}
-              {!borrowersQuery.isLoading && borrowers.length === 0 && <div className="rounded-xl border border-dashed border-white/[0.08] p-6 text-center text-sm text-zinc-500">No borrowers yet. Create the first informal profile.</div>}
-            </div>
-          </div>
-        </section>
+                </div>
+              </section>
 
-        <section className="space-y-5">
-          <BorrowerProfile borrower={borrower} isLoading={borrowerQuery.isLoading} onGrantConsent={() => borrower && grantMobileMoneyConsent.mutate(borrower.id)} onCreateApplication={() => { if (borrower) setApplicationForm(prev => ({ ...prev, borrowerId: borrower.id })); setActivePanel('application') }} />
-          <ApplicationsRail applications={applications} selectedId={selectedApplicationId} isLoading={applicationsQuery.isLoading} onSelect={(id) => { const selected = applications.find(item => item.id === id); setSelectedApplicationId(id); setSelectedBorrowerId(selected?.borrowerId ?? selected?.borrower?.id ?? null) }} />
-          <ApplicationWorkspace
-            app={app}
-            policy={policy}
-            isLoading={applicationQuery.isLoading}
-            guardrails={{ mobileMoneyConsent, completedVisit, guarantorOk }}
-            fieldConfidence={fieldConfidence}
-            setFieldConfidence={setFieldConfidence}
-            decisionForm={decisionForm}
-            setDecisionForm={setDecisionForm}
-            collectionAction={collectionAction}
-            setCollectionAction={setCollectionAction}
-            canDisburse={canDisburse}
-            canManageCollections={canManageCollections}
-            canWriteOff={canWriteOff}
-            writeOffReason={writeOffReason}
-            setWriteOffReason={setWriteOffReason}
-            renewAmount={renewAmount}
-            setRenewAmount={setRenewAmount}
-            actions={{ planFieldVisit, completeFieldVisit, runScorecard, submitDecision, createOffer, acceptOffer, createDisbursement, completeDisbursement, recordRepayment, openDelinquency, createCollection, completeCollectionAction, cureDelinquency, escalateDelinquency, writeOffLoanAccount, renewLoan }}
-          />
-        </section>
-      </div>
+              <section className="space-y-5">
+                <BorrowerProfile borrower={borrower} isLoading={borrowerQuery.isLoading} onGrantConsent={() => borrower && grantMobileMoneyConsent.mutate(borrower.id)} onCreateApplication={() => { if (borrower) setApplicationForm(prev => ({ ...prev, borrowerId: borrower.id })); setActivePanel('application') }} />
+                <ApplicationsRail applications={applications} selectedId={selectedApplicationId} isLoading={applicationsQuery.isLoading} onSelect={(id) => { const selected = applications.find(item => item.id === id); setSelectedApplicationId(id); setSelectedBorrowerId(selected?.borrowerId ?? selected?.borrower?.id ?? null) }} />
+                <ApplicationWorkspace
+                  app={app}
+                  policy={policy}
+                  isLoading={applicationQuery.isLoading}
+                  guardrails={{ mobileMoneyConsent, completedVisit, guarantorOk }}
+                  fieldConfidence={fieldConfidence}
+                  setFieldConfidence={setFieldConfidence}
+                  decisionForm={decisionForm}
+                  setDecisionForm={setDecisionForm}
+                  collectionAction={collectionAction}
+                  setCollectionAction={setCollectionAction}
+                  canDisburse={canDisburse}
+                  canManageCollections={canManageCollections}
+                  canWriteOff={canWriteOff}
+                  writeOffReason={writeOffReason}
+                  setWriteOffReason={setWriteOffReason}
+                  renewAmount={renewAmount}
+                  setRenewAmount={setRenewAmount}
+                  actions={{ planFieldVisit, completeFieldVisit, runScorecard, submitDecision, createOffer, acceptOffer, createDisbursement, completeDisbursement, recordRepayment, openDelinquency, createCollection, completeCollectionAction, cureDelinquency, escalateDelinquency, writeOffLoanAccount, renewLoan }}
+                />
+              </section>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <SidePanel open={activePanel === 'borrower'} onClose={() => setActivePanel('none')} title="New informal borrower" subtitle="Back-office onboarding profile, not borrower-facing app." width={420}>
         <div className="space-y-4">
@@ -445,12 +508,12 @@ export default function MicrofinancePage() {
 }
 
 function BorrowerProfile({ borrower, isLoading, onGrantConsent, onCreateApplication }: { borrower?: RetailBorrower; isLoading: boolean; onGrantConsent: () => void; onCreateApplication: () => void }) {
-  if (isLoading) return <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" /></div>
+  if (isLoading) return <div className="card-glow p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" /></div>
   if (!borrower) return <div className="rounded-2xl border border-dashed border-white/[0.08] bg-[#0d0d0d] p-8 text-center text-sm text-zinc-500">Select a borrower to see consent, profile and exposure guardrails.</div>
   const revenue = borrower.informalBusinessProfile?.monthlyRevenueEstimate ?? 0
   const expenses = borrower.informalBusinessProfile?.monthlyExpenseEstimate ?? 0
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-5">
+    <div className="card-glow p-5">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <div className="mb-2 flex items-center gap-2"><span className={pill(borrower.segment)}>{segmentLabels[borrower.segment]}</span><span className={pill(borrower.status)}>{borrower.status}</span></div>
@@ -471,16 +534,16 @@ function BorrowerProfile({ borrower, isLoading, onGrantConsent, onCreateApplicat
 
 function ApplicationsRail({ applications, selectedId, isLoading, onSelect }: { applications: MicroLoanApplication[]; selectedId: string | null; isLoading: boolean; onSelect: (id: string) => void }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-4">
+    <div className="card-glow p-4">
       <div className="mb-4 flex items-center justify-between"><h2 className="text-[13px] font-bold text-white">Micro-loan queue</h2>{isLoading && <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />}</div>
       <div className="flex gap-3 overflow-x-auto pb-2">
         {applications.map(app => (
-          <button key={app.id} onClick={() => onSelect(app.id)} className={cn('group min-w-[250px] rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#3ECF8E]/40 hover:bg-white/[0.04]', selectedId === app.id ? 'border-[#3ECF8E]/50 bg-[#3ECF8E]/[0.08] shadow-[0_0_15px_rgba(62,207,142,0.15)]' : 'border-white/[0.07] bg-white/[0.025]')}>
+          <button key={app.id} onClick={() => onSelect(app.id)} className={cn('group min-w-[250px] rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/40 hover:bg-white/[0.04]', selectedId === app.id ? 'border-brand-400/50 bg-brand-400/[0.08] shadow-[0_0_15px_rgba(59,123,255,0.15)]' : 'border-white/[0.07] bg-white/[0.025]')}>
             <div className="flex items-start justify-between mb-2">
               <span className={pill(app.status)}>{app.status.replaceAll('_', ' ')}</span>
-              <ArrowRight className="h-4 w-4 text-[#3ECF8E] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <ArrowRight className="h-4 w-4 text-brand-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </div>
-            <div className="font-bold text-white transition-colors group-hover:text-[#3ECF8E]">{app.borrower?.fullName ?? app.reqId}</div>
+            <div className="font-bold text-white transition-colors group-hover:text-brand-400">{app.borrower?.fullName ?? app.reqId}</div>
             <div className="mt-1 text-[11px] text-zinc-500">{app.reqId} · {money(app.requestedAmount, app.currency)}</div>
           </button>
         ))}
@@ -522,7 +585,7 @@ function ApplicationWorkspace({ app, policy, isLoading, guardrails, fieldConfide
   setRenewAmount: (value: string) => void
   actions: WorkspaceActions
 }) {
-  if (isLoading) return <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" /></div>
+  if (isLoading) return <div className="card-glow p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" /></div>
   if (!app) return <div className="rounded-2xl border border-dashed border-white/[0.08] bg-[#0d0d0d] p-8 text-center text-sm text-zinc-500">Select a micro-loan application to process the operational lifecycle.</div>
 
   const plannedVisit = firstPlannedVisit(app)
@@ -536,7 +599,7 @@ function ApplicationWorkspace({ app, policy, isLoading, guardrails, fieldConfide
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-5">
+      <div className="card-glow p-5">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2"><span className={pill(app.status)}>{app.status.replaceAll('_', ' ')}</span><span className={pill(app.segment)}>{segmentLabels[app.segment]}</span></div>
@@ -563,7 +626,7 @@ function ApplicationWorkspace({ app, policy, isLoading, guardrails, fieldConfide
 
         <WorkflowStep icon={ClipboardCheck} title="2. Thin-file scorecard" body="Rules-first scoring. It recommends; it does not auto-decide.">
           <div className="flex flex-wrap items-center gap-3"><Btn variant="primary" onClick={() => actions.runScorecard.mutate(app.id)} disabled={actions.runScorecard.isPending}>{actions.runScorecard.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} Run scorecard</Btn>{scorecard && <span className="text-sm text-white">Score <b>{scorecard.totalScore}</b> · {scorecard.recommendation.replaceAll('_', ' ')}</span>}</div>
-          {scorecard && <div className="mt-4 grid gap-2"><ProgressBar value={scorecard.totalScore} color="bg-[#3ECF8E]" /><div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-500 sm:grid-cols-4"><span>KYC {scorecard.identityScore}</span><span>Cashflow {scorecard.cashflowScore}</span><span>MoMo {scorecard.mobileMoneyScore}</span><span>Field {scorecard.fieldConfidenceScore}</span></div></div>}
+          {scorecard && <div className="mt-4 grid gap-2"><ProgressBar value={scorecard.totalScore} color="bg-brand-400" /><div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-500 sm:grid-cols-4"><span>KYC {scorecard.identityScore}</span><span>Cashflow {scorecard.cashflowScore}</span><span>MoMo {scorecard.mobileMoneyScore}</span><span>Field {scorecard.fieldConfidenceScore}</span></div></div>}
         </WorkflowStep>
 
         <WorkflowStep icon={ShieldCheck} title="3. Human decision" body="Human-in-the-loop remains mandatory before offer creation.">
@@ -655,27 +718,60 @@ function SupervisorReviewQueue({ applications, supervisorForm, setSupervisorForm
 function PortfolioAnalyticsPanel({ analytics, isLoading }: { analytics?: PortfolioAnalytics; isLoading: boolean }) {
   if (isLoading) return <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" /></div>
   if (!analytics) return null
+  const totalDPD = (analytics.agingBuckets.dpd1to7 + analytics.agingBuckets.dpd8to30 + analytics.agingBuckets.dpd31to90 + analytics.agingBuckets.dpd90Plus) || 1
+  const dpdBuckets = [
+    { label: '1–7 DPD',  value: analytics.agingBuckets.dpd1to7,   color: 'bg-amber-400',  textColor: 'text-amber-300',  border: 'border-amber-500/20',  bg: 'bg-amber-500/[0.04]' },
+    { label: '8–30 DPD', value: analytics.agingBuckets.dpd8to30,  color: 'bg-orange-400', textColor: 'text-orange-300', border: 'border-orange-500/20', bg: 'bg-orange-500/[0.04]' },
+    { label: '31–90 DPD',value: analytics.agingBuckets.dpd31to90, color: 'bg-rose-500',   textColor: 'text-rose-300',   border: 'border-rose-500/20',   bg: 'bg-rose-500/[0.04]' },
+    { label: '90+ DPD',  value: analytics.agingBuckets.dpd90Plus,  color: 'bg-rose-700',   textColor: 'text-rose-200',   border: 'border-rose-700/20',   bg: 'bg-rose-700/[0.04]' },
+  ]
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#0a0a0a] px-6 py-4">
         <div>
-          <h2 className="text-[13px] font-bold text-white">Portfolio Analytics</h2>
-          <p className="mt-1 text-[11px] text-zinc-500">PAR, aging and collection efficiency for pilot operations oversight.</p>
+          <h2 className="text-sm font-bold text-white">Portfolio Analytics</h2>
+          <p className="mt-0.5 text-[11px] text-zinc-500">PAR, aging and collection efficiency for pilot operations oversight.</p>
         </div>
-        <span className="rounded-full border border-[#3ECF8E]/20 bg-[#3ECF8E]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#3ECF8E]">Live</span>
+        <span className="rounded-full border border-brand-400/20 bg-brand-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-brand-400">Live</span>
       </div>
-      <div className="grid gap-3 md:grid-cols-5">
-        <Metric label="PAR 30 ratio" value={`${analytics.par30Ratio.toFixed(1)}%`} />
-        <Metric label="PAR 90 ratio" value={`${analytics.par90Ratio.toFixed(1)}%`} />
-        <Metric label="Collection efficiency" value={`${analytics.collectionEfficiency.toFixed(1)}%`} />
-        <Metric label="Active / Defaulted" value={`${analytics.activeLoanCount} / ${analytics.defaultedLoanCount}`} />
-        <Metric label="Disbursed (window)" value={money(analytics.disbursedAmount)} />
+      <div className="grid divide-x divide-white/[0.06] md:grid-cols-5">
+        <div className="p-5">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">PAR 30</div>
+          <div className={`text-3xl font-black tabular-nums ${analytics.par30Ratio > 5 ? 'text-amber-400' : 'text-white'}`}>{analytics.par30Ratio.toFixed(1)}%</div>
+        </div>
+        <div className="p-5">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">PAR 90</div>
+          <div className={`text-3xl font-black tabular-nums ${analytics.par90Ratio > 0 ? 'text-rose-400' : 'text-white'}`}>{analytics.par90Ratio.toFixed(1)}%</div>
+        </div>
+        <div className="p-5">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Collection Eff.</div>
+          <div className={`text-3xl font-black tabular-nums ${analytics.collectionEfficiency >= 80 ? 'text-brand-400' : 'text-amber-400'}`}>{analytics.collectionEfficiency.toFixed(1)}%</div>
+        </div>
+        <div className="p-5">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Loans</div>
+          <div className="text-3xl font-black tabular-nums text-white">{analytics.activeLoanCount}</div>
+          {analytics.defaultedLoanCount > 0 && <div className="mt-0.5 text-[11px] text-rose-400">{analytics.defaultedLoanCount} defaulted</div>}
+        </div>
+        <div className="p-5">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Disbursed</div>
+          <div className="text-3xl font-black tabular-nums text-white">{money(analytics.disbursedAmount)}</div>
+        </div>
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-4">
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"><div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">1-7 DPD</div><div className="mt-1 text-sm font-bold text-amber-300 tabular-nums">{analytics.agingBuckets.dpd1to7}</div></div>
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"><div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">8-30 DPD</div><div className="mt-1 text-sm font-bold text-orange-300 tabular-nums">{analytics.agingBuckets.dpd8to30}</div></div>
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"><div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">31-90 DPD</div><div className="mt-1 text-sm font-bold text-rose-300 tabular-nums">{analytics.agingBuckets.dpd31to90}</div></div>
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"><div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">90+ DPD</div><div className="mt-1 text-sm font-bold text-rose-200 tabular-nums">{analytics.agingBuckets.dpd90Plus}</div></div>
+      <div className="border-t border-white/[0.06] px-6 pb-5 pt-4">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">DPD Aging Buckets</div>
+        <div className="grid gap-3 md:grid-cols-4">
+          {dpdBuckets.map(bucket => (
+            <div key={bucket.label} className={`rounded-xl border p-4 ${bucket.border} ${bucket.bg}`}>
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{bucket.label}</span>
+                <span className={`text-xl font-black tabular-nums ${bucket.textColor}`}>{bucket.value}</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                <div className={`h-full rounded-full transition-all ${bucket.color}`} style={{ width: `${Math.min(100, (bucket.value / totalDPD) * 100)}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -686,20 +782,45 @@ function FairnessPanel({ fairness, isLoading }: { fairness?: FairnessReport; isL
   if (!fairness) return <div className="rounded-2xl border border-dashed border-white/[0.08] bg-[#0d0d0d] p-6 text-center text-sm text-zinc-500">Fairness metrics loading...</div>
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-5">
-      <div className="mb-4 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#3ECF8E]" /><h2 className="text-[13px] font-bold text-white">Inclusion Monitoring</h2></div>
-      <p className="text-[11px] text-zinc-500 mb-4">Approval, rejection, delinquency and data burden by segment. No overclaim — these are operational signals, not fairness verdicts.</p>
+      <div className="mb-1 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-brand-400" /><h2 className="text-[13px] font-bold text-white">Inclusion Monitoring</h2></div>
+      <p className="mb-4 text-[11px] text-zinc-500">Approval, rejection and delinquency by segment. Operational signals, not fairness verdicts.</p>
       <div className="space-y-3">
         {fairness.segments.map(row => (
           <div key={row.segment} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-            <div className="mb-2 flex items-center justify-between"><span className={pill(row.segment)}>{segmentLabels[row.segment]}</span><span className="text-[11px] text-zinc-500">{row.totalDecisions} decisions</span></div>
-            <div className="grid grid-cols-3 gap-3 text-[11px]">
-              <div><span className="text-zinc-500">Approval</span><div className="font-bold text-emerald-300">{row.approvalRate}%</div></div>
-              <div><span className="text-zinc-500">Rejection</span><div className="font-bold text-rose-300">{row.rejectionRate}%</div></div>
-              <div><span className="text-zinc-500">Delinquency</span><div className="font-bold text-amber-300">{row.delinquencyEvents}</div></div>
+            <div className="mb-3 flex items-center justify-between">
+              <span className={pill(row.segment)}>{segmentLabels[row.segment]}</span>
+              <span className="text-[11px] text-zinc-500">{row.totalDecisions} decisions</span>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-3 text-[10px] text-zinc-500">
-              <span>Alt-data quality: {row.avgAltDataPayloadQuality.toFixed(1)}</span>
-              <span>Avg imputed: {row.avgAltDataImputedCount.toFixed(1)}</span>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-500">Approval</span>
+                  <span className="text-sm font-black tabular-nums text-emerald-300">{row.approvalRate}%</span>
+                </div>
+                <div className="h-1 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-full rounded-full bg-emerald-400" style={{ width: `${row.approvalRate}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-500">Rejection</span>
+                  <span className="text-sm font-black tabular-nums text-rose-300">{row.rejectionRate}%</span>
+                </div>
+                <div className="h-1 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-full rounded-full bg-rose-400" style={{ width: `${row.rejectionRate}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-500">Delinquency</span>
+                  <span className="text-sm font-black tabular-nums text-amber-300">{row.delinquencyEvents}</span>
+                </div>
+                <div className="text-[10px] text-zinc-600">events</div>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-4 text-[10px] text-zinc-600">
+              <span>Alt-data quality: <b className="text-zinc-400">{row.avgAltDataPayloadQuality.toFixed(1)}</b></span>
+              <span>Avg imputed: <b className="text-zinc-400">{row.avgAltDataImputedCount.toFixed(1)}</b></span>
             </div>
           </div>
         ))}
@@ -714,17 +835,39 @@ function ConsentCoveragePanel({ coverage, isLoading }: { coverage?: ConsentCover
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-5">
       <div className="mb-4 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-amber-400" /><h2 className="text-[13px] font-bold text-white">Consent Coverage</h2></div>
-      <div className="grid grid-cols-4 gap-3 mb-4">
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center"><div className="text-[10px] text-zinc-500">Total</div><div className="text-xl font-bold tabular-nums tracking-tight text-white">{coverage.total}</div></div>
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3 text-center"><div className="text-[10px] text-zinc-500">Active</div><div className="text-xl font-bold tabular-nums tracking-tight text-[#3ECF8E]">{coverage.granted}</div></div>
-        <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.04] p-3 text-center"><div className="text-[10px] text-zinc-500">Revoked</div><div className="text-xl font-bold tabular-nums tracking-tight text-rose-300">{coverage.revoked}</div></div>
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-3 text-center"><div className="text-[10px] text-zinc-500">Coverage</div><div className="text-xl font-bold tabular-nums tracking-tight text-amber-300">{coverage.coverageRate}%</div></div>
+      <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Coverage Rate</span>
+          <span className="text-2xl font-black tabular-nums text-amber-300">{coverage.coverageRate}%</span>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${Math.min(100, coverage.coverageRate)}%` }} />
+        </div>
+      </div>
+      <div className="mb-4 grid grid-cols-3 gap-3">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
+          <div className="mb-1 text-[10px] text-zinc-500">Total</div>
+          <div className="text-2xl font-black tabular-nums text-white">{coverage.total}</div>
+        </div>
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3 text-center">
+          <div className="mb-1 text-[10px] text-zinc-500">Active</div>
+          <div className="text-2xl font-black tabular-nums text-brand-400">{coverage.granted}</div>
+        </div>
+        <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.04] p-3 text-center">
+          <div className="mb-1 text-[10px] text-zinc-500">Revoked</div>
+          <div className="text-2xl font-black tabular-nums text-rose-300">{coverage.revoked}</div>
+        </div>
       </div>
       <div className="space-y-2">
         {coverage.bySource.map(source => (
-          <div key={source.sourceType} className="flex items-center justify-between text-[11px]">
+          <div key={source.sourceType} className="flex items-center justify-between py-1 text-[11px]">
             <span className="text-zinc-400">{source.sourceType}</span>
-            <span className="font-bold text-white">{source.count}</span>
+            <div className="flex items-center gap-3">
+              <div className="h-1 w-20 overflow-hidden rounded-full bg-white/[0.06]">
+                <div className="h-full rounded-full bg-brand-400/50" style={{ width: `${Math.min(100, (source.count / (coverage.total || 1)) * 100)}%` }} />
+              </div>
+              <span className="w-6 text-right font-bold text-white">{source.count}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -736,36 +879,65 @@ function AltDataLineagePanel({ records, isLoading }: { records?: any[]; isLoadin
   if (isLoading) return <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" /></div>
   if (!records || records.length === 0) return <div className="rounded-2xl border border-dashed border-white/[0.08] bg-[#0d0d0d] p-6 text-center text-sm text-zinc-500">No alternative data lineage records yet. Snapshots appear when consent-gated data is ingested.</div>
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] p-5">
-      <div className="mb-4 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-400" /><h2 className="text-[13px] font-bold text-white">Alternative Data Lineage</h2></div>
-      <p className="text-[11px] text-zinc-500 mb-4">Every alternative-data snapshot is consent-gated and lineage-tracked. This is sandbox readiness, not live telco integration.</p>
-      <div className="space-y-2">
-        {records.map(record => (
-          <div key={record.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2"><span className={pill(record.sourceType)}>{record.sourceType}</span><span className="text-[11px] text-zinc-400">{record.borrower.fullName}</span></div>
-              <span className="text-[10px] text-zinc-500">{new Date(record.createdAt).toLocaleDateString()}</span>
+    <div className="rounded-2xl border border-white/[0.08] bg-[#0d0d0d] overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-white/[0.06] bg-[#0a0a0a] px-6 py-4">
+        <ShieldCheck className="h-4 w-4 text-blue-400" />
+        <div>
+          <h2 className="text-sm font-bold text-white">Alternative Data Lineage</h2>
+          <p className="mt-0.5 text-[11px] text-zinc-500">Consent-gated snapshots. Sandbox readiness, not live telco integration.</p>
+        </div>
+      </div>
+      <div className="divide-y divide-white/[0.04]">
+        {records.map(record => {
+          const quality = record.payloadQualityScore ?? 0
+          const qualityColor = quality >= 80 ? 'text-brand-400' : quality >= 50 ? 'text-amber-300' : 'text-rose-300'
+          return (
+            <div key={record.id} className="p-4 hover:bg-white/[0.02] transition-colors">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={pill(record.sourceType)}>{record.sourceType}</span>
+                  <span className="text-[11px] font-medium text-zinc-300">{record.borrower.fullName}</span>
+                </div>
+                <span className="text-[10px] text-zinc-500">{new Date(record.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-3 text-[10px]">
+                <div>
+                  <div className="text-zinc-500 mb-0.5">Quality</div>
+                  <div className={`font-black tabular-nums ${qualityColor}`}>{quality}</div>
+                </div>
+                <div>
+                  <div className="text-zinc-500 mb-0.5">Raw</div>
+                  <div className="font-bold text-white">{record.rawCount}</div>
+                </div>
+                <div>
+                  <div className="text-zinc-500 mb-0.5">Derived</div>
+                  <div className="font-bold text-white">{record.derivedCount}</div>
+                </div>
+                <div>
+                  <div className="text-zinc-500 mb-0.5">Imputed</div>
+                  <div className="font-bold text-white">{record.imputedCount}</div>
+                </div>
+              </div>
+              {record.consentGrant && (
+                <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-400/80">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Consent {record.consentGrant.status} · {record.consentGrant.purpose}
+                </div>
+              )}
             </div>
-            <div className="grid grid-cols-4 gap-2 text-[10px] text-zinc-500">
-              <span>Quality: <b className="text-white">{record.payloadQualityScore}</b></span>
-              <span>Raw: <b className="text-white">{record.rawCount}</b></span>
-              <span>Derived: <b className="text-white">{record.derivedCount}</b></span>
-              <span>Imputed: <b className="text-white">{record.imputedCount}</b></span>
-            </div>
-            {record.consentGrant && <div className="mt-1 text-[10px] text-emerald-400/80">Consent: {record.consentGrant.status} · {record.consentGrant.purpose}</div>}
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
 }
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</span><input value={value} onChange={event => onChange(event.target.value)} className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#3ECF8E]/40" /></label>
+  return <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</span><input value={value} onChange={event => onChange(event.target.value)} className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-brand-400/40" /></label>
 }
 
 function SelectField({ label, value, options, onChange, compact }: { label: string; value: string; options: string[][]; onChange: (value: string) => void; compact?: boolean }) {
-  return <label className={compact ? 'min-w-[170px]' : 'block'}><span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</span><select value={value} onChange={event => onChange(event.target.value)} className="w-full rounded-lg border border-white/[0.08] bg-[#111] px-3 py-2 text-sm text-white outline-none focus:border-[#3ECF8E]/40">{options.map(([optionValue, labelText]) => <option key={optionValue} value={optionValue}>{labelText}</option>)}</select></label>
+  return <label className={compact ? 'min-w-[170px]' : 'block'}><span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</span><select value={value} onChange={event => onChange(event.target.value)} className="w-full rounded-lg border border-white/[0.08] bg-[#111] px-3 py-2 text-sm text-white outline-none focus:border-brand-400/40">{options.map(([optionValue, labelText]) => <option key={optionValue} value={optionValue}>{labelText}</option>)}</select></label>
 }
 
 function Metric({ label, value }: { label: string; value: React.ReactNode }) {

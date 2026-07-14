@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { TrendingUp, ExternalLink, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
@@ -39,7 +39,7 @@ const complianceBadges = ['IFRS 9', 'Basel III', 'ISO 27001', 'GDPR']
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/[0.05] bg-[#050505]">
+    <footer className="border-t border-white/[0.05] bg-surface-0">
       <div className="max-w-7xl mx-auto px-6">
         {/* Main footer grid */}
         <div className="py-24 grid grid-cols-1 md:grid-cols-6 gap-12">
@@ -47,12 +47,12 @@ export function Footer() {
           <div className="md:col-span-3 lg:pr-20">
             {/* Logo */}
             <div className="flex items-center gap-3.5 mb-8">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#3ECF8E] to-[#20a466] flex items-center justify-center shadow-[0_0_30px_rgba(62,207,142,0.15)] ring-1 ring-white/[0.1]">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-400 to-[#20a466] flex items-center justify-center shadow-[0_0_30px_rgba(59,123,255,0.15)] ring-1 ring-white/[0.1]">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="text-[17px] font-bold text-white tracking-tight leading-none">Octaix Risk Engine</div>
-                <div className="text-[11px] text-[#3ECF8E] font-bold mt-1 uppercase tracking-widest">Enterprise Edition v4.2</div>
+                <div className="text-[11px] text-brand-400 font-bold mt-1 uppercase tracking-widest">Enterprise Edition v4.2</div>
               </div>
             </div>
 
@@ -69,7 +69,7 @@ export function Footer() {
               ))}
             </div>
 
-            <Link href="/contact" className="group inline-flex items-center gap-2 text-[15px] text-white hover:text-[#3ECF8E] font-bold transition-all duration-300">
+            <Link href="/contact" className="group inline-flex items-center gap-2 text-[15px] text-white hover:text-brand-400 font-bold transition-all duration-300">
               Consult with our Risk Specialists
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>

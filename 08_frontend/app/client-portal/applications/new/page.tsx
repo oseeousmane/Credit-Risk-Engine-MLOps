@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -34,7 +34,7 @@ export default function NewApplicationPage() {
   const [formData, setFormData] = useState({
     // Step 1
     requestedAmount: '',
-    currency: 'USD',
+    currency: 'XAF',
     facilityType: 'Term Loan',
     tenureMonths: '12',
     repaymentStructure: 'Amortizing',
@@ -160,7 +160,7 @@ export default function NewApplicationPage() {
     <div className="max-w-5xl mx-auto space-y-7 pb-12 relative min-h-screen">
       
       {/* ── Ambient Glows (Glassmorphism) ────────────────────────────────────── */}
-      <div className="absolute top-[-50px] left-[-100px] w-[500px] h-[500px] bg-[#3ECF8E]/[0.03] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-50px] left-[-100px] w-[500px] h-[500px] bg-brand-400/[0.03] rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute top-[40%] right-[-150px] w-[400px] h-[400px] bg-blue-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       {/* ── Header & Stepper ──────────────────────────────────────────────── */}
@@ -174,7 +174,7 @@ export default function NewApplicationPage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex items-center gap-2">
-              <FilePlus className="w-3.5 h-3.5 text-[#3ECF8E]" />
+              <FilePlus className="w-3.5 h-3.5 text-brand-400" />
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">New Request</span>
             </div>
           </div>
@@ -189,16 +189,16 @@ export default function NewApplicationPage() {
             return (
               <React.Fragment key={step.id}>
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 ${
-                  isActive ? 'bg-[#3ECF8E]/15 border border-[#3ECF8E]/30 shadow-[0_0_15px_rgba(62,207,142,0.15)]' : 
+                  isActive ? 'bg-brand-400/15 border border-brand-400/30 shadow-[0_0_15px_rgba(59,123,255,0.15)]' : 
                   isPast ? 'bg-white/[0.03] border border-white/[0.05]' : 'opacity-40 border border-transparent'
                 }`}>
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium transition-colors ${
-                    isActive ? 'bg-[#3ECF8E] text-[#0a0a0a]' :
+                    isActive ? 'bg-brand-400 text-[#0a0a0a]' :
                     isPast ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-800 text-zinc-500'
                   }`}>
-                    {isPast ? <CheckCircle2 className="w-3 h-3 text-[#3ECF8E]" /> : step.id}
+                    {isPast ? <CheckCircle2 className="w-3 h-3 text-brand-400" /> : step.id}
                   </div>
-                  <span className={`text-[12px] font-medium hidden sm:block transition-colors ${isActive ? 'text-[#3ECF8E]' : isPast ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                  <span className={`text-[12px] font-medium hidden sm:block transition-colors ${isActive ? 'text-brand-400' : isPast ? 'text-zinc-300' : 'text-zinc-500'}`}>
                     {step.title}
                   </span>
                 </div>
@@ -238,31 +238,31 @@ export default function NewApplicationPage() {
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Requested Amount (M)</label>
                       <div className="relative">
                         <DollarSign className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
-                        <input type="number" step="0.1" name="requestedAmount" value={formData.requestedAmount} onChange={handleChange} placeholder="e.g. 15.5" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium transition-all" />
+                        <input type="number" step="0.1" name="requestedAmount" value={formData.requestedAmount} onChange={handleChange} placeholder="e.g. 15.5" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium transition-all" />
                       </div>
                       <p className="text-[11px] text-zinc-600 mt-2">Enter amount in millions.</p>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Currency</label>
-                      <select name="currency" value={formData.currency} onChange={handleChange} className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium appearance-none transition-all">
-                        <option>USD</option><option>EUR</option><option>GBP</option>
+                      <select name="currency" value={formData.currency} onChange={handleChange} className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium appearance-none transition-all">
+                        <option>XAF</option><option>EUR</option><option>USD</option><option>GBP</option>
                       </select>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Facility Type</label>
-                      <select name="facilityType" value={formData.facilityType} onChange={handleChange} className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium appearance-none transition-all">
+                      <select name="facilityType" value={formData.facilityType} onChange={handleChange} className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium appearance-none transition-all">
                         <option>Term Loan</option><option>Revolving Credit Facility</option><option>Trade Finance</option><option>Overdraft</option>
                       </select>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Tenor (Months)</label>
-                      <select name="tenureMonths" value={formData.tenureMonths} onChange={handleChange} className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium appearance-none transition-all">
+                      <select name="tenureMonths" value={formData.tenureMonths} onChange={handleChange} className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium appearance-none transition-all">
                         <option>12</option><option>24</option><option>36</option><option>48</option><option>60</option>
                       </select>
                     </div>
                     <div className="col-span-2">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Purpose of Facility</label>
-                      <textarea name="purpose" rows={3} value={formData.purpose} onChange={handleChange} placeholder="Briefly describe the business purpose..." className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium resize-none transition-all" />
+                      <textarea name="purpose" rows={3} value={formData.purpose} onChange={handleChange} placeholder="Briefly describe the business purpose..." className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium resize-none transition-all" />
                     </div>
                   </div>
                 </motion.div>
@@ -280,12 +280,12 @@ export default function NewApplicationPage() {
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Company Legal Name</label>
                       <div className="relative">
                         <Building2 className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
-                        <input type="text" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="e.g. Acme Industries Ltd." className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium transition-all" />
+                        <input type="text" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="ex. : SOCOME Industries SA" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium transition-all" />
                       </div>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Industry Sector</label>
-                      <select name="industry" value={formData.industry} onChange={handleChange} className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium appearance-none transition-all">
+                      <select name="industry" value={formData.industry} onChange={handleChange} className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium appearance-none transition-all">
                         <option>Technology</option><option>Manufacturing</option><option>Real Estate</option><option>Energy</option><option>Logistics</option>
                       </select>
                     </div>
@@ -293,21 +293,21 @@ export default function NewApplicationPage() {
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Region / Country</label>
                       <div className="relative">
                         <Globe className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
-                        <input type="text" name="country" value={formData.country} onChange={handleChange} placeholder="e.g. United States" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium transition-all" />
+                        <input type="text" name="country" value={formData.country} onChange={handleChange} placeholder="e.g. United States" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium transition-all" />
                       </div>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Annual Revenue (M)</label>
                       <div className="relative">
                         <DollarSign className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
-                        <input type="number" name="annualRevenue" value={formData.annualRevenue} onChange={handleChange} placeholder="e.g. 50" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium transition-all" />
+                        <input type="number" name="annualRevenue" value={formData.annualRevenue} onChange={handleChange} placeholder="e.g. 50" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium transition-all" />
                       </div>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Employees</label>
                       <div className="relative">
                         <Users className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
-                        <input type="number" name="employees" value={formData.employees} onChange={handleChange} placeholder="e.g. 250" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium transition-all" />
+                        <input type="number" name="employees" value={formData.employees} onChange={handleChange} placeholder="e.g. 250" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium transition-all" />
                       </div>
                     </div>
                   </div>
@@ -326,23 +326,23 @@ export default function NewApplicationPage() {
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Existing Debt (M)</label>
                       <div className="relative">
                         <DollarSign className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
-                        <input type="number" name="existingDebt" value={formData.existingDebt} onChange={handleChange} placeholder="e.g. 25" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium transition-all" />
+                        <input type="number" name="existingDebt" value={formData.existingDebt} onChange={handleChange} placeholder="e.g. 25" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium transition-all" />
                       </div>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Main Banking Relationship</label>
                       <div className="relative">
                         <Landmark className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
-                        <input type="text" name="mainBank" value={formData.mainBank} onChange={handleChange} placeholder="e.g. Chase Bank" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium transition-all" />
+                        <input type="text" name="mainBank" value={formData.mainBank} onChange={handleChange} placeholder="e.g. Chase Bank" className="w-full pl-10 pr-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium transition-all" />
                       </div>
                     </div>
                     <div className="col-span-2">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Collateral / Security Offered</label>
-                      <textarea name="collateral" rows={2} value={formData.collateral} onChange={handleChange} placeholder="e.g. 1st lien on equipment, real estate..." className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium resize-none transition-all" />
+                      <textarea name="collateral" rows={2} value={formData.collateral} onChange={handleChange} placeholder="e.g. 1st lien on equipment, real estate..." className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium resize-none transition-all" />
                     </div>
                     <div className="col-span-2">
                       <label className="block text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-2">Financial Position Summary</label>
-                      <textarea name="financialPosition" rows={2} value={formData.financialPosition} onChange={handleChange} placeholder="Brief note on liquidity and profitability trends..." className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 text-white font-medium resize-none transition-all" />
+                      <textarea name="financialPosition" rows={2} value={formData.financialPosition} onChange={handleChange} placeholder="Brief note on liquidity and profitability trends..." className="w-full px-4 py-3 bg-[#0d0d0d] border border-white/[0.06] rounded-xl focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 text-white font-medium resize-none transition-all" />
                     </div>
                   </div>
                 </motion.div>
@@ -367,11 +367,11 @@ export default function NewApplicationPage() {
                         <motion.div 
                           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
                           key={doc.title} 
-                          className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${isUploaded ? 'bg-[#3ECF8E]/5 border-[#3ECF8E]/20 shadow-[0_0_15px_rgba(62,207,142,0.05)]' : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.15]'}`}
+                          className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${isUploaded ? 'bg-brand-400/5 border-brand-400/20 shadow-[0_0_15px_rgba(59,123,255,0.05)]' : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.15]'}`}
                         >
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isUploaded ? 'bg-[#3ECF8E]/10' : 'bg-[#3ECF8E]/10'}`}>
-                              {isUploaded ? <CheckCircle2 className="w-5 h-5 text-[#3ECF8E]" /> : <FileText className="w-5 h-5 text-[#3ECF8E]" />}
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isUploaded ? 'bg-brand-400/10' : 'bg-brand-400/10'}`}>
+                              {isUploaded ? <CheckCircle2 className="w-5 h-5 text-brand-400" /> : <FileText className="w-5 h-5 text-brand-400" />}
                             </div>
                             <div>
                               <div className="text-[14px] font-medium text-white tracking-tight">{doc.title}</div>
@@ -379,7 +379,7 @@ export default function NewApplicationPage() {
                             </div>
                           </div>
                           {isUploaded ? (
-                            <span className="text-[12px] font-medium text-[#3ECF8E] px-3 py-1 rounded bg-[#3ECF8E]/10 border border-[#3ECF8E]/20">Attached</span>
+                            <span className="text-[12px] font-medium text-brand-400 px-3 py-1 rounded bg-brand-400/10 border border-brand-400/20">Attached</span>
                           ) : (
                             <button type="button" onClick={() => handleMockUpload(doc.title)} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/[0.08] hover:bg-white/[0.06] hover:border-white/[0.15] text-[12px] font-medium text-zinc-300 transition-all">
                               <FileUp className="w-3.5 h-3.5" />
@@ -404,10 +404,10 @@ export default function NewApplicationPage() {
                   <div className="space-y-6">
                     {/* Summary Block 1 */}
                     <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-xl p-6 relative overflow-hidden group">
-                      <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-[#3ECF8E]/[0.02] to-transparent pointer-events-none" />
+                      <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-brand-400/[0.02] to-transparent pointer-events-none" />
                       <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-5 flex items-center justify-between relative z-10">
                         <span>Facility Request</span>
-                        <button type="button" onClick={() => setCurrentStep(1)} className="text-[#3ECF8E] hover:text-[#3ECF8E]/80 transition-colors">Edit</button>
+                        <button type="button" onClick={() => setCurrentStep(1)} className="text-brand-400 hover:text-brand-400/80 transition-colors">Edit</button>
                       </div>
                       <div className="grid grid-cols-2 gap-y-5 gap-x-6 text-[13px] relative z-10">
                         <div>
@@ -427,10 +427,10 @@ export default function NewApplicationPage() {
 
                     {/* Summary Block 2 */}
                     <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-xl p-6 relative overflow-hidden">
-                      <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-[#3ECF8E]/[0.02] to-transparent pointer-events-none" />
+                      <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-brand-400/[0.02] to-transparent pointer-events-none" />
                       <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-5 flex items-center justify-between relative z-10">
                         <span>Business Context</span>
-                        <button type="button" onClick={() => setCurrentStep(2)} className="text-[#3ECF8E] hover:text-[#3ECF8E]/80 transition-colors">Edit</button>
+                        <button type="button" onClick={() => setCurrentStep(2)} className="text-brand-400 hover:text-brand-400/80 transition-colors">Edit</button>
                       </div>
                       <div className="grid grid-cols-2 gap-y-5 gap-x-6 text-[13px] relative z-10">
                         <div>
@@ -453,8 +453,8 @@ export default function NewApplicationPage() {
                     </div>
                     
                     {/* Declaration */}
-                    <div className="flex items-start gap-4 p-5 bg-[#3ECF8E]/[0.03] border border-[#3ECF8E]/20 rounded-xl">
-                      <ShieldCheck className="w-5 h-5 text-[#3ECF8E] flex-shrink-0 mt-0.5" />
+                    <div className="flex items-start gap-4 p-5 bg-brand-400/[0.03] border border-brand-400/20 rounded-xl">
+                      <ShieldCheck className="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" />
                       <p className="text-[12px] text-zinc-400 leading-relaxed font-medium">
                         By submitting this application, I confirm that the information provided is accurate and complete to the best of my knowledge. I understand that the bank may request further documentation during the underwriting process.
                       </p>
@@ -485,7 +485,7 @@ export default function NewApplicationPage() {
                     Continue <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 ) : (
-                  <button type="button" onClick={handleSubmit} disabled={submitMutation.isPending} className="px-6 py-2.5 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#0a0a0a] rounded-xl text-[13px] font-semibold transition-all shadow-[0_0_20px_rgba(62,207,142,0.3)] flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                  <button type="button" onClick={handleSubmit} disabled={submitMutation.isPending} className="px-6 py-2.5 bg-brand-400 hover:bg-brand-400/90 text-[#0a0a0a] rounded-xl text-[13px] font-semibold transition-all shadow-[0_0_20px_rgba(59,123,255,0.3)] flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
                     {submitMutation.isPending ? (
                       <><Loader2 className="w-4 h-4 animate-spin text-[#0a0a0a]" /> Submitting...</>
                     ) : (
@@ -502,10 +502,10 @@ export default function NewApplicationPage() {
         {/* ── Side Panel ────────────────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="space-y-6">
           <div className="bg-[#0a0a0a]/80 backdrop-blur-md border border-white/[0.06] rounded-[24px] p-7 sticky top-24 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#3ECF8E]/10 rounded-full blur-[40px] pointer-events-none" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-400/10 rounded-full blur-[40px] pointer-events-none" />
             
-            <div className="w-12 h-12 rounded-2xl bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 flex items-center justify-center mb-6 relative z-10">
-              <Info className="w-6 h-6 text-[#3ECF8E]" />
+            <div className="w-12 h-12 rounded-2xl bg-brand-400/10 border border-brand-400/20 flex items-center justify-center mb-6 relative z-10">
+              <Info className="w-6 h-6 text-brand-400" />
             </div>
             <h3 className="text-[16px] font-medium text-white tracking-tight mb-2 relative z-10">What happens next?</h3>
             <p className="text-[13px] text-zinc-400 leading-relaxed mb-8 relative z-10">
@@ -533,7 +533,7 @@ export default function NewApplicationPage() {
             <div className="mt-8 pt-6 border-t border-white/[0.06] relative z-10">
               <div className="text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-500 mb-3">Secure Connection</div>
               <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-[#3ECF8E]" />
+                <ShieldCheck className="w-4 h-4 text-brand-400" />
                 <span className="text-[12px] font-medium text-zinc-400">End-to-End Encrypted (AES-256)</span>
               </div>
             </div>

@@ -71,7 +71,7 @@ export function ManagerDashboard() {
                { id: 'APP-2026-793', name: 'Northern Telecom', type: 'SLA Breach', reason: 'Stuck in KYC for 55h', assignee: 'JD' },
              ].map((app, i) => (
                 <Link key={i} href="/pipeline" className="flex items-center justify-between p-4 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.04] transition-colors group relative overflow-hidden">
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-[#3ECF8E] transition-colors" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-brand-400 transition-colors" />
                   <div className="flex items-center gap-4">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-zinc-800 to-zinc-700 flex items-center justify-center border border-white/[0.1] text-[10px] font-bold text-white shadow-md">
                        {app.assignee}
@@ -89,7 +89,7 @@ export function ManagerDashboard() {
                     }`}>
                       {app.type}
                     </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-[#3ECF8E] transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-brand-400 transition-colors" />
                   </div>
                 </Link>
              ))}
@@ -102,7 +102,7 @@ export function ManagerDashboard() {
               <div className="space-y-5">
                 {[
                   { stage: 'KYC & Data Val', count: 18, pct: 45, color: 'bg-blue-500' },
-                  { stage: 'Scoring', count: 12, pct: 30, color: 'bg-[#3ECF8E]' },
+                  { stage: 'Scoring', count: 12, pct: 30, color: 'bg-brand-400' },
                   { stage: 'Committee Review', count: 8, pct: 20, color: 'bg-purple-500' },
                   { stage: 'Ready for Booking', count: 2, pct: 5, color: 'bg-zinc-400' },
                 ].map((s, i) => (

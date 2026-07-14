@@ -57,9 +57,9 @@ export default function CounterpartyDetailPage() {
             <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${
               cp.watchlistFlag 
               ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
-              : 'bg-[#3ECF8E]/10 border-[#3ECF8E]/20 text-[#3ECF8E]'
+              : 'bg-brand-400/10 border-brand-400/20 text-brand-400'
             }`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${cp.watchlistFlag ? 'bg-rose-500 animate-pulse' : 'bg-[#3ECF8E]'}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${cp.watchlistFlag ? 'bg-rose-500 animate-pulse' : 'bg-brand-400'}`} />
               <span className="text-[9px] font-bold uppercase tracking-widest">{cp.watchlistFlag ? 'WATCHLIST' : 'STABLE'}</span>
             </div>
             <span className="font-mono font-bold text-white px-2 py-1 bg-white/[0.04] border border-white/[0.05] rounded text-[11px]">{cp.internalRating}</span>
@@ -103,17 +103,17 @@ export default function CounterpartyDetailPage() {
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5 text-blue-400" /> Current Exposure
               </div>
-              <div className="text-3xl font-black text-white tabular-nums">${cp.exposure.toFixed(1)}M</div>
-              <div className="text-[11px] text-zinc-500 mt-2 font-medium">Limit: <span className="text-zinc-300">${cp.expLimit.toFixed(1)}M</span></div>
+              <div className="text-3xl font-black text-white tabular-nums">{cp.exposure.toFixed(1)} Mds XAF</div>
+              <div className="text-[11px] text-zinc-500 mt-2 font-medium">Limite : <span className="text-zinc-300">{cp.expLimit.toFixed(1)} Mds XAF</span></div>
             </div>
             
             <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-2xl p-6 hover:border-white/[0.1] transition-colors relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[#3ECF8E]/10 translate-x-1/3 -translate-y-1/3" />
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-brand-400/10 translate-x-1/3 -translate-y-1/3" />
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2"><Activity className="w-3.5 h-3.5 text-[#3ECF8E]" /> PD (1Y)</div>
-                <span className="text-[9px] text-[#3ECF8E] font-bold bg-[#3ECF8E]/10 px-1.5 py-0.5 rounded">MODEL OUTPUT</span>
+                <div className="flex items-center gap-2"><Activity className="w-3.5 h-3.5 text-brand-400" /> PD (1Y)</div>
+                <span className="text-[9px] text-brand-400 font-bold bg-brand-400/10 px-1.5 py-0.5 rounded">MODEL OUTPUT</span>
               </div>
-              <div className="text-3xl font-black tabular-nums text-[#3ECF8E]">{cp.pd1y.toFixed(2)}%</div>
+              <div className="text-3xl font-black tabular-nums text-brand-400">{cp.pd1y.toFixed(2)}%</div>
               <div className="text-[11px] text-zinc-500 mt-2 font-medium">Implied Rating: <span className="text-zinc-300">{cp.internalRating}</span></div>
             </div>
             
@@ -176,7 +176,7 @@ export default function CounterpartyDetailPage() {
                 <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-2xl overflow-hidden">
                   <div className="px-6 py-5 flex justify-between items-center border-b border-white/[0.06] bg-[#0A0A0A]">
                     <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Active Facilities</h2>
-                    <span className="text-[9px] font-bold bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 text-[#3ECF8E] px-2 py-1 rounded uppercase tracking-widest">ACTIVE</span>
+                    <span className="text-[9px] font-bold bg-brand-400/10 border border-brand-400/20 text-brand-400 px-2 py-1 rounded uppercase tracking-widest">ACTIVE</span>
                   </div>
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -190,8 +190,8 @@ export default function CounterpartyDetailPage() {
                       {cp.exposures.map((exp: any) => (
                         <tr key={exp.id} className="border-b border-white/[0.02] last:border-0 hover:bg-white/[0.02] transition-colors">
                           <td className="py-4 pl-6 font-bold text-[13px] text-white tracking-tight">{exp.facilityType}</td>
-                          <td className="py-4 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">{exp.currency || 'USD'}</td>
-                          <td className="py-4 pr-6 text-right font-black tabular-nums text-white">${exp.amount.toFixed(1)}M</td>
+                          <td className="py-4 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">{exp.currency || 'XAF'}</td>
+                          <td className="py-4 pr-6 text-right font-black tabular-nums text-white">{exp.amount.toFixed(1)} Mds</td>
                         </tr>
                       ))}
                     </tbody>
@@ -225,15 +225,15 @@ export default function CounterpartyDetailPage() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">Total Limit</span>
-                    <span className="font-bold text-white tabular-nums">${cp.expLimit.toFixed(1)}M</span>
+                    <span className="font-bold text-white tabular-nums">{cp.expLimit.toFixed(1)} Mds XAF</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Drawn</span>
-                    <span className="font-bold text-white tabular-nums">${cp.exposure.toFixed(1)}M</span>
+                    <span className="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Tiré</span>
+                    <span className="font-bold text-white tabular-nums">{cp.exposure.toFixed(1)} Mds XAF</span>
                   </div>
                   <div className="flex justify-between items-center border-t border-white/[0.06] pt-4">
-                    <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full border border-zinc-500" /> Undrawn</span>
-                    <span className="font-bold text-white tabular-nums">${Math.max(0, cp.expLimit - cp.exposure).toFixed(1)}M</span>
+                    <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full border border-zinc-500" /> Non tiré</span>
+                    <span className="font-bold text-white tabular-nums">{Math.max(0, cp.expLimit - cp.exposure).toFixed(1)} Mds XAF</span>
                   </div>
                 </div>
               </div>
@@ -267,15 +267,15 @@ export default function CounterpartyDetailPage() {
                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
                  <Wallet className="w-3.5 h-3.5 text-blue-400" /> LTM Revenue
                </div>
-               <div className="text-3xl font-black text-white tabular-nums">$1.24B</div>
-               <div className="text-[11px] text-[#3ECF8E] mt-2 font-bold">+8.4% YoY</div>
+               <div className="text-3xl font-black text-white tabular-nums">818 Mds XAF</div>
+               <div className="text-[11px] text-brand-400 mt-2 font-bold">+8.4% YoY</div>
             </div>
             <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-2xl p-6 relative overflow-hidden group">
                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
                  <BarChart3 className="w-3.5 h-3.5 text-purple-400" /> EBITDA Margin
                </div>
                <div className="text-3xl font-black text-white tabular-nums">24.5%</div>
-               <div className="text-[11px] text-[#3ECF8E] mt-2 font-bold">+120 bps</div>
+               <div className="text-[11px] text-brand-400 mt-2 font-bold">+120 bps</div>
             </div>
             <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-2xl p-6 relative overflow-hidden group">
                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
@@ -415,7 +415,7 @@ export default function CounterpartyDetailPage() {
                  </div>
                  <div className="bg-[#0A0A0A] border border-white/[0.04] p-4 rounded-xl">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Exposure at Default (EAD)</div>
-                    <div className="text-2xl font-black text-white tabular-nums">${(cp.exposure * 1.05).toFixed(1)}M</div>
+                    <div className="text-2xl font-black text-white tabular-nums">{(cp.exposure * 1.05).toFixed(1)} Mds XAF</div>
                     <div className="text-[11px] text-zinc-500 mt-1">Includes 5% CCF on undrawn lines</div>
                  </div>
                  <div className="bg-[#0A0A0A] border border-white/[0.04] p-4 rounded-xl">
@@ -444,7 +444,7 @@ export default function CounterpartyDetailPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded border ${doc.status === 'VALIDATED' ? 'bg-[#3ECF8E]/10 border-[#3ECF8E]/20 text-[#3ECF8E]' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded border ${doc.status === 'VALIDATED' ? 'bg-brand-400/10 border-brand-400/20 text-brand-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
                     {doc.status}
                   </span>
                   {doc.fileUrl && (

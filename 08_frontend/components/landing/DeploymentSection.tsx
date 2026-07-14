@@ -39,7 +39,7 @@ export function DeploymentSection() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-12 gap-16 items-center">
           <div className="lg:col-span-5">
-            <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E] mb-4">{header.badge}</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400 mb-4">{header.badge}</div>
             <h2 className="text-3xl sm:text-4xl font-medium text-white mb-6 tracking-tight leading-tight">{header.title}</h2>
             <p className="text-[15px] font-medium text-zinc-400 leading-relaxed mb-8">{header.desc}</p>
             <div className="flex gap-4">
@@ -56,16 +56,16 @@ export function DeploymentSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="group relative flex items-start gap-5 p-6 bg-[#050505] border border-white/[0.03] hover:border-white/[0.08] rounded-2xl transition-all duration-500 overflow-hidden"
+                className="group relative flex items-start gap-5 p-6 bg-surface-0 border border-white/[0.03] hover:border-white/[0.08] rounded-2xl transition-all duration-500 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-[#3ECF8E]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                <div className="relative z-10 w-12 h-12 rounded-xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center flex-shrink-0 group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-all duration-500">
-                  <opt.icon className="w-5 h-5 text-zinc-500 group-hover:text-[#3ECF8E] transition-colors" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <div className="relative z-10 w-12 h-12 rounded-xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center flex-shrink-0 group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-all duration-500">
+                  <opt.icon className="w-5 h-5 text-zinc-500 group-hover:text-brand-400 transition-colors" />
                 </div>
                 <div className="relative z-10 flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-[16px] font-medium text-zinc-200 group-hover:text-white transition-colors">{opt.title}</h3>
-                    <span className="text-[10px] font-semibold text-[#3ECF8E] bg-[#3ECF8E]/10 px-2 py-0.5 rounded uppercase tracking-wider">{opt.badge}</span>
+                    <span className="text-[10px] font-semibold text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded uppercase tracking-wider">{opt.badge}</span>
                   </div>
                   <p className="text-[13px] font-medium text-zinc-500 leading-relaxed">{opt.desc}</p>
                 </div>

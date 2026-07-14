@@ -3,7 +3,12 @@ import * as React from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import type { AlertSeverity } from '@/lib/types'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import {
+  TrendingUp, TrendingDown,
+  ShieldCheck, AlertCircle, AlertTriangle, ShieldAlert,
+  Zap, CheckCircle2, Clock, XCircle, Wifi, WifiOff, Info,
+  Activity, Minus
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 
 // ─── StatusBadge ─────────────────────────────────────────────────────────────
@@ -14,38 +19,73 @@ interface StatusBadgeProps {
 }
 
 const statusMap: Record<string, string> = {
-  Stable: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  Alert: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-  Negative: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-  Watch: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-  Positive: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-  VERIFIED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  REVIEW: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-  FAILED: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-  ONLINE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  DEGRADED: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-  OFFLINE: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30',
-  Active: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-  APPROVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  DECLINE: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-  REVIEW_BADGE: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-  LOW: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  MED: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-  HIGH: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-  CRITICAL: 'bg-red-600/10 text-red-400 border-red-600/40',
-  PRIORITY: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  Stable:      'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  Alert:       'bg-rose-500/10 text-rose-400 border-rose-500/30',
+  Negative:    'bg-rose-500/10 text-rose-400 border-rose-500/30',
+  Watch:       'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  Positive:    'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  VERIFIED:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  REVIEW:      'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  FAILED:      'bg-rose-500/10 text-rose-400 border-rose-500/30',
+  ONLINE:      'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  DEGRADED:    'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  OFFLINE:     'bg-zinc-500/10 text-zinc-400 border-zinc-500/30',
+  Active:      'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  APPROVE:     'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  DECLINE:     'bg-rose-500/10 text-rose-400 border-rose-500/30',
+  REVIEW_BADGE:'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  LOW:         'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  MED:         'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  HIGH:        'bg-rose-500/10 text-rose-400 border-rose-500/30',
+  CRITICAL:    'bg-red-600/10 text-red-400 border-red-600/40',
+  PRIORITY:    'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  WARNING:     'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  INFO:        'bg-blue-500/10 text-blue-400 border-blue-500/30',
+}
+
+// Shape-distinct icons — one per risk level, never color-only
+const iconMap: Record<string, React.ElementType> = {
+  LOW:         ShieldCheck,
+  MED:         Minus,
+  HIGH:        AlertTriangle,
+  CRITICAL:    ShieldAlert,
+  PRIORITY:    Zap,
+  Alert:       AlertTriangle,
+  WARNING:     AlertTriangle,
+  INFO:        Info,
+  Stable:      CheckCircle2,
+  VERIFIED:    CheckCircle2,
+  APPROVE:     CheckCircle2,
+  ONLINE:      Wifi,
+  Active:      Activity,
+  REVIEW:      Clock,
+  REVIEW_BADGE:Clock,
+  Watch:       AlertCircle,
+  FAILED:      XCircle,
+  DECLINE:     XCircle,
+  OFFLINE:     WifiOff,
+  Negative:    AlertCircle,
 }
 
 export function StatusBadge({ status, size = 'sm', className }: StatusBadgeProps) {
-  const colors = statusMap[status] ?? 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30'
+  const colors  = statusMap[status] ?? 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30'
+  const Icon    = iconMap[status]
+  const isPulse = status === 'Alert' || status === 'CRITICAL' || status === 'PRIORITY'
+
   return (
     <span className={cn(
-      'inline-flex items-center gap-1.5 rounded border px-2 font-mono font-semibold uppercase tracking-wider',
+      'inline-flex items-center gap-1 rounded border px-2 font-mono font-semibold uppercase tracking-wider',
       size === 'sm' ? 'text-[10px] py-0.5' : 'text-xs py-1',
       colors, className
     )}>
-      {(status === 'Alert' || status === 'CRITICAL' || status === 'PRIORITY') && (
-        <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+      {Icon && (
+        <Icon
+          className={size === 'sm' ? 'w-2.5 h-2.5 flex-shrink-0' : 'w-3 h-3 flex-shrink-0'}
+          aria-hidden="true"
+        />
+      )}
+      {isPulse && !Icon && (
+        <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse flex-shrink-0" />
       )}
       {status}
     </span>
@@ -67,8 +107,8 @@ interface KPIBlockProps {
 }
 
 const accentGlow: Record<string, string> = {
-  blue:    'from-[#3ECF8E]/5 to-transparent group-hover:from-[#3ECF8E]/10',
-  emerald: 'from-[#3ECF8E]/5 to-transparent group-hover:from-[#3ECF8E]/10',
+  blue:    'from-brand-400/5 to-transparent group-hover:from-brand-400/10',
+  emerald: 'from-brand-400/5 to-transparent group-hover:from-brand-400/10',
   amber:   'from-amber-500/5 to-transparent group-hover:from-amber-500/10',
   rose:    'from-rose-500/5 to-transparent group-hover:from-rose-500/10',
   purple:  'from-purple-500/5 to-transparent group-hover:from-purple-500/10',
@@ -160,17 +200,23 @@ interface AlertBlockProps {
 const alertColors: Record<AlertSeverity, string> = {
   CRITICAL: 'border-l-rose-500 bg-rose-500/5 shadow-[0_0_15px_rgba(244,63,94,0.15)]',
   WARNING:  'border-l-amber-500 bg-amber-500/5 shadow-[0_0_15px_rgba(245,158,11,0.15)]',
-  INFO:     'border-l-[#3ECF8E] bg-[#3ECF8E]/5 shadow-[0_0_15px_rgba(62,207,142,0.15)]',
+  INFO:     'border-l-brand-400 bg-brand-400/5 shadow-[0_0_15px_rgba(59,123,255,0.15)]',
 }
 const alertTitleColors: Record<AlertSeverity, string> = {
-  CRITICAL: 'text-rose-400 drop-shadow-[0_0_5px_rgba(244,63,94,0.5)]',
-  WARNING:  'text-amber-400 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]',
-  INFO:     'text-[#3ECF8E] drop-shadow-[0_0_5px_rgba(62,207,142,0.5)]',
+  CRITICAL: 'text-rose-400',
+  WARNING:  'text-amber-400',
+  INFO:     'text-brand-400',
+}
+const alertIcons: Record<AlertSeverity, React.ElementType> = {
+  CRITICAL: ShieldAlert,
+  WARNING:  AlertTriangle,
+  INFO:     Info,
 }
 
 export function AlertBlock({ severity, title, body, time, action }: AlertBlockProps) {
+  const SevIcon = alertIcons[severity]
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       whileHover={{ scale: 1.01 }}
@@ -187,10 +233,8 @@ export function AlertBlock({ severity, title, body, time, action }: AlertBlockPr
         />
       )}
       <div className="flex items-center justify-between relative z-10">
-        <span className={cn('text-xs font-bold uppercase tracking-wider flex items-center gap-2', alertTitleColors[severity])}>
-          {(severity === 'CRITICAL' || severity === 'WARNING') && (
-            <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-          )}
+        <span className={cn('text-xs font-bold uppercase tracking-wider flex items-center gap-1.5', alertTitleColors[severity])}>
+          <SevIcon className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
           {severity}
         </span>
         {time && <span className="text-[10px] text-zinc-500">{time}</span>}
@@ -257,8 +301,8 @@ export function SidePanel({ open, onClose, title, subtitle, children, width = 38
 // ─── LiveBadge ───────────────────────────────────────────────────────────────────
 export function LiveBadge({ label = 'LIVE COMPUTATION' }: { label?: string }) {
   return (
-    <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#3ECF8E] bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-md px-2.5 py-1">
-      <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" />
+    <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-brand-400 bg-brand-400/10 border border-brand-400/20 rounded-md px-2.5 py-1">
+      <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
       {label}
     </span>
   )
@@ -352,7 +396,7 @@ export function DataTable<T>({
                 className={cn(
                   'border-b border-white/[0.04] transition-colors',
                   onRowClick && 'cursor-pointer hover:bg-white/[0.03]',
-                  isActive && 'bg-[#3ECF8E]/[0.06] border-l-2 border-l-[#3ECF8E]'
+                  isActive && 'bg-brand-400/[0.06] border-l-2 border-l-brand-400'
                 )}
               >
                 {columns.map(col => (
@@ -407,7 +451,7 @@ export function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: 
       onClick={() => onChange(!checked)}
       className={cn(
         'relative w-10 h-5 rounded-full transition-colors duration-200',
-        checked ? 'bg-[#3ECF8E]' : 'bg-white/[0.08]'
+        checked ? 'bg-brand-400' : 'bg-white/[0.08]'
       )}
     >
       <span className={cn(
@@ -434,7 +478,7 @@ export function Btn({ variant = 'secondary', size = 'md', children, className, .
     lg: 'text-[14px] px-5 py-2.5',
   }
   const variants = {
-    primary:   'bg-[#3ECF8E] text-[#0a0a0a] border border-transparent hover:opacity-90 active:scale-[0.98] shadow-[0_0_28px_rgba(62,207,142,0.2)]',
+    primary:   'bg-brand-400 text-[#0a0a0a] border border-transparent hover:opacity-90 active:scale-[0.98] shadow-brand',
     secondary: 'bg-white/[0.06] text-white border border-white/[0.14] hover:bg-white/[0.09] hover:border-white/[0.2] active:scale-[0.98]',
     ghost:     'bg-transparent text-zinc-400 border border-transparent hover:text-white hover:bg-white/[0.04]',
     danger:    'bg-rose-500/10 text-rose-400 border border-rose-500/25 hover:bg-rose-500/20 active:scale-[0.98]',

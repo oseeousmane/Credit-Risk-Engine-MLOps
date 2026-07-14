@@ -1,0 +1,150 @@
+{
+  "meta": {
+    "document_type": "MODEL_DEFAULT_DEFINITION",
+    "version": "1.0.0",
+    "status": "DEMO_PILOT — Non validé sur données CEMAC réelles",
+    "effective_date": "2026-05-29",
+    "next_review_date": "2026-11-29",
+    "approved_by": "Model Risk Management (MRM) — Demo Pilot Only",
+    "model_artifact": "pd_xgb_v1",
+    "regulatory_references": [
+      "IFRS 9 §B5.5.37 — Définition du défaut",
+      "Basel III CRE36 — IRB Default Definition",
+      "COBAC R-2010/01 — Conditions d'exercice du crédit en zone CEMAC",
+      "EBA/GL/2016/07 — Default Definition Guidelines"
+    ]
+  },
+
+  "default_definition": {
+    "summary": "Un défaut est constaté lorsque la contrepartie est jugée 'peu susceptible de rembourser' (Unlikely to Pay) ou lorsque tout encours est en retard de paiement depuis plus de 90 jours consécutifs (DPD > 90).",
+
+    "criteria": [
+      {
+        "id": "UTP",
+        "label": "Unlikely to Pay (UTP)",
+        "description": "Indicateurs qualitatifs signalant que la contrepartie ne remboursera probablement pas sans recours à la garantie.",
+        "triggers": [
+          "Restructuration du crédit accordée pour raison financière (concession débiteur)",
+          "Dépôt de bilan ou procédure collective ouverte",
+          "Cession du crédit avec décote significative (> 5%)",
+          "Provisionnement spécifique décidé par le comité des risques",
+          "Radiation partielle ou totale de l'encours"
+        ],
+        "source_dataset": "Non disponible dans Home Credit — défaut défini par TARGET=1 (variable binaire)",
+        "cemac_adaptation": "En zone CEMAC, le critère UTP est renforcé par la lenteur des procédures judiciaires. Le défaut pratique intervient souvent avant la définition formelle."
+      },
+      {
+        "id": "DPD90",
+        "label": "Days Past Due > 90",
+        "description": "Tout encours en retard de paiement de plus de 90 jours consécutifs.",
+        "threshold_days": 90,
+        "counting_rule": "Jours calendaires consécutifs depuis la première échéance impayée.",
+        "rebuttable_presumption": "Selon IFRS 9 §B5.5.19 et EBA/GL/2016/07 §45, le seuil de 90 jours est présomptif mais réfutable si des éléments probants démontrent que la contrepartie est toujours solvable.",
+        "source_dataset": "Proxy via TARGET=1 dans Home Credit (DPD > 60 jours ou UTP — voir note ci-dessous)",
+        "cemac_adaptation": "COBAC recommande un seuil de 90 jours pour les créances douteuses (Règlement R-2010/01 §12). Certaines EMF appliquent 60 jours en pratique."
+      }
+    ],
+
+    "dataset_note": {
+      "warning": "IMPORTANT — NON-CONFORMITE DOCUMENTEE",
+      "detail": "Le dataset Home Credit 2016-2018 ne fournit pas une définition explicite du défaut alignée Basel III/IFRS 9. TARGET=1 est une variable composite incluant des clients en DPD > 60 jours ET des clients UTP. La définition exacte n'est pas publiquement documentée par Home Credit. Cela constitue un écart par rapport aux exigences MODEL_GOVERNANCE_SPEC §1.",
+      "impact": "Le modèle pd_xgb_v1 (DEMO_BASELINE) ne peut pas être présenté comme conforme à la définition du défaut IFRS 9 sans revalidation sur données CEMAC avec définition explicite.",
+      "mitigation": "Pour PROD_CHAMPION : définir contractuellement la définition du défaut avec la banque partenaire avant tout entraînement sur données réelles."
+    }
+  },
+
+  "observation_window": {
+    "definition": "Période pendant laquelle les données de la contrepartie sont observées pour construire les features du modèle.",
+    "current_model": {
+      "dataset": "Home Credit Default Risk (Kaggle 2016-2018)",
+      "observation_start": "2007 (crédit le plus ancien dans le bureau)",
+      "observation_end": "2018-06 (date approximative de collecte)",
+      "window_type": "Point-in-Time (PIT) — snapshot à la date de la demande",
+      "note": "Les features d'historique (INST_*, POS_*, BUREAU_*) sont agrégées depuis l'historique complet disponible jusqu'à la date de demande."
+    },
+    "cemac_target": {
+      "recommendation": "Fenêtre d'observation de 24-36 mois pour les features comportementales (DPD, retards). Fenêtre de 12 mois pour les features financières (revenus, EBITDA).",
+      "rationale": "En zone CEMAC, la qualité des données historiques est souvent limitée à 12-24 mois dans les CBS existants. Une fenêtre de 24 mois est un compromis réaliste.",
+      "status": "NON IMPLEMENTEE — requiert données CBS réelles"
+    }
+  },
+
+  "performance_window": {
+    "definition": "Horizon temporel sur lequel on observe si la contrepartie a fait défaut après la date d'observation.",
+    "current_model": {
+      "horizon": "12 mois (proxy)",
+      "note": "Non documenté explicitement dans Home Credit. La variable TARGET est observée sur la durée du crédit en cours au moment de la collecte. Horizon effectif non certifié.",
+      "ifrs9_alignment": "Pour IFRS 9 Stage 1, l'ECL est calculé sur 12 mois. Pour Stage 2 et 3, sur la durée résiduelle du crédit (Lifetime). Le modèle PD est utilisé pour les deux horizons via scaling — non validé."
+    },
+    "cemac_target": {
+      "pd_horizon": "12 mois (PD_12M) — conforme Basel III IRB Foundation",
+      "ecl_stage1_horizon": "12 mois",
+      "ecl_stage2_horizon": "Durée résiduelle contractuelle (Lifetime)",
+      "term_structure": "Non implémentée — voir TRANSFORMATION_ROADMAP §2. La projection lifetime utilise (1-PD)^T (approche simplifiée) remplacée par matrice de migration 3 états.",
+      "status": "PARTIELLEMENT IMPLEMENTEE — matrice de migration ajoutée en mai 2026 (ifrs9_staging.py)"
+    }
+  },
+
+  "applicable_segments": {
+    "current_model_scope": "Personnes physiques (retail) — données Home Credit",
+    "target_cemac_scope": [
+      {
+        "segment": "PME / Corporate",
+        "revenue_range_xaf": "50M - 5Md XAF",
+        "specific_risks": "Concentration sectorielle (pétrole, BTP, agriculture), risque de change XAF/USD, dépendance aux marchés publics",
+        "model_gap": "CRITIQUE — modèle retail non adapté. Nécessite modèle corporate séparé."
+      },
+      {
+        "segment": "Microfinance / EMF",
+        "revenue_range_xaf": "< 5M XAF",
+        "specific_risks": "Thin-file (absence d'historique bureau), économie informelle, saisonnalité agricole, solidarité de groupe",
+        "model_gap": "CRITIQUE — modèle retail non adapté. Alt-data requis (mobile money, field visits)."
+      },
+      {
+        "segment": "Retail Formel",
+        "revenue_range_xaf": "Salariés secteur formel",
+        "specific_risks": "Instabilité emploi public, retards de salaires État, dépendance mono-employeur",
+        "model_gap": "MODERE — plus proche de Home Credit mais différences culturelles et macroéconomiques significatives."
+      }
+    ]
+  },
+
+  "pd_floors": {
+    "basel3_irb_floor": 0.0003,
+    "current_model_floor": 0.01,
+    "note": "Le floor actuel de 0.01% (DEMO_BASELINE) est inférieur au floor Basel III IRB de 0.03% pour les expositions corporate. À corriger pour PROD_CHAMPION.",
+    "cemac_recommendation": 0.05,
+    "cemac_rationale": "En zone CEMAC, le taux de défaut historique des portefeuilles corporate est structurellement plus élevé qu'en Europe. Un floor de 0.05% est plus conservateur et prudent."
+  },
+
+  "gaps_requiring_remediation": [
+    {
+      "gap_id": "G-01",
+      "severity": "HIGH",
+      "description": "Définition du défaut HOME_CREDIT ≠ définition IFRS 9 / COBAC explicite",
+      "action": "Contractualiser la définition avec la banque partenaire avant tout entraînement PROD",
+      "owner": "MRM + Compliance Officer"
+    },
+    {
+      "gap_id": "G-02",
+      "severity": "HIGH",
+      "description": "Performance window non certifiée (horizon PD 12 mois non garanti dans Home Credit)",
+      "action": "Utiliser dataset avec dates explicites pour certifier l'horizon",
+      "owner": "Data Scientist Senior"
+    },
+    {
+      "gap_id": "G-03",
+      "severity": "HIGH",
+      "description": "Segmentation modèle absente (un seul modèle retail pour tous les segments)",
+      "action": "Développer modèle corporate/SME séparé sur données CEMAC réelles",
+      "owner": "Data Scientist Senior + Quant"
+    },
+    {
+      "gap_id": "G-04",
+      "severity": "MEDIUM",
+      "description": "PD floor 0.01% inférieur au floor Basel III IRB corporate (0.03%)",
+      "action": "Passer le floor à 0.03% minimum pour PROD_CHAMPION — configurable via thresholds.yaml",
+      "owner": "Quant / ML Engineer"
+    }
+  ]
+}

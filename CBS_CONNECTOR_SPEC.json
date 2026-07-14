@@ -1,0 +1,125 @@
+{
+  "meta": {
+    "document_type": "CBS_CONNECTOR_SPEC",
+    "version": "1.0.0",
+    "status": "SPECIFICATION — Implementation pending CBS access",
+    "effective_date": "2026-05-30",
+    "author": "Octaix Data Engineering",
+    "target_systems": ["TEMENOS T24", "FLEXCUBE", "AMPLITUDE", "Banque Atlantique CBS", "UBA CBS"]
+  },
+
+  "objective": "Définir le contrat d'interface entre les CBS des banques CEMAC partenaires et l'Analytic Base Table (ABT) du moteur Octaix. Ce document est la spec technique pour l'équipe data engineering lors du déploiement pilote.",
+
+  "data_requirements": {
+    "minimum_history_months": 24,
+    "preferred_history_months": 48,
+    "minimum_accounts": 5000,
+    "minimum_defaults_for_training": 500,
+    "note": "Un taux de défaut < 1% sur l'historique CBS rend l'entraînement difficile — discuter avec la banque partenaire de la définition opérationnelle du défaut."
+  },
+
+  "required_tables": [
+    {
+      "table_id": "T01",
+      "name": "applications",
+      "description": "Table des demandes de crédit — un enregistrement par demande",
+      "mandatory": true,
+      "fields": [
+        {"field": "application_id",   "type": "VARCHAR(50)",  "mandatory": true,  "description": "Identifiant unique de la demande"},
+        {"field": "client_id",        "type": "VARCHAR(50)",  "mandatory": true,  "description": "Identifiant du client (pseudonymisé)"},
+        {"field": "date_octroi",      "type": "DATE",         "mandatory": true,  "description": "Date de décision d'octroi (ou de refus)"},
+        {"field": "date_debut",       "type": "DATE",         "mandatory": true,  "description": "Date de première mise en force"},
+        {"field": "date_echeance",    "type": "DATE",         "mandatory": true,  "description": "Date d'échéance contractuelle finale"},
+        {"field": "montant_accorde",  "type": "DECIMAL(18,2)","mandatory": true,  "description": "Montant effectivement accordé (XAF)"},
+        {"field": "montant_demande",  "type": "DECIMAL(18,2)","mandatory": false, "description": "Montant initialement demandé (XAF)"},
+        {"field": "taux_interet",     "type": "DECIMAL(6,4)", "mandatory": true,  "description": "Taux d'intérêt contractuel annuel (EIR)"},
+        {"field": "type_credit",      "type": "VARCHAR(30)",  "mandatory": true,  "description": "TERM_LOAN | REVOLVING | OVERDRAFT | GUARANTEE"},
+        {"field": "secteur_activite", "type": "VARCHAR(50)",  "mandatory": true,  "description": "Code secteur SYSCOHADA / COBAC"},
+        {"field": "type_garantie",    "type": "VARCHAR(30)",  "mandatory": false, "description": "REAL_ESTATE | EQUIPMENT | PLEDGE | UNSECURED"},
+        {"field": "valeur_garantie",  "type": "DECIMAL(18,2)","mandatory": false, "description": "Valeur estimée de la garantie (XAF)"},
+        {"field": "devise",           "type": "CHAR(3)",      "mandatory": true,  "description": "XAF | EUR | USD"},
+        {"field": "statut_final",     "type": "VARCHAR(20)",  "mandatory": true,  "description": "PERFORMING | WATCHLIST | DOUBTFUL | LOSS | RESTRUCTURED"},
+        {"field": "date_premier_impaye","type": "DATE",       "mandatory": false, "description": "Date du premier impayé observé (NULL si pas d'impayé)"},
+        {"field": "dpd_max_observe",  "type": "INTEGER",      "mandatory": false, "description": "Jours de retard maximum observé sur la durée du crédit"},
+        {"field": "defaut_flag",      "type": "BOOLEAN",      "mandatory": true,  "description": "1 si défaut observé (DPD > 90j ou UTP) dans la fenêtre de performance"},
+        {"field": "date_defaut",      "type": "DATE",         "mandatory": false, "description": "Date du constat de défaut (NULL si pas de défaut)"}
+      ],
+      "pii_fields": ["client_id"],
+      "pseudonymization": "SHA-256(client_id + sel_secret) — le sel est géré par Octaix, jamais transmis au CBS"
+    },
+    {
+      "table_id": "T02",
+      "name": "clients",
+      "description": "Profil financier du client à la date d'octroi (snapshot point-in-time)",
+      "mandatory": true,
+      "fields": [
+        {"field": "client_id",        "type": "VARCHAR(50)",  "mandatory": true,  "description": "Identifiant du client (pseudonymisé)"},
+        {"field": "date_snapshot",    "type": "DATE",         "mandatory": true,  "description": "Date du snapshot financier (= date_octroi)"},
+        {"field": "chiffre_affaires", "type": "DECIMAL(18,2)","mandatory": true,  "description": "CA annuel dernière clôture (XAF)"},
+        {"field": "ebitda",           "type": "DECIMAL(18,2)","mandatory": false, "description": "EBITDA annuel (XAF)"},
+        {"field": "resultat_net",     "type": "DECIMAL(18,2)","mandatory": false, "description": "Résultat net (XAF)"},
+        {"field": "total_actif",      "type": "DECIMAL(18,2)","mandatory": false, "description": "Total actif au bilan (XAF)"},
+        {"field": "dettes_financieres","type": "DECIMAL(18,2)","mandatory": false,"description": "Total dettes financières (XAF)"},
+        {"field": "tresorerie",       "type": "DECIMAL(18,2)","mandatory": false, "description": "Trésorerie nette (XAF)"},
+        {"field": "anciennete_annees","type": "DECIMAL(5,2)", "mandatory": true,  "description": "Ancienneté de l'entreprise en années"},
+        {"field": "forme_juridique",  "type": "VARCHAR(20)",  "mandatory": false, "description": "SA | SARL | GIE | EURL | EI"},
+        {"field": "nb_employes",      "type": "INTEGER",      "mandatory": false, "description": "Nombre d'employés déclarés"},
+        {"field": "score_bureau",     "type": "DECIMAL(5,4)", "mandatory": false, "description": "Score bureau de crédit CEMAC si disponible (0-1)"},
+        {"field": "nb_incidents_24m", "type": "INTEGER",      "mandatory": false, "description": "Nombre d'incidents de paiement 24 derniers mois"},
+        {"field": "encours_total_cbs","type": "DECIMAL(18,2)","mandatory": false, "description": "Total engagements en cours dans cette banque (XAF)"}
+      ],
+      "pii_fields": ["client_id"],
+      "note": "Les données financières doivent être au format SYSCOHADA. Les bilans OHADA sont acceptés."
+    },
+    {
+      "table_id": "T03",
+      "name": "echeanciers",
+      "description": "Historique des paiements d'échéances (une ligne par échéance)",
+      "mandatory": false,
+      "note": "Requis pour les features INST_* (comportement de remboursement). Fortement recommandé.",
+      "fields": [
+        {"field": "application_id",   "type": "VARCHAR(50)",  "mandatory": true,  "description": "Lien vers T01"},
+        {"field": "num_echeance",     "type": "INTEGER",      "mandatory": true,  "description": "Numéro de l'échéance"},
+        {"field": "date_due",         "type": "DATE",         "mandatory": true,  "description": "Date d'exigibilité contractuelle"},
+        {"field": "date_paiement",    "type": "DATE",         "mandatory": false, "description": "Date effective du paiement (NULL si impayé)"},
+        {"field": "montant_du",       "type": "DECIMAL(18,2)","mandatory": true,  "description": "Montant contractuel dû (XAF)"},
+        {"field": "montant_paye",     "type": "DECIMAL(18,2)","mandatory": true,  "description": "Montant effectivement payé (XAF)"},
+        {"field": "dpd",              "type": "INTEGER",      "mandatory": true,  "description": "Jours de retard à la date de paiement (0 si à temps)"}
+      ]
+    }
+  ],
+
+  "extraction_protocol": {
+    "method": "SFTP_ENCRYPTED",
+    "format": "Parquet (snappy compression) | CSV UTF-8 (fallback)",
+    "frequency": "MONTHLY pour le premier pilote — DAILY pour la production",
+    "encryption": "AES-256-GCM + clé PGP Octaix",
+    "retention_octaix": "5 ans (conformité COBAC) — données pseudonymisées uniquement",
+    "data_at_rest": "PostgreSQL Supabase avec chiffrement au repos (AES-256)",
+    "transfer_notes": [
+      "Aucune donnée nominative (nom, adresse, numéro de compte) ne doit être transmise.",
+      "Le client_id doit être pseudonymisé AVANT extraction côté CBS.",
+      "Un accord de traitement des données (DPA) doit être signé avant tout transfert."
+    ]
+  },
+
+  "quality_gates": [
+    {"check": "defaut_flag non null pour toutes les applications > 24 mois", "severity": "BLOCKER"},
+    {"check": "date_octroi < date_debut < date_echeance",                    "severity": "BLOCKER"},
+    {"check": "Taux de défaut entre 1% et 40%",                             "severity": "BLOCKER"},
+    {"check": "Minimum 500 défauts dans le dataset d'entraînement",          "severity": "BLOCKER"},
+    {"check": "Pas de client_id en clair (SHA-256 requis)",                  "severity": "BLOCKER"},
+    {"check": "chiffre_affaires > 0 pour toutes les lignes",                "severity": "WARNING"},
+    {"check": "score_bureau disponible pour >= 30% des dossiers",            "severity": "WARNING"},
+    {"check": "Historique écheancier T03 >= 18 mois pour les crédits actifs","severity": "WARNING"}
+  ],
+
+  "timeline_pilot": {
+    "step_1": "Signature DPA + accord pilote (J0)",
+    "step_2": "Extraction échantillon 1000 dossiers + validation qualité (J0 → J+14)",
+    "step_3": "Extraction complète 24 mois (J+15 → J+30)",
+    "step_4": "Entraînement modèle CEMAC + OOT validation (J+31 → J+60)",
+    "step_5": "Shadow scoring en production (J+61 → J+90)",
+    "step_6": "Promotion CHALLENGER → CHAMPION (J+90 si gates validées)"
+  }
+}

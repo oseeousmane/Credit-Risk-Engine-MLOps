@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OrchestrationService } from './orchestration.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { IFRS9Stage } from '@prisma/client';
 
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -13,7 +15,9 @@ export interface ScoreRequest {
   pdCurrent: number;
   exposure: number;
   riskLevel: string;
+  requestId?: string;       // corrélation NestJS ↔ FastAPI (X-Request-ID)
   // Counterparty context
+  counterpartyId?: string;
   internalRating?: string;
   sector?: string;
   yearsInBusiness?: number;
@@ -60,6 +64,25 @@ export interface FeatureLineage {
   imputedFeatures: string[];
 }
 
+export interface Ifrs9StagingSnapshot {
+  stage:              number;           // 1, 2 ou 3
+  staging_id?:        string;           // UUID généré par ifrs9_staging.py
+  ecl_horizon:        string;           // '12_MONTH' | 'LIFETIME'
+  ecl_provision:      number;           // provision en unités EAD
+  lgd_estimate:       number;           // LGD calculée (Two-Part Beta ou statique)
+  lgd_method:         string;           // méthode utilisée
+  lgd_p05?:           number | null;    // percentile 5% Monte-Carlo
+  lgd_p95?:           number | null;    // percentile 95% Monte-Carlo
+  lgd_sector_applied?: string | null;
+  ead_estimate:       number;
+  eir_used:           number;
+  rwa_estimate?:      number | null;
+  rwa_method?:        string | null;
+  sicr_triggered:     boolean;
+  staging_reasons:    string[];
+  pd_origination_used: number;
+}
+
 export interface ScoreResult {
   recommendation: 'APPROVE' | 'APPROVE_WITH_CONDITIONS' | 'SEND_TO_REVIEW' | 'REJECT';
   confidence: number;
@@ -73,12 +96,25 @@ export interface ScoreResult {
   qualityBand: string;
   featureLineage: FeatureLineage;
   inferenceTimestamp: string;
+  // IFRS 9 staging snapshot
+  ifrs9?: Ifrs9StagingSnapshot | null;
+  // Reason codes réglementaires COBAC
+  reasonCodes?: Record<string, unknown>[] | null;
+  // Notice adverse action COBAC
+  adverseActionNotice?: Record<string, unknown> | null;
+  // Shadow model comparison
+  shadowPdScore?: number | null;
+  shadowModelVersion?: string | null;
+  shadowPdDelta?: number | null;
 }
 
 // Thresholds aligned with DEMO_VS_PROD_BENCHMARK §5 and main.py apply_decision_policy().
 // Any change here MUST be mirrored in 03_risk_engine/main.py.
+// NOTE: AUTO_APPROVE_MAX_PD is intentionally set to 0.0 (disabled).
+// The fallback rule engine must NOT auto-approve — only route to human review.
+// Réactivation : positionner ZERO_TOUCH_ENABLED=true ET avoir un artefact PROD_CHAMPION validé.
 const POLICY = {
-  AUTO_APPROVE_MAX_PD: 0.8,   // was 0.5 — misaligned with main engine Elite tier (<= 0.8%)
+  AUTO_APPROVE_MAX_PD: 0.0,   // DÉSACTIVÉ — était 0.8. Aucune auto-approbation sur DEMO_BASELINE.
   AUTO_REJECT_MIN_PD: 6.0,
   AUTO_APPROVE_MAX_EXPOSURE: 50,
   REVIEW_MIN_EXPOSURE: 100,
@@ -91,10 +127,18 @@ export class ScoringService {
   private readonly scoringUrl: string;
   private readonly scoringApiKey: string;
   private readonly timeoutMs = 8000;
+  
+  // ── Circuit Breaker State ──
+  private cbState: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+  private cbFailureCount = 0;
+  private cbNextAttempt = 0;
+  private readonly CB_FAILURE_THRESHOLD = 3;
+  private readonly CB_COOLDOWN_MS = 15000; // 15 seconds cooldown
 
   constructor(
     private readonly orchestrator: OrchestrationService,
     private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
   ) {
     this.scoringUrl = this.config.get<string>('integrations.scoringServiceUrl') ?? 'http://localhost:8000';
     this.scoringApiKey = this.config.get<string>('integrations.scoringApiKey') ?? '';
@@ -107,8 +151,26 @@ export class ScoringService {
     const activeVersion = await this.orchestrator.getActiveModelVersion('XGBOOST');
     this.logger.log(`[Scoring] Application ${req.applicationId} via version ${activeVersion}`);
 
+    // Circuit Breaker Check
+    if (this.cbState === 'OPEN') {
+      if (Date.now() > this.cbNextAttempt) {
+        this.logger.warn(`[CircuitBreaker] HALF-OPEN: Retrying Python service for app=${req.applicationId}...`);
+        this.cbState = 'HALF_OPEN';
+      } else {
+        this.logger.warn(`[CircuitBreaker] OPEN: Traffic to Python blocked. Fast-failing to Rule Engine.`);
+        return { ...this.localRuleEngine(req), engine: 'FALLBACK', activeVersion: 'rule_engine_v1' };
+      }
+    }
+
     try {
-      const result = await this.callPythonService(req, activeVersion);
+      const result = await this.callPythonService(req);
+
+      // On success, reset the circuit breaker
+      if (this.cbState === 'HALF_OPEN') {
+        this.logger.log(`[CircuitBreaker] CLOSED: Python service recovered.`);
+        this.cbState = 'CLOSED';
+      }
+      this.cbFailureCount = 0;
 
       if (result.imputedFeaturesCount >= POLICY.LOW_QUALITY_IMPUTED_THRESHOLD) {
         this.logger.warn(
@@ -118,19 +180,112 @@ export class ScoringService {
       }
 
       this.logger.log(
-        `[Scoring] Success: app=${req.applicationId} â†’ ${result.recommendation} ` +
+        `[Scoring] Success: app=${req.applicationId} → ${result.recommendation} ` +
         `PD=${result.pdScore.toFixed(2)}% Quality=${result.qualityBand} Imputed=${result.imputedFeaturesCount}`
       );
-      return { ...result, engine: 'PYTHON', activeVersion };
+
+      // Persist IFRS9 staging audit — fire-and-forget
+      if (result.ifrs9) {
+        this.persistIfrs9Audit(req, result, activeVersion).catch((e: Error) =>
+          this.logger.error(`[IFRS9Audit] Persistence failed for app=${req.applicationId}: ${e.message}`)
+        );
+      }
+
+      // Persist shadow comparison — fire-and-forget
+      if (result.shadowPdScore !== null && result.shadowPdScore !== undefined && result.shadowModelVersion) {
+        this.persistShadowLog(req, result, activeVersion).catch((e: Error) =>
+          this.logger.error(`[ShadowLog] Persistence failed for app=${req.applicationId}: ${e.message}`)
+        );
+      }
+
+      return { ...result, engine: "PYTHON" as const, activeVersion };
     } catch (err) {
-      this.logger.warn(
-        `[Scoring] Python service unreachable. Activating explicit fallback. Error: ${(err as Error).message}`
-      );
+      this.handlePythonFailure(err);
       return { ...this.localRuleEngine(req), engine: 'FALLBACK', activeVersion: 'rule_engine_v1' };
     }
   }
 
-  private async callPythonService(req: ScoreRequest, activeVersion: string): Promise<ScoreResult> {
+  private async persistIfrs9Audit(
+    req: ScoreRequest,
+    result: ScoreResult,
+    modelVersion: string,
+  ): Promise<void> {
+    const s = result.ifrs9!;
+    const stageMap: Record<number, IFRS9Stage> = {
+      1: IFRS9Stage.STAGE_1,
+      2: IFRS9Stage.STAGE_2,
+      3: IFRS9Stage.STAGE_3,
+    };
+
+    await this.prisma.ifrs9StagingAudit.create({
+      data: {
+        stagingId:      s.staging_id ?? crypto.randomUUID(),
+        applicationId:  req.applicationId ?? null,
+        counterpartyId: req.counterpartyId ?? null,
+        stage:          stageMap[s.stage] ?? IFRS9Stage.STAGE_1,
+        sicrTriggered:  s.sicr_triggered ?? false,
+        stagingReasons: s.staging_reasons ?? [],
+        pdCurrent:      result.pdScore / 100,
+        pdOrigination:  s.pd_origination_used ?? result.pdScore / 100,
+        lgdEstimate:    s.lgd_estimate ?? 0.45,
+        lgdMethod:      s.lgd_method ?? 'static',
+        eadEstimate:    s.ead_estimate ?? req.exposure ?? 0,
+        eirUsed:        s.eir_used ?? 0.08,
+        eclProvision:   s.ecl_provision ?? 0,
+        eclHorizon:     s.ecl_horizon ?? '12_MONTH',
+        rwaEstimate:    s.rwa_estimate ?? null,
+        modelVersion,
+        scoredBy:       'PYTHON_MODEL',
+      },
+    });
+  }
+
+  private async persistShadowLog(
+    req: ScoreRequest,
+    result: ScoreResult,
+    championVersion: string,
+  ): Promise<void> {
+    const shadowPd   = result.shadowPdScore!;
+    const championPd = result.pdScore;
+    const delta      = shadowPd - championPd;
+
+    const championRec = result.recommendation;
+    const shadowRec   = this.applyShadowDecisionPolicy(shadowPd, req.exposure, req.riskLevel);
+
+    await this.prisma.shadowScoreLog.create({
+      data: {
+        applicationId:          req.applicationId ?? null,
+        requestId:              req.requestId ?? null,
+        championVersion,
+        championPdScore:        championPd,
+        championRecommendation: championRec,
+        shadowVersion:          result.shadowModelVersion!,
+        shadowPdScore:          shadowPd,
+        shadowPdDelta:          delta,
+        recommendationMatch:    championRec === shadowRec,
+        pdDeltaAbsPercent:      Math.abs(delta),
+      },
+    });
+  }
+
+  private applyShadowDecisionPolicy(pd: number, exposure: number, riskLevel: string): string {
+    if (pd > POLICY.AUTO_REJECT_MIN_PD) return 'REJECT';
+    if (exposure > POLICY.REVIEW_MIN_EXPOSURE || riskLevel.toUpperCase() === 'HIGH') return 'SEND_TO_REVIEW';
+    if (pd > POLICY.AUTO_APPROVE_MAX_PD) return 'APPROVE_WITH_CONDITIONS';
+    return 'APPROVE';
+  }
+
+  private handlePythonFailure(err: unknown) {
+    this.logger.error(`[Scoring] Python service failure: ${(err as Error).message}`);
+    this.cbFailureCount += 1;
+    if (this.cbFailureCount >= this.CB_FAILURE_THRESHOLD && this.cbState !== 'OPEN') {
+      this.logger.error(`[CircuitBreaker] TRIPPED! Opening circuit for ${this.CB_COOLDOWN_MS}ms.`);
+      this.cbState = 'OPEN';
+      this.cbNextAttempt = Date.now() + this.CB_COOLDOWN_MS;
+    }
+  }
+
+  private async callPythonService(req: ScoreRequest): Promise<ScoreResult> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
 
@@ -169,7 +324,11 @@ export class ScoringService {
       grace_period_months: req.gracePeriodMonths ?? 0,
     });
 
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const correlationId = req.requestId ?? crypto.randomUUID();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Request-ID': correlationId,
+    };
     if (this.scoringApiKey) {
       headers['X-Api-Key'] = this.scoringApiKey;
     }
@@ -216,6 +375,30 @@ export class ScoringService {
         imputedFeatures: lineage.imputed_features ?? [],
       },
       inferenceTimestamp: data.inference_timestamp ?? new Date().toISOString(),
+      // IFRS 9 staging snapshot — mappé depuis FastAPI, null si non disponible
+      ifrs9: data.ifrs9 ? {
+        stage:               data.ifrs9.stage,
+        ecl_horizon:         data.ifrs9.ecl_horizon,
+        ecl_provision:       data.ifrs9.ecl_provision,
+        lgd_estimate:        data.ifrs9.lgd_estimate,
+        lgd_method:          data.ifrs9.lgd_method,
+        lgd_p05:             data.ifrs9.lgd_p05 ?? null,
+        lgd_p95:             data.ifrs9.lgd_p95 ?? null,
+        lgd_sector_applied:  data.ifrs9.lgd_sector_applied ?? null,
+        ead_estimate:        data.ifrs9.ead_estimate,
+        eir_used:            data.ifrs9.eir_used,
+        rwa_estimate:        data.ifrs9.rwa_estimate ?? null,
+        rwa_method:          data.ifrs9.rwa_method ?? null,
+        sicr_triggered:      data.ifrs9.sicr_triggered,
+        staging_reasons:     data.ifrs9.staging_reasons ?? [],
+        pd_origination_used: data.ifrs9.pd_origination_used,
+        staging_id:          data.ifrs9.staging_id ?? undefined,
+      } as Ifrs9StagingSnapshot : null,
+      reasonCodes:         data.reason_codes ?? null,
+      adverseActionNotice: data.adverse_action_notice ?? null,
+      shadowPdScore:       data.shadow_pd_score ?? null,
+      shadowModelVersion:  data.shadow_model_version ?? null,
+      shadowPdDelta:       data.shadow_pd_delta ?? null,
     };
   }
 

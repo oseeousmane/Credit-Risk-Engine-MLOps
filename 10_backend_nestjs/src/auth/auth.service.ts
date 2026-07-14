@@ -8,9 +8,11 @@ import { ConfigService } from '@nestjs/config';
 import { Role } from '@prisma/client';
 
 // â”€â”€â”€ Bridge Flag â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// When `SELECT count(*) FROM "User" WHERE "passwordAlgorithm" = 'SHA256'` = 0,
-// delete the entire block marked [LEGACY_SHA256_BRIDGE] below and this flag.
-const LEGACY_SHA256_BRIDGE_ENABLED = true;
+// SHA-256 bridge — migration vers bcrypt(12). OFF par défaut (secure by default).
+// Activer UNIQUEMENT pendant la migration avec SHA256_BRIDGE_ENABLED=true.
+// Désactiver dès que getMigrationStatus().migrationComplete === true.
+const LEGACY_SHA256_BRIDGE_ENABLED =
+  process.env.SHA256_BRIDGE_ENABLED === 'true';
 
 // SHA-256 pattern: 64 hex characters, NO bcrypt prefix
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
@@ -30,9 +32,63 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
+  /**
+   * Appelé par le AppModule au démarrage pour vérifier l'état de la migration SHA-256.
+   * Logue une alerte si des comptes SHA-256 subsistent et rappelle la deadline.
+   */
+  async auditSha256BridgeOnStartup(): Promise<void> {
+    if (!LEGACY_SHA256_BRIDGE_ENABLED) {
+      this.logger.log('[AUTH_BRIDGE] SHA256 bridge inactive (default). Set SHA256_BRIDGE_ENABLED=true to enable migration.');
+      return;
+    }
+    this.logger.warn('[AUTH_BRIDGE] SHA256 bridge ACTIVE — migration mode. Disable once migrationComplete=true.');
+    try {
+      const status = await this.getMigrationStatus();
+      if (status.migrationComplete) {
+        this.logger.log(
+          '[AUTH_BRIDGE] Migration complete: 0 SHA-256 accounts remain. ' +
+          'Unset SHA256_BRIDGE_ENABLED and remove the bridge on next deploy.',
+        );
+      } else {
+        this.logger.warn(
+          `[AUTH_BRIDGE] ${status.legacy} SHA-256 account(s) pending migration (${status.total} total). ` +
+          'Accounts migrate silently on next login. Monitor via GET /admin/auth/migration-status.',
+        );
+      }
+    } catch {
+      // Si la DB n'est pas encore prete au startup, on ignore silencieusement
+    }
+  }
+
   async login(email: string, password: string) {
     if (!email || !password) {
       throw new UnauthorizedException('Email and password are required');
+    }
+
+    // ── Dev-only demo bypass — works without a live DB ────────────────────────
+    // Activated only when NODE_ENV !== 'production'. Never reachable in prod.
+    if (process.env.NODE_ENV !== 'production') {
+      const DEMO_USERS: Record<string, { password: string; role: Role; name: string; id: string }> = {
+        'analyst@riskengine.com': { password: 'Demo@2026', role: 'ANALYST' as Role, name: 'Demo Analyst', id: 'demo-analyst-001' },
+        'manager@riskengine.com': { password: 'Demo@2026', role: 'MANAGER' as Role, name: 'Demo Manager', id: 'demo-manager-001' },
+        'cro@riskengine.com':     { password: 'Demo@2026', role: 'CRO'     as Role, name: 'Demo CRO',     id: 'demo-cro-001'     },
+        'admin@riskengine.com':   { password: 'Demo@2026', role: 'ADMIN'   as Role, name: 'Demo Admin',   id: 'demo-admin-001'   },
+      };
+      const demo = DEMO_USERS[email];
+      if (demo && demo.password === password) {
+        const payload = { sub: demo.id, email, role: demo.role, name: demo.name, counterpartyId: null };
+        const access_token = this.jwtService.sign(payload);
+        const refresh_token = this.jwtService.sign(
+          { sub: demo.id },
+          { secret: this.config.get<string>('auth.refreshSecret')!, expiresIn: '24h' } as JwtSignOptions,
+        );
+        this.logger.log(`[AUTH_DEMO] Demo login: ${email} | role=${demo.role}`);
+        return {
+          access_token,
+          refresh_token,
+          user: { id: demo.id, name: demo.name, email, role: demo.role, counterpartyId: null, clientFirm: null },
+        };
+      }
     }
 
     const allowedDomains = this.config.get<string[]>('oidc.allowedDomains') || [];
@@ -191,6 +247,7 @@ export class AuthService {
   }
 
   async logout(userId: string) {
+    if (process.env.NODE_ENV !== 'production' && userId?.startsWith('demo-')) return;
     await this.prisma.user.update({ where: { id: userId }, data: { hashedRefreshToken: null } });
   }
 

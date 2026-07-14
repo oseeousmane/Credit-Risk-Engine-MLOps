@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, ForbiddenException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ScoringService } from '../scoring/scoring.service';
@@ -19,6 +19,7 @@ export class DecisioningService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly scoring: ScoringService,
+    @Inject(forwardRef(() => PipelineService))
     private readonly pipelineService: PipelineService,
     private readonly riskMath: RiskMathService,
     private readonly monitoring: MonitoringService,
@@ -76,9 +77,14 @@ export class DecisioningService {
     });
 
     this.logger.log(
-      `[Evaluate] app=${app.reqId} â†’ ${scoreResult.recommendation} ` +
+      `[Evaluate] app=${app.reqId} -> ${scoreResult.recommendation} ` +
       `PD=${scoreResult.pdScore.toFixed(2)}% Quality=${scoreResult.qualityBand} Imputed=${scoreResult.imputedFeaturesCount}`
     );
+
+    // NOTE: IFRS9 staging is already persisted as a dedicated ifrs9StagingAudit row
+    // inside ScoringService.persistIfrs9Audit (fire-and-forget). Writing a second
+    // record here would create a duplicate audit entry per scoring call.
+    // An AuditEvent with eventType=’IFRS9_STAGING’ is therefore intentionally omitted.
 
     return {
       recommendation: scoreResult.recommendation,
@@ -94,7 +100,62 @@ export class DecisioningService {
       qualityBand: scoreResult.qualityBand,
       featureLineage: scoreResult.featureLineage,
       inferenceTimestamp: scoreResult.inferenceTimestamp,
+      ifrs9: scoreResult.ifrs9,
     };
+  }
+
+  /**
+   * ZERO-TOUCH AUTO-APPROVAL — DÉSACTIVÉE (Gouvernance des risques)
+   *
+   * Raison : Le modèle actif (pd_xgb_v1) est un artefact DEMO_BASELINE entraîné
+   * sur des données publiques russo-asiatiques (Home Credit, 2016-2018). Une décision
+   * machine autonome sur ce fondement n'est pas défendable devant un auditeur COBAC
+   * ni devant un comité des risques d'une institution bancaire CEMAC.
+   *
+   * Conditions de réactivation (toutes requises) :
+   *   1. Artefact PROD_CHAMPION promu — entraîné sur données bancaires CEMAC réelles
+   *   2. Validation OOT indépendante par validateur MRM externe agréé
+   *   3. Approbation écrite du Comité des Risques avec plafond explicite
+   *   4. Paramètre ENV ZERO_TOUCH_ENABLED=true positionné en production
+   *
+   * Toute réactivation sans ces 4 conditions est une faute de gouvernance.
+   */
+  async attemptZeroTouchApproval(applicationId: string) {
+    // ── GARDE PERMANENTE : Zero-Touch désactivée jusqu'à PROD_CHAMPION validé ──
+    const enabled = process.env.ZERO_TOUCH_ENABLED === 'true';
+    if (!enabled) {
+      this.logger.warn(
+        `[ZeroTouch] DISABLED — app=${applicationId} routed to human review. ` +
+        'Zero-Touch requires PROD_CHAMPION model + MRM sign-off. See decisioning.service.ts.'
+      );
+      return {
+        success: false,
+        reason: 'ZERO_TOUCH_DISABLED_PENDING_PROD_CHAMPION',
+        message:
+          'Auto-approval désactivée. Le modèle actif est DEMO_BASELINE. ' +
+          'Un modèle PROD_CHAMPION validé par un MRM externe est requis avant toute décision autonome.',
+      };
+    }
+
+    // Code préservé pour réactivation future contrôlée (ne s'exécute jamais sans ENV)
+    const app = await this.prisma.application.findUniqueOrThrow({
+      where: { id: applicationId },
+      include: { counterparty: true },
+    });
+    const exposure = (app.counterparty as any).exposure ?? app.requestedAmount;
+    if (exposure > 50000) {
+      return { success: false, reason: 'EXPOSURE_TOO_HIGH' };
+    }
+    const evaluation = await this.evaluateApplication(applicationId);
+    if (evaluation.pdScore < 0.5 && evaluation.recommendation === 'APPROVE') {
+      const systemActor = { id: '00000000-0000-0000-0000-000000000000', role: 'ADMIN' };
+      const result = await this.submitDecision(
+        applicationId, systemActor, 'APPROVE',
+        'Zero-Touch Auto-Approval Policy: PD < 0.5% and Exposure <= 50k.'
+      );
+      return { success: true, decisionId: result.decision.id };
+    }
+    return { success: false, reason: 'CRITERIA_UNMET' };
   }
 
   /**

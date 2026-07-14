@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
@@ -35,7 +35,7 @@ export function FAQSection() {
   return (
     <section className="py-32 relative overflow-hidden">
       {/* Background Decor */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#3ECF8E]/[0.03] blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-400/[0.03] blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-6 relative z-10">
         <div className="text-center mb-20">
@@ -43,7 +43,7 @@ export function FAQSection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#3ECF8E] mb-5"
+            className="text-[11px] font-bold uppercase tracking-[0.3em] text-brand-400 mb-5"
           >
             {t.badge}
           </motion.div>
@@ -68,7 +68,7 @@ export function FAQSection() {
               transition={{ delay: i * 0.1 }}
               className={`group border rounded-2xl transition-all duration-500 ${
                 openIndex === i 
-                ? 'bg-[#0a0a0a] border-[#3ECF8E]/20 shadow-[0_0_30px_rgba(62,207,142,0.05)]' 
+                ? 'bg-[#0a0a0a] border-brand-400/20 shadow-[0_0_30px_rgba(59,123,255,0.05)]' 
                 : 'bg-white/[0.02] border-white/[0.05] hover:border-white/[0.1] hover:bg-white/[0.04]'
               }`}
             >
@@ -79,7 +79,7 @@ export function FAQSection() {
                 <span className={`text-[17px] font-medium tracking-tight transition-colors duration-300 ${openIndex === i ? 'text-white' : 'text-zinc-300 group-hover:text-white'}`}>
                   {faq.q}
                 </span>
-                <div className={`flex-shrink-0 ml-4 p-2 rounded-full transition-all duration-500 ${openIndex === i ? 'bg-[#3ECF8E]/10 text-[#3ECF8E] rotate-180' : 'bg-white/[0.05] text-zinc-500'}`}>
+                <div className={`flex-shrink-0 ml-4 p-2 rounded-full transition-all duration-500 ${openIndex === i ? 'bg-brand-400/10 text-brand-400 rotate-180' : 'bg-white/[0.05] text-zinc-500'}`}>
                   <ChevronDown className="w-4 h-4" />
                 </div>
               </button>
@@ -92,7 +92,7 @@ export function FAQSection() {
                     transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
                   >
                     <div className="px-7 pb-8">
-                      <div className="h-px w-full bg-gradient-to-r from-[#3ECF8E]/20 to-transparent mb-6" />
+                      <div className="h-px w-full bg-gradient-to-r from-brand-400/20 to-transparent mb-6" />
                       <p className="text-[15px] font-medium text-zinc-400 leading-relaxed max-w-3xl">
                         {faq.a}
                       </p>

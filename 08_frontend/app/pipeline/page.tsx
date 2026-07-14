@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import { CheckCircle2, ArrowRight, Loader2, GitMerge, TrendingUp, Clock, Activity, FileText, X, ChevronRight } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -40,8 +40,8 @@ function KPICards({ totalNew, inReview, exposureSum }: { totalNew: number, inRev
     {
       label: 'New Apps',
       value: `${animatedNew}`,
-      icon: Activity, iconColor: 'text-[#3ECF8E]', iconBg: 'bg-[#3ECF8E]/10 border-[#3ECF8E]/20',
-      accent: '#3ECF8E'
+      icon: Activity, iconColor: 'text-brand-400', iconBg: 'bg-brand-400/10 border-brand-400/20',
+      accent: '#3B7BFF'
     },
     {
       label: 'In Review',
@@ -51,9 +51,9 @@ function KPICards({ totalNew, inReview, exposureSum }: { totalNew: number, inRev
     },
     {
       label: 'Pipeline Exposure',
-      value: `$${animatedExp.toFixed(1)}M`,
-      icon: TrendingUp, iconColor: 'text-[#3ECF8E]', iconBg: 'bg-[#3ECF8E]/10 border-[#3ECF8E]/20',
-      accent: '#3ECF8E'
+      value: `${animatedExp.toFixed(1)} Mds XAF`,
+      icon: TrendingUp, iconColor: 'text-brand-400', iconBg: 'bg-brand-400/10 border-brand-400/20',
+      accent: '#3B7BFF'
     }
   ]
 
@@ -167,7 +167,7 @@ export default function PipelinePage() {
   const getStageColor = (stage: string) => {
     if (stage.includes('REVIEW')) return 'bg-amber-400'
     if (stage.includes('DOC') || stage === 'SUBMITTED') return 'bg-white'
-    return 'bg-[#3ECF8E]'
+    return 'bg-brand-400'
   }
 
   return (
@@ -232,7 +232,7 @@ export default function PipelinePage() {
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="py-20 text-center">
-                    <Loader2 className="w-6 h-6 text-[#3ECF8E] animate-spin mx-auto mb-4" />
+                    <Loader2 className="w-6 h-6 text-brand-400 animate-spin mx-auto mb-4" />
                     <span className="text-zinc-500 text-xs font-medium tracking-widest uppercase">Loading Pipeline</span>
                   </td>
                 </tr>
@@ -248,7 +248,7 @@ export default function PipelinePage() {
                   key={app.id} 
                   onClick={() => setSelectedAppId(app.id)}
                   className={`border-b border-white/[0.02] last:border-0 cursor-pointer transition-colors group ${
-                    selectedAppId === app.id ? 'bg-[#3ECF8E]/[0.05]' : 'hover:bg-white/[0.02]'
+                    selectedAppId === app.id ? 'bg-brand-400/[0.05]' : 'hover:bg-white/[0.02]'
                   }`}
                 >
                   <td className="py-5 pl-6">
@@ -266,7 +266,7 @@ export default function PipelinePage() {
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">Requested</div>
                   </td>
                   <td className="py-5">
-                    <div className="text-[14px] font-black tabular-nums text-[#3ECF8E]">{(app.pd ?? 0).toFixed(2)}%</div>
+                    <div className="text-[14px] font-black tabular-nums text-brand-400">{(app.pd ?? 0).toFixed(2)}%</div>
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">RTG: <span className="text-white">{app.counterparty?.internalRating}</span></div>
                   </td>
                   <td className="py-5">
@@ -285,7 +285,7 @@ export default function PipelinePage() {
                          <button 
                            title="Review Application"
                            onClick={(e) => { e.stopPropagation(); setSelectedAppId(app.id); }}
-                           className="px-3 py-1.5 rounded-lg bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 text-[#3ECF8E] font-bold text-[10px] uppercase tracking-wider hover:bg-[#3ECF8E]/20 transition-all flex items-center gap-1.5"
+                           className="px-3 py-1.5 rounded-lg bg-brand-400/10 border border-brand-400/20 text-brand-400 font-bold text-[10px] uppercase tracking-wider hover:bg-brand-400/20 transition-all flex items-center gap-1.5"
                          >
                            <Activity className="w-3 h-3" /> Review
                          </button>
@@ -310,12 +310,12 @@ export default function PipelinePage() {
           <div className="relative w-full max-w-[600px] bg-[#0d0d0d] border border-white/[0.1] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             {/* Header / Banner */}
             <div className="p-6 border-b border-white/[0.06] bg-[#0A0A0A] relative">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#3ECF8E]/40 to-transparent" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-400/40 to-transparent" />
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-3 mb-1.5">
                     <span className="font-mono bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded text-[10px] text-zinc-400">{selectedApp.reqId}</span>
-                    <span className={`uppercase tracking-widest text-[9px] font-bold ${selectedApp.currentStage.includes('REVIEW') ? 'text-amber-400' : 'text-[#3ECF8E]'}`}>
+                    <span className={`uppercase tracking-widest text-[9px] font-bold ${selectedApp.currentStage.includes('REVIEW') ? 'text-amber-400' : 'text-brand-400'}`}>
                       {selectedApp.currentStage.replace(/_/g, ' ')}
                     </span>
                   </div>
@@ -335,10 +335,10 @@ export default function PipelinePage() {
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Exposure</span>
                   <span className="text-xl font-black tabular-nums text-white">${selectedApp.requestedAmount}M</span>
                 </div>
-                <div className="p-4 bg-[#3ECF8E]/[0.03] rounded-2xl border border-[#3ECF8E]/20 flex flex-col relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-[#3ECF8E]/10 to-transparent pointer-events-none" />
-                  <span className="relative text-[10px] font-bold text-[#3ECF8E] uppercase tracking-widest mb-1">PD (1Y)</span>
-                  <span className="relative text-xl font-black tabular-nums text-[#3ECF8E]">{(selectedApp.pd ?? 0).toFixed(2)}%</span>
+                <div className="p-4 bg-brand-400/[0.03] rounded-2xl border border-brand-400/20 flex flex-col relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-brand-400/10 to-transparent pointer-events-none" />
+                  <span className="relative text-[10px] font-bold text-brand-400 uppercase tracking-widest mb-1">PD (1Y)</span>
+                  <span className="relative text-xl font-black tabular-nums text-brand-400">{(selectedApp.pd ?? 0).toFixed(2)}%</span>
                 </div>
                 <div className="p-4 bg-white/[0.02] rounded-2xl border border-white/[0.04] flex flex-col">
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Rating</span>
@@ -356,7 +356,7 @@ export default function PipelinePage() {
                     value={overrideReason}
                     onChange={(e) => setOverrideReason(e.target.value)}
                     placeholder="Enter justification here..."
-                    className="w-full bg-[#0d0d0d] border border-white/[0.08] text-[13px] text-white rounded-xl p-4 outline-none focus:border-[#3ECF8E]/50 min-h-[120px] transition-colors resize-none placeholder:text-zinc-700"
+                    className="w-full bg-[#0d0d0d] border border-white/[0.08] text-[13px] text-white rounded-xl p-4 outline-none focus:border-brand-400/50 min-h-[120px] transition-colors resize-none placeholder:text-zinc-700"
                   />
                 </div>
               ) : (
@@ -365,13 +365,13 @@ export default function PipelinePage() {
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 mb-4">Underwriting Workflow</h3>
                     <div className="flex items-center gap-3">
                       <div className="flex-1 bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 flex flex-col gap-1 relative overflow-hidden">
-                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#3ECF8E]" />
+                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-400" />
                          <span className="text-[9px] text-zinc-500 uppercase tracking-wider pl-1">KYC / AML</span>
                          <span className="text-xs font-bold text-white pl-1">Cleared</span>
                       </div>
                       <ArrowRight className="w-4 h-4 text-zinc-700" />
                       <div className="flex-1 bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 flex flex-col gap-1 relative overflow-hidden">
-                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#3ECF8E]" />
+                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-400" />
                          <span className="text-[9px] text-zinc-500 uppercase tracking-wider pl-1">Documents</span>
                          <span className="text-xs font-bold text-white pl-1">Validated</span>
                       </div>
@@ -383,10 +383,10 @@ export default function PipelinePage() {
                     </div>
                   </div>
                   
-                  <div className="bg-[#3ECF8E]/[0.02] border border-[#3ECF8E]/10 rounded-xl p-4 flex items-start gap-3">
-                    <CheckCircle2 className="w-4 h-4 text-[#3ECF8E] mt-0.5" />
+                  <div className="bg-brand-400/[0.02] border border-brand-400/10 rounded-xl p-4 flex items-start gap-3">
+                    <CheckCircle2 className="w-4 h-4 text-brand-400 mt-0.5" />
                     <div>
-                      <h4 className="text-[13px] font-bold text-[#3ECF8E]">MLOps Recommendation: Approve</h4>
+                      <h4 className="text-[13px] font-bold text-brand-400">MLOps Recommendation: Approve</h4>
                       <p className="text-[11px] text-zinc-400 mt-1.5 leading-relaxed">Model confidence is high. Financials demonstrate robust liquidity. Probability of Default (PD) is firmly within the risk appetite framework.</p>
                     </div>
                   </div>
@@ -415,7 +415,7 @@ export default function PipelinePage() {
                   <button 
                     disabled={scoreMutation.isPending}
                     onClick={() => scoreMutation.mutate(selectedApp.id)}
-                    className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#030303] font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(62,207,142,0.2)]"
+                    className="w-full bg-brand-400 hover:bg-brand-400/90 text-[#030303] font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(59,123,255,0.2)]"
                   >
                     {scoreMutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Scoring...</> : <><ArrowRight className="w-4 h-4" /> Execute MLOps Scoring</>}
                   </button>
@@ -425,7 +425,7 @@ export default function PipelinePage() {
                   <button 
                     disabled={moveStageMutation.isPending}
                     onClick={() => moveStageMutation.mutate({ id: selectedApp.id, stage: 'ANALYST_REVIEW' })}
-                    className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#030303] font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(62,207,142,0.2)]"
+                    className="w-full bg-brand-400 hover:bg-brand-400/90 text-[#030303] font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(59,123,255,0.2)]"
                   >
                     {moveStageMutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : 'Move to Analyst Review'}
                   </button>
@@ -435,7 +435,7 @@ export default function PipelinePage() {
                   <button 
                     disabled={moveStageMutation.isPending}
                     onClick={() => moveStageMutation.mutate({ id: selectedApp.id, stage: 'MANAGER_REVIEW' })}
-                    className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#030303] font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(62,207,142,0.2)]"
+                    className="w-full bg-brand-400 hover:bg-brand-400/90 text-[#030303] font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(59,123,255,0.2)]"
                   >
                     {moveStageMutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : 'Submit to Manager'}
                   </button>
@@ -449,7 +449,7 @@ export default function PipelinePage() {
                   <button 
                     disabled={manualDecisionMutation.isPending}
                     onClick={() => manualDecisionMutation.mutate({ id: selectedApp.id, status: 'APPROVE', reason: 'Manager Approval' })}
-                    className="flex-1 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#030303] font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(62,207,142,0.2)]"
+                    className="flex-1 bg-brand-400 hover:bg-brand-400/90 text-[#030303] font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm shadow-[0_0_20px_rgba(59,123,255,0.2)]"
                   >
                     {manualDecisionMutation.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Approving...</> : 'Approve'}
                   </button>

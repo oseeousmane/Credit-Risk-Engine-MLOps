@@ -17,7 +17,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; email: string; role: string }) {
+  async validate(payload: { sub: string; email: string; role: string; name?: string }) {
+    // Dev-only: demo users have synthetic IDs that don't exist in DB
+    if (process.env.NODE_ENV !== 'production' && payload.sub?.startsWith('demo-')) {
+      return {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name ?? payload.email,
+        role: payload.role,
+        counterpartyId: null,
+        authProvider: 'LOCAL',
+      };
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {

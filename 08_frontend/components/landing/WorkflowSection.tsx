@@ -49,7 +49,7 @@ const steps = [
 ]
 
 const colorMap: Record<string, { icon: string; number: string; connector: string; dot: string }> = {
-  blue:    { icon: 'text-[#3ECF8E]',    number: 'text-[#3ECF8E]/40',   connector: 'bg-[#3ECF8E]/20',    dot: 'bg-[#3ECF8E]' },
+  blue:    { icon: 'text-brand-400',    number: 'text-brand-400/40',   connector: 'bg-brand-400/20',    dot: 'bg-brand-400' },
   indigo:  { icon: 'text-indigo-400',  number: 'text-indigo-500/40', connector: 'bg-indigo-500/20',  dot: 'bg-indigo-400' },
   amber:   { icon: 'text-amber-400',   number: 'text-amber-500/40',  connector: 'bg-amber-500/20',   dot: 'bg-amber-400' },
   emerald: { icon: 'text-emerald-400', number: 'text-emerald-500/40',connector: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
@@ -85,7 +85,7 @@ export function WorkflowSection() {
       <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E] mb-4">{header.badge}</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400 mb-4">{header.badge}</div>
           <h2 className="text-3xl sm:text-4xl font-medium text-white mb-5 tracking-tight">{header.title}</h2>
           <p className="text-[15px] font-medium text-zinc-400 max-w-2xl mx-auto leading-relaxed">{header.desc}</p>
         </div>
@@ -114,7 +114,7 @@ export function WorkflowSection() {
                   <motion.div variants={nodeVariants} className="relative z-10 flex flex-col items-center">
                     <motion.div 
                       whileHover={{ scale: 1.05, y: -2 }}
-                      className="group relative w-14 h-14 rounded-2xl bg-[#050505] border border-white/[0.04] flex items-center justify-center mb-5 overflow-hidden transition-all duration-500 hover:border-white/[0.1] hover:shadow-lg"
+                      className="group relative w-14 h-14 rounded-2xl bg-surface-0 border border-white/[0.04] flex items-center justify-center mb-5 overflow-hidden transition-all duration-500 hover:border-white/[0.1] hover:shadow-lg"
                     >
                       <div className={`absolute inset-0 bg-${s.color}-500/[0.03] opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                       <s.icon className={`relative z-10 w-5 h-5 text-zinc-500 group-hover:${c.icon} transition-colors duration-500`} />
@@ -137,7 +137,7 @@ export function WorkflowSection() {
               <div key={s.label} className="flex gap-5">
                 {/* Timeline */}
                 <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-xl bg-[#050505] border border-white/[0.04] flex items-center justify-center flex-shrink-0`}>
+                  <div className={`w-10 h-10 rounded-xl bg-surface-0 border border-white/[0.04] flex items-center justify-center flex-shrink-0`}>
                     <s.icon className={`w-4 h-4 text-zinc-400`} />
                   </div>
                   {i < steps.length - 1 && <div className="w-px flex-1 bg-white/[0.04] my-3" />}

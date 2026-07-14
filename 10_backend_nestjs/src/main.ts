@@ -18,11 +18,22 @@ async function bootstrap() {
 
   const isProduction = config.get<string>('environment') === 'production';
 
+  // ── Session cookie hardening ──────────────────────────────────────────────
+  // httpOnly : JS côté client ne peut pas lire le cookie (anti-XSS)
+  // secure   : cookie transmis uniquement sur HTTPS (prod) ou HTTP (dev)
+  // sameSite : 'lax' — protège contre CSRF tout en autorisant les redirections GET
+  // maxAge   : 8h en prod (journée de travail), 24h en dev
   app.use(
     session({
       secret: config.get<string>('auth.sessionSecret')!,
       resave: false,
       saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: isProduction ? 8 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
+      },
     }),
   );
 
@@ -32,9 +43,44 @@ async function bootstrap() {
   });
 
   // â”€â”€ Institutional Security Headers (Helmet) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Helmet — Security Headers institutionnels ─────────────────────────────
+  // CSP explicite en dev ET prod. Le mode dev est relâché (unsafe-inline pour
+  // Next.js HMR) mais n'est jamais false — une politique nulle est pire qu'une
+  // politique relâchée car elle n'offre aucune protection contre les injections.
+  const cspDirectives = isProduction
+    ? {
+        defaultSrc: ["'self'"],
+        scriptSrc:  ["'self'"],
+        styleSrc:   ["'self'", "'unsafe-inline'"],  // Tailwind inline styles
+        imgSrc:     ["'self'", "data:", "blob:"],
+        fontSrc:    ["'self'"],
+        connectSrc: ["'self'"],
+        frameSrc:   ["'none'"],
+        objectSrc:  ["'none'"],
+        upgradeInsecureRequests: [],
+      }
+    : {
+        // Dev : politique relâchée pour Next.js HMR + Swagger UI
+        defaultSrc: ["'self'"],
+        scriptSrc:  ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc:   ["'self'", "'unsafe-inline'"],
+        imgSrc:     ["'self'", "data:", "blob:", "https:"],
+        fontSrc:    ["'self'", "data:"],
+        connectSrc: ["'self'", "ws:", "wss:"],
+        frameSrc:   ["'self'"],
+        objectSrc:  ["'none'"],
+        upgradeInsecureRequests: [],
+      };
+
   app.use(helmet({
-    contentSecurityPolicy: isProduction ? undefined : false,
-    hsts: isProduction,
+    contentSecurityPolicy: { directives: cspDirectives },
+    hsts: isProduction
+      ? { maxAge: 31_536_000, includeSubDomains: true, preload: true }
+      : false,
+    xFrameOptions:        { action: 'deny' },
+    xContentTypeOptions:  true,
+    referrerPolicy:       { policy: 'strict-origin-when-cross-origin' },
+    permittedCrossDomainPolicies: false,
   }));
 
   // â”€â”€ CORS â€” restricted to the configured frontend origin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -1,7 +1,7 @@
 'use client'
 import { type ReactNode } from 'react'
 import { useState } from 'react'
-import { Play, RotateCcw, Loader2, AlertTriangle, BrainCircuit, ShieldCheck, TrendingUp, Activity } from 'lucide-react'
+import { Play, RotateCcw, Loader2, AlertTriangle, BrainCircuit, ShieldCheck, TrendingUp, Activity, FileWarning, Scale, Eye } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { fetchApi } from '@/lib/api-client'
 
@@ -98,7 +98,7 @@ export default function ScoringPage() {
           <button
             onClick={handleScore}
             disabled={mutation.isPending}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-colors disabled:opacity-50 shadow-lg shadow-blue-500/20"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-400 hover:bg-brand-400/90 text-white font-bold text-sm transition-colors disabled:opacity-50 shadow-brand"
           >
             {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             {mutation.isPending ? 'Scoring...' : 'Run Score'}
@@ -115,14 +115,14 @@ export default function ScoringPage() {
           <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Facilité de Crédit</h3>
             <div className="space-y-3">
-              <Field label="Montant demandé ($M)" value={form.requestedAmount} onChange={v => set('requestedAmount', +v)} type="number" />
-              <Field label="Exposition totale ($M)" value={form.exposure} onChange={v => set('exposure', +v)} type="number" />
+              <Field label="Montant demandé (Mds XAF)" value={form.requestedAmount} onChange={v => set('requestedAmount', +v)} type="number" />
+              <Field label="Exposition totale (Mds XAF)" value={form.exposure} onChange={v => set('exposure', +v)} type="number" />
               <Field label="PD courante (%)" value={form.pdCurrent} onChange={v => set('pdCurrent', +v)} type="number" step="0.1" />
               <SelectField label="Niveau de risque" value={form.riskLevel} onChange={v => set('riskLevel', v)} options={RISK_LEVELS} />
               <SelectField label="Type de facilité" value={form.facilityType} onChange={v => set('facilityType', v)} options={FACILITY_TYPES} />
               <Field label="Durée (mois)" value={form.tenorMonths} onChange={v => set('tenorMonths', +v)} type="number" />
               <SelectField label="Type de collatéral" value={form.collateralType} onChange={v => set('collateralType', v)} options={COLLATERAL_TYPES} />
-              <Field label="Valeur collatéral ($M)" value={form.collateralValue} onChange={v => set('collateralValue', +v)} type="number" />
+              <Field label="Valeur collatéral (Mds XAF)" value={form.collateralValue} onChange={v => set('collateralValue', +v)} type="number" />
             </div>
           </div>
 
@@ -147,7 +147,7 @@ export default function ScoringPage() {
 
           {/* Financials */}
           <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-5">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Données Financières ($M)</h3>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-4">Données Financières (Mds XAF)</h3>
             <div className="space-y-3">
               <Field label="Chiffre d'affaires" value={form.revenue} onChange={v => set('revenue', +v)} type="number" />
               <Field label="EBITDA" value={form.ebitda} onChange={v => set('ebitda', +v)} type="number" />
@@ -188,14 +188,42 @@ export default function ScoringPage() {
           )}
 
           {mutation.isPending && (
-            <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl flex flex-col items-center justify-center min-h-[400px] gap-4">
-              <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-              <p className="text-zinc-400 text-sm font-medium">Calcul PD en cours — moteur Python...</p>
+            <div className="bg-surface-0 border border-white/[0.08] rounded-2xl p-8 flex flex-col min-h-[400px] gap-6 animate-pulse">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-brand-400/20 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-brand-400 animate-spin" />
+                </div>
+                <div>
+                  <div className="h-5 w-48 bg-white/10 rounded mb-2"></div>
+                  <div className="h-3 w-32 bg-white/5 rounded"></div>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="h-20 bg-white/5 rounded-xl"></div>
+                <div className="h-20 bg-white/5 rounded-xl"></div>
+                <div className="h-20 bg-white/5 rounded-xl"></div>
+                <div className="h-20 bg-white/5 rounded-xl"></div>
+              </div>
+              <div className="h-32 bg-white/5 rounded-2xl mt-2"></div>
+              <div className="h-40 bg-white/5 rounded-2xl"></div>
             </div>
           )}
 
           {result && (
             <>
+              {/* CRITICAL RISK warning banner */}
+              {form.riskLevel === 'CRITICAL' && (
+                <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 flex items-start gap-3 shadow-[0_0_20px_rgba(244,63,94,0.15)]">
+                  <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5 animate-pulse" />
+                  <div>
+                    <p className="text-rose-400 text-sm font-bold uppercase tracking-wide">ALERTE : PROFIL DE RISQUE CRITIQUE</p>
+                    <p className="text-rose-400/70 text-xs mt-0.5">
+                      Cette contrepartie est marquée comme CRITIQUE. Toute approbation nécessitera une dérogation exceptionnelle signée par le Comité des Risques (CRO).
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               {/* FALLBACK warning banner */}
               {result.engine?.includes('FALLBACK') && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
@@ -280,6 +308,108 @@ export default function ScoringPage() {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* ── Reason Codes COBAC ── */}
+              {result.reasonCodes && result.reasonCodes.length > 0 && (
+                <div className="bg-[#0d0d0d] border border-amber-500/20 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Scale className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                      Motifs réglementaires COBAC ({result.reasonCodes.length})
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    {result.reasonCodes.map((rc: any, i: number) => (
+                      <div key={i} className={`flex items-start gap-3 p-3 rounded-xl border ${
+                        rc.severity === 'PRIMARY'
+                          ? 'bg-rose-500/5 border-rose-500/20'
+                          : 'bg-zinc-500/5 border-zinc-500/15'
+                      }`}>
+                        <span className={`text-[9px] font-black font-mono px-2 py-0.5 rounded mt-0.5 flex-shrink-0 ${
+                          rc.severity === 'PRIMARY'
+                            ? 'bg-rose-500/20 text-rose-400'
+                            : 'bg-zinc-500/20 text-zinc-400'
+                        }`}>
+                          {rc.code}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-zinc-200 leading-snug">{rc.fr}</p>
+                          {rc.cobac_ref && (
+                            <p className="text-[10px] text-zinc-600 mt-1 font-mono">{rc.cobac_ref}</p>
+                          )}
+                        </div>
+                        <span className={`text-[9px] font-bold uppercase flex-shrink-0 mt-0.5 ${
+                          rc.severity === 'PRIMARY' ? 'text-rose-500' : 'text-zinc-600'
+                        }`}>
+                          {rc.severity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Notice Adverse Action COBAC ── */}
+              {result.adverseActionNotice && (
+                <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileWarning className="w-4 h-4 text-zinc-400" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                      Notice Adverse Action
+                    </h3>
+                    <span className="ml-auto text-[9px] font-mono text-zinc-600 bg-white/[0.03] px-2 py-0.5 rounded border border-white/[0.04]">
+                      {result.adverseActionNotice.decision_date} {result.adverseActionNotice.decision_time}
+                    </span>
+                  </div>
+
+                  {/* Decision summary */}
+                  <div className="mb-4 flex items-center gap-3">
+                    <span className="text-xs font-bold text-zinc-300">Décision :</span>
+                    <span className="text-xs font-black text-white">{result.adverseActionNotice.decision}</span>
+                    <span className="text-[10px] font-mono text-zinc-600">Réf : {result.adverseActionNotice.model_reference}</span>
+                  </div>
+
+                  {/* Primary reasons */}
+                  {result.adverseActionNotice.primary_reasons?.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 mb-2">Raisons principales</p>
+                      <div className="space-y-1.5">
+                        {result.adverseActionNotice.primary_reasons.map((r: any, i: number) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="text-[9px] font-mono text-zinc-600 bg-white/[0.03] px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5">{r.code}</span>
+                            <p className="text-xs text-zinc-300 leading-snug">{r.motif}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Client rights */}
+                  <div className="border-t border-white/[0.04] pt-3 mt-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Eye className="w-3 h-3 text-zinc-600" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Droits du demandeur</p>
+                    </div>
+                    <ul className="space-y-1">
+                      {result.adverseActionNotice.client_rights?.map((right: string, i: number) => (
+                        <li key={i} className="text-[11px] text-zinc-500 flex items-start gap-1.5">
+                          <span className="text-zinc-700 flex-shrink-0 mt-px">•</span>
+                          {right}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Human in loop */}
+                  {result.adverseActionNotice.human_in_loop && (
+                    <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                      <p className="text-[10px] text-zinc-600 italic leading-relaxed">
+                        {result.adverseActionNotice.human_in_loop}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

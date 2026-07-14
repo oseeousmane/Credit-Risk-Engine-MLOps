@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import ClientPortalAuthWrapper from './AuthWrapper'
 
 export const metadata: Metadata = {
-  title: 'Client Portal | RiskEngine Enterprise',
-  description: 'Secure enterprise client portal for institutional credit applications',
+  title: 'Portail Client | ORE — Octaix Risk Engine',
+  description: 'Portail client sécurisé Octaix Risk Engine (ORE) pour le dépôt et le suivi des demandes de crédit institutionnelles. Conforme COBAC / Bâle III.',
 }
 
 export default function ClientPortalLayout({ children }: { children: React.ReactNode }) {

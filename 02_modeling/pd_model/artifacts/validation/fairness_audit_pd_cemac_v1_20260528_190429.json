@@ -1,0 +1,765 @@
+{
+  "model_name": "pd_cemac_v1",
+  "audit_timestamp": "2026-05-28T19:04:29.450285",
+  "n_samples": 10000,
+  "overall_default_rate": 0.1457,
+  "segment_performance": [
+    {
+      "segment_col": "CODE_GENDER",
+      "segment_value": "0.0",
+      "n_samples": 6495,
+      "default_rate": 0.146882,
+      "auc": 0.9325,
+      "gini": 0.8651,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "CODE_GENDER",
+      "segment_value": "1.0",
+      "n_samples": 3505,
+      "default_rate": 0.143509,
+      "auc": 0.9365,
+      "gini": 0.873,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "45-55",
+      "n_samples": 3818,
+      "default_rate": 0.143269,
+      "auc": 0.9245,
+      "gini": 0.8489,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "55+",
+      "n_samples": 3805,
+      "default_rate": 0.125887,
+      "auc": 0.9491,
+      "gini": 0.8983,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "35-45",
+      "n_samples": 2198,
+      "default_rate": 0.175614,
+      "auc": 0.9201,
+      "gini": 0.8403,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "25-35",
+      "n_samples": 179,
+      "default_rate": 0.251397,
+      "auc": 0.9249,
+      "gini": 0.8498,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "1.0",
+      "n_samples": 3450,
+      "default_rate": 0.135652,
+      "auc": 0.9324,
+      "gini": 0.8648,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "2.0",
+      "n_samples": 2009,
+      "default_rate": 0.110005,
+      "auc": 0.9553,
+      "gini": 0.9106,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "0.0",
+      "n_samples": 688,
+      "default_rate": 0.119186,
+      "auc": 0.9467,
+      "gini": 0.8935,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "3.0",
+      "n_samples": 3074,
+      "default_rate": 0.169811,
+      "auc": 0.9139,
+      "gini": 0.8278,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "4.0",
+      "n_samples": 779,
+      "default_rate": 0.210526,
+      "auc": 0.9342,
+      "gini": 0.8684,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "4.0",
+      "n_samples": 2027,
+      "default_rate": 0.143562,
+      "auc": 0.944,
+      "gini": 0.888,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "2.0",
+      "n_samples": 1973,
+      "default_rate": 0.137861,
+      "auc": 0.9235,
+      "gini": 0.8469,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "1.0",
+      "n_samples": 2001,
+      "default_rate": 0.142429,
+      "auc": 0.9343,
+      "gini": 0.8685,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "3.0",
+      "n_samples": 1996,
+      "default_rate": 0.158818,
+      "auc": 0.9298,
+      "gini": 0.8597,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "0.0",
+      "n_samples": 2003,
+      "default_rate": 0.145781,
+      "auc": 0.9369,
+      "gini": 0.8738,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "4.0",
+      "n_samples": 1998,
+      "default_rate": 0.13013,
+      "auc": 0.9391,
+      "gini": 0.8782,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "2.0",
+      "n_samples": 2017,
+      "default_rate": 0.13882,
+      "auc": 0.9328,
+      "gini": 0.8655,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "3.0",
+      "n_samples": 1976,
+      "default_rate": 0.137146,
+      "auc": 0.9299,
+      "gini": 0.8599,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "1.0",
+      "n_samples": 2001,
+      "default_rate": 0.150425,
+      "auc": 0.9264,
+      "gini": 0.8528,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "0.0",
+      "n_samples": 2008,
+      "default_rate": 0.171813,
+      "auc": 0.9414,
+      "gini": 0.8828,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    }
+  ],
+  "disparate_impact": [
+    {
+      "error": "Groupe r\u00e9f\u00e9rence 'M' non trouv\u00e9"
+    },
+    {
+      "protected_col": "AGE_BUCKET",
+      "reference_group": "55+",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": false,
+      "groups": [
+        {
+          "group": "25-35",
+          "reject_rate": 0.4581,
+          "n": 179,
+          "disparate_impact_ratio": 1.9674,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "35-45",
+          "reject_rate": 0.3562,
+          "n": 2198,
+          "disparate_impact_ratio": 1.5299,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "45-55",
+          "reject_rate": 0.3146,
+          "n": 3818,
+          "disparate_impact_ratio": 1.3509,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "55+",
+          "reject_rate": 0.2329,
+          "n": 3805,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_INCOME_TYPE",
+      "reference_group": "2.0",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": false,
+      "groups": [
+        {
+          "group": "0.0",
+          "reject_rate": 0.2369,
+          "n": 688,
+          "disparate_impact_ratio": 1.1989,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "1.0",
+          "reject_rate": 0.2864,
+          "n": 3450,
+          "disparate_impact_ratio": 1.4492,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "2.0",
+          "reject_rate": 0.1976,
+          "n": 2009,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        },
+        {
+          "group": "3.0",
+          "reject_rate": 0.3565,
+          "n": 3074,
+          "disparate_impact_ratio": 1.8042,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "4.0",
+          "reject_rate": 0.3954,
+          "n": 779,
+          "disparate_impact_ratio": 2.0008,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_EDUCATION_TYPE",
+      "reference_group": "1.0",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": false,
+      "groups": [
+        {
+          "group": "0.0",
+          "reject_rate": 0.2861,
+          "n": 2003,
+          "disparate_impact_ratio": 1.0114,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "1.0",
+          "reject_rate": 0.2829,
+          "n": 2001,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        },
+        {
+          "group": "2.0",
+          "reject_rate": 0.2884,
+          "n": 1973,
+          "disparate_impact_ratio": 1.0196,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "3.0",
+          "reject_rate": 0.3066,
+          "n": 1996,
+          "disparate_impact_ratio": 1.084,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "4.0",
+          "reject_rate": 0.3118,
+          "n": 2027,
+          "disparate_impact_ratio": 1.1023,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_HOUSING_TYPE",
+      "reference_group": "4.0",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": false,
+      "groups": [
+        {
+          "group": "0.0",
+          "reject_rate": 0.2968,
+          "n": 2008,
+          "disparate_impact_ratio": 1.0332,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "1.0",
+          "reject_rate": 0.3043,
+          "n": 2001,
+          "disparate_impact_ratio": 1.0594,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "2.0",
+          "reject_rate": 0.2905,
+          "n": 2017,
+          "disparate_impact_ratio": 1.0113,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "3.0",
+          "reject_rate": 0.2971,
+          "n": 1976,
+          "disparate_impact_ratio": 1.034,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "4.0",
+          "reject_rate": 0.2873,
+          "n": 1998,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        }
+      ]
+    }
+  ],
+  "equal_opportunity": [
+    {
+      "protected_col": "CODE_GENDER",
+      "tpr_gap": 0.0122,
+      "gap_flag": false,
+      "groups": [
+        {
+          "group": "0.0",
+          "tpr": 0.8036,
+          "n": 6495
+        },
+        {
+          "group": "1.0",
+          "tpr": 0.8158,
+          "n": 3505
+        }
+      ]
+    },
+    {
+      "protected_col": "AGE_BUCKET",
+      "tpr_gap": 0.1632,
+      "gap_flag": true,
+      "groups": [
+        {
+          "group": "45-55",
+          "tpr": 0.7823,
+          "n": 3818
+        },
+        {
+          "group": "55+",
+          "tpr": 0.8647,
+          "n": 3805
+        },
+        {
+          "group": "35-45",
+          "tpr": 0.7577,
+          "n": 2198
+        },
+        {
+          "group": "25-35",
+          "tpr": 0.7015,
+          "n": 179
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_INCOME_TYPE",
+      "tpr_gap": 0.1397,
+      "gap_flag": true,
+      "groups": [
+        {
+          "group": "1.0",
+          "tpr": 0.8095,
+          "n": 3450
+        },
+        {
+          "group": "2.0",
+          "tpr": 0.8893,
+          "n": 2009
+        },
+        {
+          "group": "0.0",
+          "tpr": 0.8531,
+          "n": 688
+        },
+        {
+          "group": "3.0",
+          "tpr": 0.7524,
+          "n": 3074
+        },
+        {
+          "group": "4.0",
+          "tpr": 0.7496,
+          "n": 779
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_EDUCATION_TYPE",
+      "tpr_gap": 0.0308,
+      "gap_flag": false,
+      "groups": [
+        {
+          "group": "4.0",
+          "tpr": 0.7909,
+          "n": 2027
+        },
+        {
+          "group": "2.0",
+          "tpr": 0.8048,
+          "n": 1973
+        },
+        {
+          "group": "1.0",
+          "tpr": 0.8217,
+          "n": 2001
+        },
+        {
+          "group": "3.0",
+          "tpr": 0.8029,
+          "n": 1996
+        },
+        {
+          "group": "0.0",
+          "tpr": 0.8194,
+          "n": 2003
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_HOUSING_TYPE",
+      "tpr_gap": 0.0304,
+      "gap_flag": false,
+      "groups": [
+        {
+          "group": "4.0",
+          "tpr": 0.8072,
+          "n": 1998
+        },
+        {
+          "group": "2.0",
+          "tpr": 0.8077,
+          "n": 2017
+        },
+        {
+          "group": "3.0",
+          "tpr": 0.7982,
+          "n": 1976
+        },
+        {
+          "group": "1.0",
+          "tpr": 0.7982,
+          "n": 2001
+        },
+        {
+          "group": "0.0",
+          "tpr": 0.8286,
+          "n": 2008
+        }
+      ]
+    }
+  ],
+  "group_calibration": [
+    {
+      "protected_col": "CODE_GENDER",
+      "has_calibration_issues": false,
+      "groups": [
+        {
+          "group": "0.0",
+          "n": 6495,
+          "observed_dr": 0.146882,
+          "predicted_dr": 0.141366,
+          "eo_ratio": 0.9624,
+          "calibration_flag": false
+        },
+        {
+          "group": "1.0",
+          "n": 3505,
+          "observed_dr": 0.143509,
+          "predicted_dr": 0.136256,
+          "eo_ratio": 0.9495,
+          "calibration_flag": false
+        }
+      ]
+    },
+    {
+      "protected_col": "AGE_BUCKET",
+      "has_calibration_issues": true,
+      "groups": [
+        {
+          "group": "45-55",
+          "n": 3818,
+          "observed_dr": 0.143269,
+          "predicted_dr": 0.142677,
+          "eo_ratio": 0.9959,
+          "calibration_flag": false
+        },
+        {
+          "group": "55+",
+          "n": 3805,
+          "observed_dr": 0.125887,
+          "predicted_dr": 0.121586,
+          "eo_ratio": 0.9658,
+          "calibration_flag": false
+        },
+        {
+          "group": "35-45",
+          "n": 2198,
+          "observed_dr": 0.175614,
+          "predicted_dr": 0.161582,
+          "eo_ratio": 0.9201,
+          "calibration_flag": false
+        },
+        {
+          "group": "25-35",
+          "n": 179,
+          "observed_dr": 0.251397,
+          "predicted_dr": 0.185571,
+          "eo_ratio": 0.7382,
+          "calibration_flag": true
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_INCOME_TYPE",
+      "has_calibration_issues": false,
+      "groups": [
+        {
+          "group": "1.0",
+          "n": 3450,
+          "observed_dr": 0.135652,
+          "predicted_dr": 0.131923,
+          "eo_ratio": 0.9725,
+          "calibration_flag": false
+        },
+        {
+          "group": "2.0",
+          "n": 2009,
+          "observed_dr": 0.110005,
+          "predicted_dr": 0.109764,
+          "eo_ratio": 0.9978,
+          "calibration_flag": false
+        },
+        {
+          "group": "0.0",
+          "n": 688,
+          "observed_dr": 0.119186,
+          "predicted_dr": 0.126948,
+          "eo_ratio": 1.0651,
+          "calibration_flag": false
+        },
+        {
+          "group": "3.0",
+          "n": 3074,
+          "observed_dr": 0.169811,
+          "predicted_dr": 0.153727,
+          "eo_ratio": 0.9053,
+          "calibration_flag": false
+        },
+        {
+          "group": "4.0",
+          "n": 779,
+          "observed_dr": 0.210526,
+          "predicted_dr": 0.205651,
+          "eo_ratio": 0.9768,
+          "calibration_flag": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_EDUCATION_TYPE",
+      "has_calibration_issues": false,
+      "groups": [
+        {
+          "group": "4.0",
+          "n": 2027,
+          "observed_dr": 0.143562,
+          "predicted_dr": 0.139186,
+          "eo_ratio": 0.9695,
+          "calibration_flag": false
+        },
+        {
+          "group": "2.0",
+          "n": 1973,
+          "observed_dr": 0.137861,
+          "predicted_dr": 0.133353,
+          "eo_ratio": 0.9673,
+          "calibration_flag": false
+        },
+        {
+          "group": "1.0",
+          "n": 2001,
+          "observed_dr": 0.142429,
+          "predicted_dr": 0.136058,
+          "eo_ratio": 0.9553,
+          "calibration_flag": false
+        },
+        {
+          "group": "3.0",
+          "n": 1996,
+          "observed_dr": 0.158818,
+          "predicted_dr": 0.147143,
+          "eo_ratio": 0.9265,
+          "calibration_flag": false
+        },
+        {
+          "group": "0.0",
+          "n": 2003,
+          "observed_dr": 0.145781,
+          "predicted_dr": 0.142068,
+          "eo_ratio": 0.9745,
+          "calibration_flag": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_HOUSING_TYPE",
+      "has_calibration_issues": false,
+      "groups": [
+        {
+          "group": "4.0",
+          "n": 1998,
+          "observed_dr": 0.13013,
+          "predicted_dr": 0.133123,
+          "eo_ratio": 1.023,
+          "calibration_flag": false
+        },
+        {
+          "group": "2.0",
+          "n": 2017,
+          "observed_dr": 0.13882,
+          "predicted_dr": 0.13827,
+          "eo_ratio": 0.996,
+          "calibration_flag": false
+        },
+        {
+          "group": "3.0",
+          "n": 1976,
+          "observed_dr": 0.137146,
+          "predicted_dr": 0.130628,
+          "eo_ratio": 0.9525,
+          "calibration_flag": false
+        },
+        {
+          "group": "1.0",
+          "n": 2001,
+          "observed_dr": 0.150425,
+          "predicted_dr": 0.140723,
+          "eo_ratio": 0.9355,
+          "calibration_flag": false
+        },
+        {
+          "group": "0.0",
+          "n": 2008,
+          "observed_dr": 0.171813,
+          "predicted_dr": 0.154965,
+          "eo_ratio": 0.9019,
+          "calibration_flag": false
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "protected_variables_tested": [
+      "CODE_GENDER",
+      "AGE_BUCKET",
+      "NAME_INCOME_TYPE",
+      "NAME_EDUCATION_TYPE",
+      "NAME_HOUSING_TYPE"
+    ],
+    "n_underperforming_segments": 0,
+    "underperforming_segments": [],
+    "n_adverse_impact_flags": 0,
+    "n_equal_opportunity_gaps": 2,
+    "n_calibration_issues": 1,
+    "promotion_gate_pass": false,
+    "promotion_gate_status": "BLOCKED \u2014 corriger les segments en sous-performance et les biais d\u00e9tect\u00e9s"
+  }
+}

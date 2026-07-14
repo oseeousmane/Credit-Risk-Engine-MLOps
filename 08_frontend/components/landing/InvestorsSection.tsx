@@ -8,7 +8,7 @@ export function InvestorsSection() {
     <section className="py-16 relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-6 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-10 shadow-sm">
-          <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E]">
+          <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400">
             Backed by Leading Institutions
           </span>
         </div>

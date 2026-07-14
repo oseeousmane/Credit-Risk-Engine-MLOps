@@ -15,22 +15,35 @@ const config: Config = {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       colors: {
-        // ─── Supabase brand green ───
+        // ─── Institutional electric blue ───
         brand: {
-          DEFAULT: '#3ECF8E',
-          50:  'rgba(62, 207, 142, 0.05)',
-          100: 'rgba(62, 207, 142, 0.10)',
-          200: 'rgba(62, 207, 142, 0.20)',
-          300: 'rgba(62, 207, 142, 0.30)',
-          400: '#3ECF8E',
-          500: '#3ECF8E',
+          DEFAULT: '#3B7BFF',
+          50:  'rgba(59, 123, 255, 0.05)',
+          100: 'rgba(59, 123, 255, 0.10)',
+          200: 'rgba(59, 123, 255, 0.20)',
+          300: 'rgba(59, 123, 255, 0.35)',
+          400: '#3B7BFF',
+          500: '#2563EB',
         },
-        // ─── Platform surfaces ───
+        // ─── Platform surfaces — deep navy ───
         surface: {
-          0: '#0a0a0a',
-          1: '#0f0f0f',
-          2: '#141414',
-          3: '#1a1a1a',
+          0: '#080E1C',
+          1: '#0B1325',
+          2: '#0F1A35',
+          3: '#162040',
+        },
+        // ─── Corporate Light Theme (Risk Dashboard) ───
+        corp: {
+          bg: '#F8FAFC',
+          card: '#FFFFFF',
+          border: '#E5E7EB',
+          sidebar: '#052C73',
+          primary: '#1D4ED8',
+          success: '#16A34A',
+          warning: '#F59E0B',
+          danger: '#DC2626',
+          textPrimary: '#0F172A',
+          textSecondary: '#64748B',
         },
       },
       letterSpacing: {
@@ -43,8 +56,8 @@ const config: Config = {
         black: '900',
       },
       boxShadow: {
-        brand:   '0 0 28px rgba(62, 207, 142, 0.25)',
-        'brand-lg': '0 0 48px rgba(62, 207, 142, 0.2)',
+        brand:   '0 0 28px rgba(59, 123, 255, 0.25)',
+        'brand-lg': '0 0 48px rgba(59, 123, 255, 0.2)',
         card:    '0 4px 24px rgba(0, 0, 0, 0.4)',
       },
       borderRadius: {
@@ -56,7 +69,7 @@ const config: Config = {
         '2xl': '24px',
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #3ECF8E 0%, #3b82f6 100%)',
+        'brand-gradient': 'linear-gradient(135deg, #3B7BFF 0%, #2563EB 100%)',
       },
       keyframes: {
         shimmer: {

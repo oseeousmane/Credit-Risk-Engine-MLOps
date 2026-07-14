@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -106,7 +106,7 @@ export function AdminDashboard() {
             <button 
               onClick={handleSave}
               disabled={saveMutation.isPending || isLoading}
-              className="px-5 py-2 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#0a0a0a] rounded-md text-[13px] font-semibold transition-colors shadow-[0_0_24px_rgba(62,207,142,0.15)] flex items-center gap-2 disabled:opacity-50"
+              className="px-5 py-2 bg-brand-400 hover:bg-brand-400/90 text-[#0a0a0a] rounded-md text-[13px] font-semibold transition-colors shadow-[0_0_24px_rgba(59,123,255,0.15)] flex items-center gap-2 disabled:opacity-50"
             >
               {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin text-[#0a0a0a]" /> : <Save className="w-4 h-4 text-[#0a0a0a]" />}
               Save Configuration
@@ -173,7 +173,7 @@ export function AdminDashboard() {
                     className="relative pl-8"
                   >
                    <div className={`absolute left-0 top-1.5 w-[23px] h-[23px] rounded-full flex items-center justify-center bg-[#0a0a0a] border border-white/[0.1] ${log.type === 'alert' ? 'shadow-[0_0_8px_rgba(244,63,94,0.5)] border-rose-500/50' : ''}`}>
-                     <div className={`w-2 h-2 rounded-full ${log.type === 'alert' ? 'bg-rose-500' : log.type === 'success' ? 'bg-[#3ECF8E]' : 'bg-blue-400'}`} />
+                     <div className={`w-2 h-2 rounded-full ${log.type === 'alert' ? 'bg-rose-500' : log.type === 'success' ? 'bg-brand-400' : 'bg-blue-400'}`} />
                    </div>
                    <div className="text-[12px] text-zinc-300 font-medium">{log.msg}</div>
                    <div className="text-[10px] text-zinc-500 mt-0.5">{log.time}</div>
@@ -193,8 +193,8 @@ export function AdminDashboard() {
                   </h2>
                   <p className="text-xs text-zinc-500">Active inference engines and threshold rules.</p>
                 </div>
-                <div className="flex items-center gap-2 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-full px-3 py-1 text-[11px] font-medium text-[#3ECF8E] shadow-[0_0_15px_rgba(62,207,142,0.1)]">
-                   <div className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" /> V4.2 Online
+                <div className="flex items-center gap-2 bg-brand-400/10 border border-brand-400/20 rounded-full px-3 py-1 text-[11px] font-medium text-brand-400 shadow-[0_0_15px_rgba(59,123,255,0.1)]">
+                   <div className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" /> V4.2 Online
                 </div>
               </div>
 
@@ -250,7 +250,7 @@ export function AdminDashboard() {
                      onClick={() => setAlertThreshold(level)}
                      className={`flex-1 py-3 text-[11px] font-bold tracking-widest rounded-xl border transition-all duration-300 ${
                        alertThreshold === level 
-                         ? 'bg-[#3ECF8E]/10 text-[#3ECF8E] border-[#3ECF8E]/30 shadow-[0_0_20px_rgba(62,207,142,0.15)] scale-105' 
+                         ? 'bg-brand-400/10 text-brand-400 border-brand-400/30 shadow-[0_0_20px_rgba(59,123,255,0.15)] scale-105' 
                          : 'bg-white/[0.02] text-zinc-500 border-white/[0.05] hover:bg-white/[0.06]'
                      }`}
                    >

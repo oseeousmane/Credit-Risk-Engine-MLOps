@@ -1,6 +1,7 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { DecisioningService } from '../decisioning/decisioning.service';
 import { PipelineStage, Role, User } from '@prisma/client';
 import { paginate } from '../common/pagination';
 import { PaginationDto } from '../common/dto/query.dto';
@@ -36,6 +37,8 @@ export class PipelineService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    @Inject(forwardRef(() => DecisioningService))
+    private readonly decisioningService: DecisioningService,
   ) {}
 
   async findAll(query: PaginationDto & { stage?: string }) {
@@ -109,6 +112,14 @@ export class PipelineService {
       previousValue: { stage: previousStage },
       newValue: { stage: newStage },
     });
+
+    // Zero-Touch Auto-Approval Trigger
+    if (newStage === 'SCORED') {
+      // Fire and forget (don't block the API response for the pipeline move)
+      this.decisioningService.attemptZeroTouchApproval(applicationId).catch((err) => {
+        console.error(`[ZeroTouch] Failed to process auto-approval for ${applicationId}:`, err);
+      });
+    }
 
     return updated;
   }

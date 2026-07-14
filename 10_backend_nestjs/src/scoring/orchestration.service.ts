@@ -88,13 +88,21 @@ export class OrchestrationService {
 
     // Simple Drift Alert Logic (PSI > 0.25 is severe drift)
     if (payload.psi && payload.psi > 0.25) {
-      this.logger.warn(`[MLOps] Severe Data Drift detected (PSI: ${payload.psi}). Triggering Alert.`);
+      this.logger.warn(`[MLOps] Severe Data Drift detected (PSI: ${payload.psi}). Triggering Alert & Downgrading Model.`);
+      
       await this.prisma.alert.create({
         data: {
           severity: 'CRITICAL',
           message: `Data Drift Alert: ${payload.versionTag} has PSI > 0.25 (Value: ${payload.psi})`,
-          detail: 'Model requires immediate retraining or challenger promotion.',
+          detail: 'Model requires immediate retraining. Status automatically downgraded to DEGRADED.',
         }
+      });
+
+      // Rétrograder le modèle à DEGRADED. Cela forcera le Circuit Breaker de scoring.service.ts
+      // à utiliser le Fallback Engine (ou une autre version HEALTHY).
+      await this.prisma.modelVersion.update({
+        where: { id: version.id },
+        data: { status: 'DEGRADED' }
       });
     }
   }

@@ -24,7 +24,7 @@ export function Header() {
   const pathname = usePathname()
   const title = Object.entries(pageTitles).sort((a, b) => b[0].length - a[0].length).find(([k]) =>
     pathname === k || (k !== '/' && pathname.startsWith(k))
-  )?.[1] ?? 'RiskEngine'
+  )?.[1] ?? 'ORE'
 
   return (
     <header className="h-16 flex items-center justify-between px-6 border-b border-white/[0.06] bg-[#080808] sticky top-0 z-40 flex-shrink-0">
@@ -34,9 +34,9 @@ export function Header() {
           initial={{ width: 256 }}
           whileFocus={{ width: 320 }}
           transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
-          className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 group focus-within:border-[#3ECF8E]/50 focus-within:bg-[#3ECF8E]/[0.02] transition-colors overflow-hidden"
+          className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 group focus-within:border-brand-400/50 focus-within:bg-brand-400/[0.02] transition-colors overflow-hidden"
         >
-          <Search className="w-3.5 h-3.5 text-zinc-600 group-focus-within:text-[#3ECF8E] flex-shrink-0 transition-colors" />
+          <Search className="w-3.5 h-3.5 text-zinc-600 group-focus-within:text-brand-400 flex-shrink-0 transition-colors" />
           <input
             placeholder="Search entity or CUSIP... (Cmd+K)"
             className="bg-transparent text-[13px] text-zinc-300 placeholder-zinc-600 outline-none flex-1 min-w-0"
@@ -70,14 +70,14 @@ export function Header() {
         <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.04] text-zinc-500 hover:text-zinc-200 transition-colors border border-white/[0.06]">
           <Moon className="w-3.5 h-3.5" />
         </button>
-        <button className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.04] text-zinc-500 hover:text-[#3ECF8E] transition-colors border border-white/[0.06] group">
+        <button className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.04] text-zinc-500 hover:text-brand-400 transition-colors border border-white/[0.06] group">
           <Bell className="w-3.5 h-3.5 group-hover:animate-swing" />
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse" />
         </button>
         <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.04] text-zinc-500 hover:text-zinc-200 transition-colors border border-white/[0.06]">
           <Settings className="w-3.5 h-3.5" />
         </button>
-        <div className="w-8 h-8 rounded-full bg-[#3ECF8E]/15 border border-[#3ECF8E]/25 flex items-center justify-center text-[#3ECF8E] text-[11px] font-black cursor-pointer">
+        <div className="w-8 h-8 rounded-full bg-brand-400/15 border border-brand-400/25 flex items-center justify-center text-brand-400 text-[11px] font-black cursor-pointer">
           AR
         </div>
       </div>

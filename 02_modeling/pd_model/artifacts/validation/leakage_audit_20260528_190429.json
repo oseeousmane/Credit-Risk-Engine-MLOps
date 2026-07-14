@@ -1,0 +1,208 @@
+{
+  "audit_timestamp": "2026-05-28T19:04:26.683789",
+  "n_samples": 50000,
+  "target_col": "TARGET",
+  "id_col": "SK_ID_CURR",
+  "sk_id_monotonicity": {
+    "test": "sk_id_monotonicity",
+    "error": "Colonne 'SK_ID_CURR' absente",
+    "safe_to_use_as_temporal_proxy": false
+  },
+  "feature_target_correlation": {
+    "test": "feature_target_correlation",
+    "n_features_tested": 157,
+    "n_alerts": 0,
+    "n_warnings": 3,
+    "top_correlations": [
+      {
+        "feature": "NAME_CONTRACT_TYPE",
+        "spearman_r": NaN,
+        "abs_r": NaN,
+        "p_value": NaN,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_CREDIT_UTILIZATION",
+        "spearman_r": 0.5094,
+        "abs_r": 0.5094,
+        "p_value": 0.0,
+        "status": "WARNING"
+      },
+      {
+        "feature": "BUREAU_AMT_CREDIT_SUM_OVERDUE_MEAN",
+        "spearman_r": 0.2271,
+        "abs_r": 0.2271,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_AMT_CREDIT_SUM_OVERDUE_SUM",
+        "spearman_r": 0.2269,
+        "abs_r": 0.2269,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_AMT_CREDIT_SUM_DEBT_SUM",
+        "spearman_r": 0.2061,
+        "abs_r": 0.2061,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_AMT_CREDIT_SUM_DEBT_MAX",
+        "spearman_r": 0.2051,
+        "abs_r": 0.2051,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "AMT_INCOME_TOTAL",
+        "spearman_r": -0.2021,
+        "abs_r": 0.2021,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_AMT_CREDIT_SUM_DEBT_MEAN",
+        "spearman_r": 0.1978,
+        "abs_r": 0.1978,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "INST_MEAN_DAYS_LATE",
+        "spearman_r": 0.1175,
+        "abs_r": 0.1175,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_CNT_CREDIT_PROLONG_SUM",
+        "spearman_r": 0.1174,
+        "abs_r": 0.1174,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "DAYS_REGISTRATION",
+        "spearman_r": 0.0723,
+        "abs_r": 0.0723,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "DAYS_EMPLOYED",
+        "spearman_r": 0.0719,
+        "abs_r": 0.0719,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EXT_SOURCE_MEAN",
+        "spearman_r": -0.0617,
+        "abs_r": 0.0617,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EXT_SOURCE_PRODUCT",
+        "spearman_r": -0.0612,
+        "abs_r": 0.0612,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EXT_SOURCE_3",
+        "spearman_r": -0.0574,
+        "abs_r": 0.0574,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EXT_SOURCE_1",
+        "spearman_r": -0.0572,
+        "abs_r": 0.0572,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "NAME_INCOME_TYPE",
+        "spearman_r": 0.0441,
+        "abs_r": 0.0441,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "AMT_ANNUITY",
+        "spearman_r": 0.0401,
+        "abs_r": 0.0401,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_AMT_ANNUITY_SUM",
+        "spearman_r": 0.0401,
+        "abs_r": 0.0401,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "PREV_AMT_ANNUITY_MEAN",
+        "spearman_r": 0.0375,
+        "abs_r": 0.0375,
+        "p_value": 0.0,
+        "status": "OK"
+      }
+    ],
+    "alerts": [],
+    "leakage_suspected": false
+  },
+  "temporal_leakage_proxy": {
+    "error": "ID column 'SK_ID_CURR' not found. Cannot perform temporal leakage check."
+  },
+  "zero_variance": {
+    "test": "zero_variance_features",
+    "n_zero_variance": 6,
+    "n_low_variance": 0,
+    "zero_variance_features": [
+      {
+        "feature": "NAME_CONTRACT_TYPE",
+        "variance": 0.0
+      },
+      {
+        "feature": "AMT_REQ_CREDIT_BUREAU_HOUR",
+        "variance": 0.0
+      },
+      {
+        "feature": "AMT_REQ_CREDIT_BUREAU_DAY",
+        "variance": 0.0
+      },
+      {
+        "feature": "BUREAU_BUREAU_STATUS_SOLD_SUM",
+        "variance": 0.0
+      },
+      {
+        "feature": "POS_POS_ACTIVE_SUM",
+        "variance": 0.0
+      },
+      {
+        "feature": "DAYS_EMPLOYED_ANOM",
+        "variance": 0.0
+      }
+    ],
+    "low_variance_features": [],
+    "leakage_suspected": true
+  },
+  "summary": {
+    "total_leakage_signals": 6,
+    "promotion_gate_pass": false,
+    "promotion_gate_status": "BLOCKED \u2014 investiguer les signaux de leakage avant promotion CHALLENGER",
+    "signals": {
+      "sk_id_inversions": 0,
+      "correlation_alerts": 0,
+      "temporal_flags": 0,
+      "zero_var_features": 6
+    }
+  }
+}

@@ -49,7 +49,7 @@ export default function ApiReferencePage() {
       </motion.div>
 
       <div className="max-w-4xl mx-auto px-6">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-[#050505] border border-white/[0.03] rounded-3xl p-10 sm:p-16 shadow-2xl relative overflow-hidden">
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-surface-0 border border-white/[0.03] rounded-3xl p-10 sm:p-16 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/[0.02] rounded-full blur-[100px] pointer-events-none" />
           <div className="relative z-10 w-16 h-16 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center mb-8">
             <Code2 className="w-8 h-8 text-purple-400" />

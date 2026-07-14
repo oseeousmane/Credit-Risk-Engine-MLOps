@@ -1,3 +1,4 @@
+
 """
 Advanced Model Validation — PD Model
 =======================================
@@ -16,6 +17,7 @@ Version : 2.0.0
 import numpy as np
 import pandas as pd
 import os
+
 import json
 import logging
 from typing import Dict, Optional, Tuple, List
@@ -264,6 +266,7 @@ class AdvancedModelValidator:
         y_true_train: Optional[np.ndarray] = None,
         y_pred_train: Optional[np.ndarray] = None,
         model_name: str = "PD_LightGBM_v2",
+        id_proxy: Optional[np.ndarray] = None,
     ) -> Dict:
         """
         Execute la validation complete et genere le rapport.
@@ -288,6 +291,12 @@ class AdvancedModelValidator:
                 y_true_train, y_pred_train, y_true, y_pred
             )
 
+        # Vintage analysis (si proxy temporel disponible)
+        if id_proxy is not None and len(id_proxy) == len(y_true):
+            self.results["vintage_analysis"] = self.compute_vintage_analysis(
+                y_true, y_pred, id_proxy, n_vintages=5
+            )
+
         # Overall assessment
         auc = self.results["discrimination"]["auc_roc"]
         gini = self.results["discrimination"]["gini"]
@@ -304,6 +313,103 @@ class AdvancedModelValidator:
         }
 
         return self.results
+
+    # ─── VINTAGE ANALYSIS ────────────────────────────────────────
+    def compute_vintage_analysis(
+        self,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+        id_proxy: np.ndarray,
+        n_vintages: int = 5,
+    ) -> Dict:
+        """
+        Analyse par vintage (tranche chronologique).
+
+        Découpe les observations en N tranches ordonnées par ID (proxy temporel)
+        et calcule pour chaque tranche :
+          - AUC / Gini / KS
+          - Taux de défaut observé
+          - PSI de la distribution de scores vs tranche 1 (référence)
+
+        Un Gini qui chute de >10pp entre la tranche 1 et la tranche N signale
+        une dégradation temporelle — indicateur de leakage ou de concept drift.
+
+        Args:
+            id_proxy : SK_ID_CURR ou équivalent — tri chronologique proxy
+            n_vintages : nombre de tranches (défaut 5)
+        """
+        from sklearn.metrics import roc_auc_score
+
+        order = np.argsort(id_proxy)
+        y_sorted    = np.array(y_true)[order]
+        pred_sorted = np.array(y_pred)[order]
+        n = len(y_sorted)
+        chunk = n // n_vintages
+
+        vintages = []
+        ref_pred = None
+
+        for i in range(n_vintages):
+            start = i * chunk
+            end   = start + chunk if i < n_vintages - 1 else n
+            ys   = y_sorted[start:end]
+            ps   = pred_sorted[start:end]
+
+            if ref_pred is None:
+                ref_pred = ps.copy()
+
+            if ys.sum() < 5 or (1 - ys).sum() < 5:
+                vintages.append({
+                    "vintage": i + 1,
+                    "n": int(len(ys)),
+                    "default_rate": round(float(ys.mean()), 4),
+                    "auc": None, "gini": None, "ks": None, "psi_vs_v1": None,
+                    "status": "INSUFFICIENT_EVENTS",
+                })
+                continue
+
+            auc  = roc_auc_score(ys, ps)
+            gini = 2 * auc - 1
+            fpr, tpr, _ = __import__("sklearn.metrics", fromlist=["roc_curve"]).roc_curve(ys, ps)
+            ks   = float(max(tpr - fpr))
+            psi  = self._compute_psi(ref_pred, ps)
+
+            status = "STABLE"
+            if psi > 0.20:
+                status = "UNSTABLE"
+            elif psi > 0.10 or gini < 0.40:
+                status = "MONITOR"
+
+            vintages.append({
+                "vintage": i + 1,
+                "n": int(len(ys)),
+                "default_rate": round(float(ys.mean()), 4),
+                "auc":  round(float(auc),  4),
+                "gini": round(float(gini), 4),
+                "ks":   round(float(ks),   4),
+                "psi_vs_v1": round(float(psi), 4),
+                "status": status,
+            })
+
+        # Dégradation du Gini entre premier et dernier vintage
+        valid = [v for v in vintages if v["gini"] is not None]
+        gini_drift = round(valid[0]["gini"] - valid[-1]["gini"], 4) if len(valid) >= 2 else 0.0
+        temporal_stability = "STABLE" if gini_drift < 0.10 else "DEGRADED"
+
+        result = {
+            "n_vintages":        n_vintages,
+            "vintages":          vintages,
+            "gini_drift_v1_vN":  gini_drift,
+            "temporal_stability": temporal_stability,
+            "stability_warning": gini_drift >= 0.10,
+        }
+
+        logger.info(
+            f"Vintage analysis: Gini V1={valid[0]['gini']:.3f} → "
+            f"V{n_vintages}={valid[-1]['gini']:.3f} | "
+            f"Drift={gini_drift:+.3f} | Status={temporal_stability}"
+        )
+        return result
 
     def save_report(self, filename: Optional[str] = None) -> str:
         """Sauvegarde le rapport de validation en JSON."""

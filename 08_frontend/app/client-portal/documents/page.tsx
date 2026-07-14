@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Upload, CheckCircle2, Clock, AlertTriangle, FileText, X, Loader2, FolderOpen, ArrowUpFromLine } from 'lucide-react'
 import { useState, useRef } from 'react'
@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 // ── Config ─────────────────────────────────────────────────────────────────────
 const DOC_STATUS: Record<string, { label: string; color: string; bg: string; border: string; icon: typeof CheckCircle2 }> = {
   validated:          { label: 'Verified',   color: 'text-emerald-400', bg: 'bg-emerald-500/8', border: 'border-emerald-500/20', icon: CheckCircle2 },
-  pending_validation: { label: 'In Review',  color: 'text-[#3ECF8E]',    bg: 'bg-[#3ECF8E]/8',    border: 'border-[#3ECF8E]/20',    icon: Clock },
+  pending_validation: { label: 'In Review',  color: 'text-brand-400',    bg: 'bg-brand-400/8',    border: 'border-brand-400/20',    icon: Clock },
   pending_upload:     { label: 'Required',   color: 'text-amber-400',   bg: 'bg-amber-500/8',   border: 'border-amber-500/20',   icon: AlertTriangle },
   rejected:           { label: 'Rejected',   color: 'text-red-400',     bg: 'bg-red-500/8',     border: 'border-red-500/20',     icon: X },
 }
@@ -50,14 +50,14 @@ export default function DocumentsPage() {
     <div className="relative space-y-7 pb-12 min-h-screen">
       
       {/* ── Ambient Glows (Glassmorphism) ────────────────────────────────────── */}
-      <div className="absolute top-[-50px] right-[-100px] w-[500px] h-[500px] bg-[#3ECF8E]/[0.03] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-50px] right-[-100px] w-[500px] h-[500px] bg-brand-400/[0.03] rounded-full blur-[100px] pointer-events-none" />
 
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="relative z-10 space-y-7">
         
         {/* ── Header ─────────────────────────────────────────────────────────── */}
         <motion.div variants={itemVariants}>
           <div className="flex items-center gap-2 mb-1">
-            <FolderOpen className="w-3.5 h-3.5 text-[#3ECF8E]" />
+            <FolderOpen className="w-3.5 h-3.5 text-brand-400" />
             <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-600">Documents</span>
           </div>
           <h1 className="text-3xl font-medium text-white tracking-tight">Document Centre</h1>
@@ -67,7 +67,7 @@ export default function DocumentsPage() {
         {/* ── Summary Bar ─────────────────────────────────────────────────────── */}
         {!isLoading && (
           <motion.div variants={itemVariants} className="bg-[#0a0a0a]/90 backdrop-blur-md border border-white/[0.06] rounded-[24px] p-6 relative overflow-hidden group">
-            <div className="absolute left-0 top-0 bottom-0 w-1/3 bg-gradient-to-r from-[#3ECF8E]/[0.03] to-transparent pointer-events-none" />
+            <div className="absolute left-0 top-0 bottom-0 w-1/3 bg-gradient-to-r from-brand-400/[0.03] to-transparent pointer-events-none" />
             <div className="flex items-center justify-between mb-5 relative z-10">
               <div>
                 <div className="text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-500 mb-1">Completion</div>
@@ -80,7 +80,7 @@ export default function DocumentsPage() {
                 </div>
                 <div>
                   <div className="text-zinc-500 mb-1 font-medium">In Review</div>
-                  <div className="text-[#3ECF8E] font-medium text-[15px]">{inReview}</div>
+                  <div className="text-brand-400 font-medium text-[15px]">{inReview}</div>
                 </div>
                 <div>
                   <div className="text-zinc-500 mb-1 font-medium">Required</div>
@@ -98,7 +98,7 @@ export default function DocumentsPage() {
             {/* Progress bar */}
             <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden mb-4 relative z-10">
               <div
-                className="h-full bg-gradient-to-r from-[#3ECF8E]/50 to-[#3ECF8E] rounded-full transition-all duration-1000 ease-out"
+                className="h-full bg-gradient-to-r from-brand-400/50 to-brand-400 rounded-full transition-all duration-1000 ease-out"
                 style={{ width: `${completionPct}%` }}
               />
             </div>
@@ -192,7 +192,7 @@ export default function DocumentsPage() {
                             {cfg.label}
                           </span>
                           {(doc.status === 'pending_upload' || doc.status === 'rejected') ? (
-                            <button className="flex items-center gap-1.5 px-4 py-2 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 text-[#3ECF8E] rounded-xl text-[12px] font-medium hover:bg-[#3ECF8E]/20 transition-all shadow-[0_0_15px_rgba(62,207,142,0.1)]">
+                            <button className="flex items-center gap-1.5 px-4 py-2 bg-brand-400/10 border border-brand-400/20 text-brand-400 rounded-xl text-[12px] font-medium hover:bg-brand-400/20 transition-all shadow-[0_0_15px_rgba(59,123,255,0.1)]">
                               <Upload className="w-3.5 h-3.5" />
                               Upload
                             </button>
@@ -225,19 +225,19 @@ export default function DocumentsPage() {
               onDrop={e => { e.preventDefault(); setDragging(false) }}
               className={`border-2 border-dashed rounded-[24px] p-8 text-center cursor-pointer transition-all duration-300 ${
                 dragging
-                  ? 'border-[#3ECF8E]/60 bg-[#3ECF8E]/10 shadow-[0_0_30px_rgba(62,207,142,0.15)]'
-                  : 'border-white/[0.08] bg-[#0a0a0a]/80 backdrop-blur-md hover:border-[#3ECF8E]/40 hover:bg-[#3ECF8E]/5'
+                  ? 'border-brand-400/60 bg-brand-400/10 shadow-[0_0_30px_rgba(59,123,255,0.15)]'
+                  : 'border-white/[0.08] bg-[#0a0a0a]/80 backdrop-blur-md hover:border-brand-400/40 hover:bg-brand-400/5'
               }`}
             >
               <input ref={fileRef} type="file" className="hidden" multiple accept=".pdf,.png,.jpg,.docx" />
-              <div className="w-14 h-14 rounded-2xl bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 flex items-center justify-center mx-auto mb-5 transition-transform group-hover:scale-110">
-                <ArrowUpFromLine className="w-6 h-6 text-[#3ECF8E]" />
+              <div className="w-14 h-14 rounded-2xl bg-brand-400/10 border border-brand-400/20 flex items-center justify-center mx-auto mb-5 transition-transform group-hover:scale-110">
+                <ArrowUpFromLine className="w-6 h-6 text-brand-400" />
               </div>
               <div className="text-[14px] font-medium text-white tracking-tight mb-1">Drop files here</div>
               <div className="text-[12.5px] text-zinc-500 mb-5">or click to browse your computer</div>
               <button
                 onClick={e => { e.stopPropagation(); fileRef.current?.click() }}
-                className="px-5 py-2.5 bg-[#3ECF8E]/15 border border-[#3ECF8E]/30 text-[#3ECF8E] text-[12px] font-medium rounded-xl hover:bg-[#3ECF8E]/25 transition-all shadow-[0_0_15px_rgba(62,207,142,0.1)]"
+                className="px-5 py-2.5 bg-brand-400/15 border border-brand-400/30 text-brand-400 text-[12px] font-medium rounded-xl hover:bg-brand-400/25 transition-all shadow-[0_0_15px_rgba(59,123,255,0.1)]"
               >
                 Browse Files
               </button>
@@ -248,8 +248,8 @@ export default function DocumentsPage() {
             </motion.div>
 
             {/* Tips */}
-            <motion.div variants={itemVariants} className="bg-[#3ECF8E]/[0.03] border border-[#3ECF8E]/15 rounded-[24px] p-6">
-              <div className="text-[11px] font-medium uppercase tracking-[0.15em] text-[#3ECF8E] mb-4">
+            <motion.div variants={itemVariants} className="bg-brand-400/[0.03] border border-brand-400/15 rounded-[24px] p-6">
+              <div className="text-[11px] font-medium uppercase tracking-[0.15em] text-brand-400 mb-4">
                 Document Tips
               </div>
               <ul className="space-y-3 text-[12.5px] text-zinc-400">
@@ -260,7 +260,7 @@ export default function DocumentsPage() {
                   'Bank statements must show company name',
                 ].map(tip => (
                   <li key={tip} className="flex items-start gap-2.5">
-                    <span className="text-[#3ECF8E] font-bold flex-shrink-0 mt-0.5">·</span>
+                    <span className="text-brand-400 font-bold flex-shrink-0 mt-0.5">·</span>
                     {tip}
                   </li>
                 ))}

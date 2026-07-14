@@ -1,0 +1,117 @@
+{
+  "model_type": "XGBoost + IsotonicCalibration",
+  "framework": "xgboost",
+  "n_features": 157,
+  "n_train_samples": 32500,
+  "n_val_samples": 7500,
+  "best_iteration": 173,
+  "train_auc": 0.956621,
+  "val_auc": 0.948727,
+  "train_brier": 0.048064,
+  "val_brier": 0.048183,
+  "train_logloss": 0.168584,
+  "val_logloss": 0.170687,
+  "default_rate_train": 0.144523,
+  "hyperparameters": {
+    "objective": "binary:logistic",
+    "eval_metric": [
+      "auc",
+      "logloss"
+    ],
+    "tree_method": "hist",
+    "max_depth": 6,
+    "learning_rate": 0.05,
+    "n_estimators": 1000,
+    "min_child_weight": 50,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "seed": 42,
+    "n_jobs": -1,
+    "verbosity": 0
+  },
+  "monotone_constraints": {
+    "DEBT_TO_INCOME": 1,
+    "CREDIT_TO_INCOME_RATIO": 1,
+    "CREDIT_TO_ANNUITY_RATIO": 1,
+    "BUREAU_CREDIT_UTILIZATION": 1,
+    "INST_LATE_PAYMENT_RATE": 1,
+    "INST_MEAN_DAYS_LATE": 1,
+    "INST_MAX_DAYS_LATE": 1,
+    "POS_SK_DPD_MEAN": 1,
+    "POS_SK_DPD_MAX": 1,
+    "EXT_SOURCE_1": -1,
+    "EXT_SOURCE_2": -1,
+    "EXT_SOURCE_3": -1,
+    "EXT_SOURCE_MEAN": -1,
+    "AMT_INCOME_TOTAL": -1,
+    "EMPLOYMENT_YEARS": -1
+  },
+  "is_calibrated": true,
+  "training_timestamp": "2026-05-28T19:03:41.483565",
+  "data_hash_sha256": "4a8f9a3bdba2e86e",
+  "data_source_path": "01_data_layer/curated/cemac_synthetic.parquet",
+  "split_strategy": "temporal_walkforward",
+  "model_type_requested": "xgboost",
+  "default_definition": {
+    "regulatory_basis": "Basel III \u00a7452 + IFRS 9 \u00a7B5.5.37 + COBAC CEMAC",
+    "default_event_primary": "DPD >= 90 jours sur toute obligation (crit\u00e8re irr\u00e9futable)",
+    "default_event_secondary": "Unlikely to pay : restructuration, contentieux, provision >= 100%",
+    "observation_window_months": 12,
+    "performance_period_months": 3,
+    "target_variable": "TARGET (1 = d\u00e9faut, 0 = sain)",
+    "demo_dataset_note": "Home Credit (donn\u00e9es russo-asiatiques 2016-2018). D\u00e9finition exacte Home Credit non divulgu\u00e9e publiquement \u2014 approximation 60-90 DPD. Non certifiable COBAC en l'\u00e9tat. Retraining sur donn\u00e9es CEMAC requis."
+  },
+  "sk_id_monotonicity_check": {
+    "id_column": "SK_ID_CURR",
+    "n_observations": 50000,
+    "n_inversions": 0,
+    "inversion_rate": 0.0,
+    "is_monotone": true,
+    "safe_to_use_as_temporal_proxy": true
+  },
+  "domain_adaptation": {
+    "strategy": "none"
+  },
+  "artifact_category": "SYNTHETIC_CEMAC",
+  "test_brier_calibration_check": {
+    "test_brier": 0.05526,
+    "val_brier": 0.048183,
+    "overfit_flag": true
+  },
+  "cross_validation": {
+    "mean_auc": 0.943399,
+    "std_auc": 0.002958,
+    "mean_brier": 0.05293,
+    "std_brier": 0.00122,
+    "n_folds": 5,
+    "fold_details": [
+      {
+        "fold": 0,
+        "auc": 0.940578,
+        "brier": 0.052814
+      },
+      {
+        "fold": 1,
+        "auc": 0.947493,
+        "brier": 0.05173
+      },
+      {
+        "fold": 2,
+        "auc": 0.943532,
+        "brier": 0.054317
+      },
+      {
+        "fold": 3,
+        "auc": 0.940542,
+        "brier": 0.05403
+      },
+      {
+        "fold": 4,
+        "auc": 0.944848,
+        "brier": 0.051759
+      }
+    ]
+  }
+}

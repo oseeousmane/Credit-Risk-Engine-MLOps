@@ -94,14 +94,14 @@ function SectionDivider() {
 function ModuleNav({ active }: { active: string }) {
   const { locale } = useLanguage()
   return (
-    <div className="sticky top-16 z-40 bg-[#050505]/90 backdrop-blur-md border-b border-white/[0.04]">
+    <div className="sticky top-16 z-40 bg-surface-0/90 backdrop-blur-md border-b border-white/[0.04]">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
           {MODULES.map(m => (
             <a key={m.id} href={`#${m.id}`}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-semibold whitespace-nowrap transition-all duration-200 border ${
                 active === m.id
-                  ? 'bg-[#3ECF8E]/10 border-[#3ECF8E]/30 text-[#3ECF8E]'
+                  ? 'bg-brand-400/10 border-brand-400/30 text-brand-400'
                   : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
               }`}>
               <m.icon className="w-3 h-3" />
@@ -136,7 +136,7 @@ export default function ModulesPage() {
   }, [])
 
   return (
-    <main className="antialiased min-h-screen bg-[#050505]">
+    <main className="antialiased min-h-screen bg-surface-0">
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative pt-36 pb-24 overflow-hidden">
@@ -144,17 +144,17 @@ export default function ModulesPage() {
         <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{ backgroundImage:'linear-gradient(to right,#fff 1px,transparent 1px),linear-gradient(to bottom,#fff 1px,transparent 1px)', backgroundSize:'32px 32px',
             maskImage:'radial-gradient(ellipse 80% 80% at 50% 40%, black 20%, transparent 100%)',WebkitMaskImage:'radial-gradient(ellipse 80% 80% at 50% 40%, black 20%, transparent 100%)' }} />
-        <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[#3ECF8E]/[0.12] blur-[120px] rounded-[100%] mix-blend-screen opacity-60 pointer-events-none" />
+        <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-brand-400/[0.12] blur-[120px] rounded-[100%] mix-blend-screen opacity-60 pointer-events-none" />
 
         <motion.div initial="hidden" animate="visible" variants={stagger} className="max-w-4xl mx-auto px-6 text-center">
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-8 cursor-default">
-            <Layers className="w-3 h-3 text-[#3ECF8E]" />
+            <Layers className="w-3 h-3 text-brand-400" />
             <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300">Platform Architecture</span>
           </motion.div>
 
           <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl lg:text-[4rem] font-medium tracking-tight leading-[1.1] mb-6">
             <span className="text-white block">Explore</span>
-            <span className="text-[#3ECF8E] block">Product Modules</span>
+            <span className="text-brand-400 block">Product Modules</span>
           </motion.h1>
 
           <motion.p variants={fadeUp} className="text-xl text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-10">
@@ -162,7 +162,7 @@ export default function ModulesPage() {
           </motion.p>
 
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href={`/${locale}/contact`} className="inline-flex items-center justify-center px-4 py-2 bg-[#3ECF8E] text-[#0a0a0a] text-[13px] font-semibold rounded-md hover:bg-[#3ECF8E]/90 transition-colors shadow-[0_0_24px_rgba(62,207,142,0.2)]">
+            <Link href={`/${locale}/contact`} className="inline-flex items-center justify-center px-4 py-2 bg-brand-400 text-[#0a0a0a] text-[13px] font-semibold rounded-md hover:bg-brand-400/90 transition-colors shadow-[0_0_24px_rgba(59,123,255,0.2)]">
               Request Demo
             </Link>
             <Link href={`/${locale}/platform`} className="inline-flex items-center justify-center px-4 py-2 bg-white/[0.05] text-white border border-white/[0.1] text-[13px] font-semibold rounded-md hover:bg-white/[0.08] transition-colors">
@@ -177,7 +177,7 @@ export default function ModulesPage() {
         <div className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-3 md:grid-cols-6 gap-6">
           {STATS.map((s, i) => (
             <motion.div key={i} initial={{ opacity:0, y:12 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay: i*0.06, duration:0.5 }} className="text-center">
-              <div className="text-[18px] font-bold text-[#3ECF8E] mb-0.5">{s.value}</div>
+              <div className="text-[18px] font-bold text-brand-400 mb-0.5">{s.value}</div>
               <div className="text-[10px] text-zinc-600 font-semibold uppercase tracking-wider">{s.label}</div>
             </motion.div>
           ))}
@@ -194,16 +194,16 @@ export default function ModulesPage() {
               variants={{ hidden:{ opacity:0, y:24 }, visible:{ opacity:1, y:0, transition:{ duration:0.6, ease:[0.16,1,0.3,1] as const } } }}
               whileHover={{ y:-5, transition:{ duration:0.2 } }}
               className="group relative flex flex-col p-7 bg-[#080808] border border-white/[0.04] hover:border-white/[0.10] rounded-2xl transition-all duration-400 overflow-hidden cursor-pointer">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#3ECF8E]/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
               <div className="relative z-10 flex items-start justify-between mb-5">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.05] group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-all duration-300">
-                  <m.icon className="w-4 h-4 text-zinc-500 group-hover:text-[#3ECF8E] transition-colors" />
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.05] group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-all duration-300">
+                  <m.icon className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 transition-colors" />
                 </div>
                 <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-700 border border-white/[0.04] px-2 py-1 rounded-full bg-white/[0.02]">{m.persona}</span>
               </div>
               <h3 className="relative z-10 text-[17px] font-medium tracking-tight text-zinc-200 group-hover:text-white transition-colors mb-2">{m.title}</h3>
               <p className="relative z-10 text-[13px] text-zinc-500 group-hover:text-zinc-400 leading-relaxed flex-1 mb-4 transition-colors">{m.desc}</p>
-              <div className="relative z-10 flex items-center gap-1.5 text-[12px] font-semibold text-[#3ECF8E] mt-auto">
+              <div className="relative z-10 flex items-center gap-1.5 text-[12px] font-semibold text-brand-400 mt-auto">
                 Explore <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </motion.a>
@@ -227,7 +227,7 @@ export default function ModulesPage() {
                 {/* Text side */}
                 <motion.div initial={{ opacity:0, x: isEven ? -30 : 30 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true, margin:'-80px' }} transition={{ duration:0.7, ease:[0.16,1,0.3,1] }}>
                   <div className="flex items-center gap-2.5 mb-5">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E]">Module {String(idx+1).padStart(2,'0')}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-400">Module {String(idx+1).padStart(2,'0')}</div>
                     <div className="h-px flex-1 bg-white/[0.05]" />
                     <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-700 border border-white/[0.04] px-2 py-0.5 rounded-full">{m.persona}</span>
                   </div>
@@ -236,12 +236,12 @@ export default function ModulesPage() {
                   <motion.ul variants={stagger} initial="hidden" whileInView="visible" viewport={{ once:true }} className="space-y-3 mb-8">
                     {m.features.map((f, i) => (
                       <motion.li key={i} variants={listItem} className="flex items-start gap-3 text-[14px] text-zinc-300">
-                        <CheckCircle2 className="w-4 h-4 text-[#3ECF8E] mt-0.5 flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-brand-400 mt-0.5 flex-shrink-0" />
                         {f}
                       </motion.li>
                     ))}
                   </motion.ul>
-                  <Link href={`/${locale}/contact`} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#3ECF8E] hover:text-[#3ECF8E]/80 transition-colors">
+                  <Link href={`/${locale}/contact`} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-400 hover:text-brand-400/80 transition-colors">
                     Request a demo of this module <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </motion.div>
@@ -264,21 +264,21 @@ export default function ModulesPage() {
       <section className="max-w-4xl mx-auto px-6 pb-24">
         <motion.div initial={{ opacity:0, y:30 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ duration:0.8 }}
           className="relative bg-[#080808] border border-white/[0.05] rounded-3xl p-16 text-center overflow-hidden">
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#3ECF8E]/[0.03] rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#3ECF8E]/[0.02] rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-400/[0.03] rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-brand-400/[0.02] rounded-full blur-[80px] pointer-events-none" />
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#3ECF8E]">Ready to Get Started</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-400/10 border border-brand-400/20 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-400">Ready to Get Started</span>
             </div>
             <h2 className="text-3xl font-medium tracking-tight text-white mb-4">
-              Ready to unify your<br /><span className="text-[#3ECF8E]">credit lifecycle?</span>
+              Ready to unify your<br /><span className="text-brand-400">credit lifecycle?</span>
             </h2>
             <p className="text-[15px] text-zinc-400 mb-8 max-w-lg mx-auto leading-relaxed">
               Connect with our enterprise team to discuss how Credit Risk Engine can integrate into your existing architecture.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href={`/${locale}/contact`} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#3ECF8E] text-[#050505] rounded-md font-semibold text-[13px] hover:bg-[#3ECF8E]/90 transition-all shadow-[0_0_30px_rgba(62,207,142,0.25)]">
+              <Link href={`/${locale}/contact`} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-400 text-surface-0 rounded-md font-semibold text-[13px] hover:bg-brand-400/90 transition-all shadow-[0_0_30px_rgba(59,123,255,0.25)]">
                 Request a Custom Demo <ArrowRight className="w-3.5 h-3.5" />
               </Link>
               <Link href={`/${locale}/platform`} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white/[0.05] text-white border border-white/[0.1] rounded-md font-semibold text-[13px] hover:bg-white/[0.08] transition-colors">

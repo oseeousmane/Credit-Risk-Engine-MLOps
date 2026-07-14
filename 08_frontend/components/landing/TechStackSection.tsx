@@ -60,7 +60,7 @@ export function TechStackSection() {
             className="sticky top-28"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-6 shadow-sm">
-              <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E]">Infrastructure</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400">Infrastructure</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight mb-6">
               Institutional-Grade Stack
@@ -68,8 +68,8 @@ export function TechStackSection() {
             <p className="text-[15px] font-medium text-zinc-400 leading-relaxed mb-6">
               We don't build black boxes or lock you into proprietary esoteric languages. Credit Risk Engine is built on top of the industry's most robust, open, and scalable technologies.
             </p>
-            <div className="p-5 bg-[#050505] border border-white/[0.04] rounded-xl flex items-start gap-4">
-              <FileCode2 className="w-5 h-5 text-[#3ECF8E] shrink-0 mt-0.5" />
+            <div className="p-5 bg-surface-0 border border-white/[0.04] rounded-xl flex items-start gap-4">
+              <FileCode2 className="w-5 h-5 text-brand-400 shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-[14px] font-medium text-zinc-200 mb-1">Developer Ergonomics</h4>
                 <p className="text-[13px] text-zinc-500 leading-relaxed">
@@ -87,11 +87,11 @@ export function TechStackSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="p-6 bg-[#050505] border border-white/[0.03] hover:border-white/[0.08] transition-colors rounded-2xl group"
+                className="p-6 bg-surface-0 border border-white/[0.03] hover:border-white/[0.08] transition-colors rounded-2xl group"
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.08] group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-colors duration-500">
-                    <stack.icon className="w-4 h-4 text-zinc-400 group-hover:text-[#3ECF8E] transition-colors duration-500" />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.08] group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-colors duration-500">
+                    <stack.icon className="w-4 h-4 text-zinc-400 group-hover:text-brand-400 transition-colors duration-500" />
                   </div>
                   <h3 className="text-[15px] font-medium tracking-tight text-white">{stack.category}</h3>
                 </div>

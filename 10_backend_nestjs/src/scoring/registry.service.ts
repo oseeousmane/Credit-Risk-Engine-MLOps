@@ -132,8 +132,36 @@ export class RegistryService {
     });
 
     if (!candidate) throw new NotFoundException(`Model version ${versionId} not found.`);
-    if (candidate.lifecycleStatus === 'ARCHIVED') {
-      throw new BadRequestException('Cannot promote an archived model version.');
+
+    // Gate 1 — état machine : seul un CHALLENGER peut être promu
+    if (candidate.lifecycleStatus !== 'CHALLENGER') {
+      throw new BadRequestException(
+        `Promotion refusée : le modèle doit être en état CHALLENGER. État actuel : ${candidate.lifecycleStatus}`
+      );
+    }
+
+    // Gate 2 — catégorie artefact : seul un PROD_CHAMPION peut entrer en production
+    if (candidate.artifactCategory !== 'PROD_CHAMPION') {
+      throw new BadRequestException(
+        `Promotion refusée : seuls les artefacts PROD_CHAMPION peuvent être promus. Catégorie actuelle : ${candidate.artifactCategory}. ` +
+        `Les modèles DEMO_BASELINE sont interdits en production (MODEL_GOVERNANCE_SPEC §1).`
+      );
+    }
+
+    // Gate 3 — evidence OOT obligatoire (IFRS 9 / Basel III validation MRM)
+    if (!candidate.oot_auc || !candidate.oot_ks) {
+      throw new BadRequestException(
+        `Promotion refusée : validation OOT manquante. AUC et KS hors-échantillon obligatoires ` +
+        `avant promotion (OOT_VALIDATION_PACK §2). Soumettre le rapport de validation au MRM.`
+      );
+    }
+
+    // Gate 4 — performance minimale : Gini ≥ 45% (= AUC ≥ 0.725)
+    if (candidate.oot_auc < 0.725) {
+      throw new BadRequestException(
+        `Promotion refusée : AUC OOT ${candidate.oot_auc.toFixed(4)} < 0.725 (Gini < 45%). ` +
+        `Floor réglementaire non atteint (OOT_VALIDATION_PACK §2).`
+      );
     }
 
     // Demote current champion(s) to ARCHIVED/DISABLED
@@ -148,25 +176,80 @@ export class RegistryService {
       data: { lifecycleStatus: 'CHAMPION' as LifecycleStatus, deploymentStatus: 'PRODUCTION' as DeploymentStatus },
     });
 
+    // ── Evidence pack — généré automatiquement à chaque promotion ────────────
+    const promotionTs = new Date().toISOString();
+    const evidencePack = {
+      pack_type:        'MODEL_PROMOTION_EVIDENCE',
+      pack_version:     '1.0',
+      generated_at:     promotionTs,
+      generated_by:     actorId ?? 'system',
+
+      model_identity: {
+        registry_name:      candidate.registry.name,
+        version_tag:        candidate.versionTag,
+        artifact_category:  candidate.artifactCategory,
+        version_id:         versionId,
+      },
+
+      promotion_gates: {
+        gate_1_challenger_state:  { passed: true, value: candidate.lifecycleStatus },
+        gate_2_prod_champion_cat: { passed: true, value: candidate.artifactCategory },
+        gate_3_oot_evidence:      { passed: true, oot_auc: candidate.oot_auc, oot_ks: candidate.oot_ks },
+        gate_4_gini_floor:        { passed: true, oot_auc: candidate.oot_auc, floor: 0.725 },
+      },
+
+      performance_metrics: {
+        val_auc:    candidate.auc,
+        val_ks:     candidate.ks,
+        oot_auc:    candidate.oot_auc,
+        oot_ks:     candidate.oot_ks,
+        oot_psi:    candidate.psi,
+        oot_period: {
+          start: (candidate as any).oot_period_start ?? null,
+          end:   (candidate as any).oot_period_end   ?? null,
+        },
+        gini_oot: candidate.oot_auc ? parseFloat((2 * candidate.oot_auc - 1).toFixed(4)) : null,
+      },
+
+      governance: {
+        mrm_sign_off_required: true,
+        mrm_sign_off_received: false,
+        comment: 'MRM sign-off required before live traffic. See MODEL_GOVERNANCE_SPEC §3.',
+        regulatory_standard:  'OOT_VALIDATION_PACK §2 + Basel III CRE36 + IFRS 9 §B5.5.17',
+      },
+
+      shadow_scoring_summary: {
+        note: 'Retrieve from ShadowScoreLog table for this versionTag before promoting.',
+        query: `SELECT AVG(pdDeltaAbsPercent), COUNT(*), SUM(CASE WHEN recommendationMatch THEN 1 END) FROM ShadowScoreLog WHERE shadowVersion = '${candidate.versionTag}'`,
+      },
+    };
+
     await this.audit.log({
       eventType: 'MODEL_PROMOTED_TO_CHAMPION',
       entityType: 'ModelVersion',
       entityId: versionId,
       actorId,
       previousValue: { lifecycle: candidate.lifecycleStatus },
-      newValue: { lifecycle: 'CHAMPION', deployment: 'PRODUCTION' },
+      newValue: {
+        lifecycle:     'CHAMPION',
+        deployment:    'PRODUCTION',
+        evidence_pack: evidencePack,
+      },
     });
 
     await this.prisma.alert.create({
       data: {
         severity: 'INFO',
         message: `Model ${candidate.registry.name} (${candidate.versionTag}) promoted to Champion`,
-        detail: actorId ? `Promoted by user ${actorId}` : 'Promoted via orchestration hook',
+        detail: `Evidence pack generated. MRM sign-off pending. Promoted by: ${actorId ?? 'system'}`,
       },
     });
 
-    this.logger.log(`[Registry] ${candidate.versionTag} promoted to champion.`);
-    return { promoted: { id: promoted.id, versionTag: promoted.versionTag, status: promoted.status } };
+    this.logger.log(`[Registry] ${candidate.versionTag} promoted to champion. Evidence pack stored in AuditEvent.`);
+    return {
+      promoted:      { id: promoted.id, versionTag: promoted.versionTag, status: promoted.status },
+      evidence_pack: evidencePack,
+    };
   }
 
   /**

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { TrendingUp, ChevronDown, Shield, LayoutGrid, BookOpen, Users, Cpu, BarChart3, Lock, FileText, X, Menu } from 'lucide-react'
@@ -40,7 +40,7 @@ function DropdownMenu({ label, items, isOpen, onToggle }: {
         className={`flex items-center gap-1 text-[13px] font-medium transition-colors ${isOpen ? 'text-white' : 'text-zinc-400 hover:text-white'}`}
       >
         {label}
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#3ECF8E]' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180 text-brand-400' : ''}`} />
       </button>
 
       {isOpen && (
@@ -49,7 +49,7 @@ function DropdownMenu({ label, items, isOpen, onToggle }: {
           <div className="flex justify-center mb-1">
             <div className="w-2 h-2 rotate-45 bg-[#111] border-l border-t border-white/10" />
           </div>
-          <div className="bg-[#050505] border border-white/[0.04] rounded-2xl overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.6)]">
+          <div className="bg-surface-0 border border-white/[0.04] rounded-2xl overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.6)]">
             {items.map((item) => {
               const Icon = item.icon
               return (
@@ -59,8 +59,8 @@ function DropdownMenu({ label, items, isOpen, onToggle }: {
                   onClick={onToggle}
                   className="flex items-start gap-3.5 p-4 hover:bg-white/[0.04] transition-colors group"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white/[0.02] border border-white/[0.04] flex items-center justify-center flex-shrink-0 group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-colors mt-0.5 shadow-sm">
-                    <Icon className="w-4 h-4 text-zinc-500 group-hover:text-[#3ECF8E] transition-colors" />
+                  <div className="w-8 h-8 rounded-lg bg-white/[0.02] border border-white/[0.04] flex items-center justify-center flex-shrink-0 group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-colors mt-0.5 shadow-sm">
+                    <Icon className="w-4 h-4 text-zinc-500 group-hover:text-brand-400 transition-colors" />
                   </div>
                   <div>
                     <div className="text-[13px] font-semibold text-zinc-200 group-hover:text-white transition-colors">{item.label}</div>
@@ -110,18 +110,18 @@ export function LandingNav({ lang = 'en' }: { lang?: Locale }) {
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? 'bg-[#050505]/80 backdrop-blur-2xl border-b border-white/[0.04] shadow-sm'
+          ? 'bg-surface-0/80 backdrop-blur-2xl border-b border-white/[0.04] shadow-sm'
           : 'bg-transparent'
       }`}>
         <div className="max-w-7xl mx-auto px-6 h-[68px] flex items-center justify-between">
 
           {/* ── Logo ─────────────────────────────────────────── */}
           <Link href={`/${lang}/home`} className="flex items-center gap-3 group flex-shrink-0">
-            <div className="relative w-8 h-8 rounded-full bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 flex items-center justify-center shadow-[0_0_12px_rgba(62,207,142,0.15)] group-hover:shadow-[0_0_16px_rgba(62,207,142,0.25)] transition-shadow">
-              <TrendingUp className="w-4 h-4 text-[#3ECF8E]" />
+            <div className="relative w-8 h-8 rounded-full bg-brand-400/10 border border-brand-400/20 flex items-center justify-center shadow-[0_0_12px_rgba(59,123,255,0.15)] group-hover:shadow-[0_0_16px_rgba(59,123,255,0.25)] transition-shadow">
+              <TrendingUp className="w-4 h-4 text-brand-400" />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-[14px] font-black text-white tracking-[-0.03em]">RiskEngine</span>
+              <span className="text-[14px] font-black text-white tracking-[-0.03em]">ORE</span>
             </div>
           </Link>
 
@@ -173,7 +173,7 @@ export function LandingNav({ lang = 'en' }: { lang?: Locale }) {
 
             <Link
               href={`/${lang}/contact`}
-              className="group flex items-center gap-1.5 px-3 py-1.5 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 rounded-md text-[#0a0a0a] font-semibold text-[13px] transition-all"
+              className="group flex items-center gap-1.5 px-3 py-1.5 bg-brand-400 hover:bg-brand-400/90 rounded-md text-[#0a0a0a] font-semibold text-[13px] transition-all"
             >
               {t.requestDemo}
             </Link>
@@ -193,7 +193,7 @@ export function LandingNav({ lang = 'en' }: { lang?: Locale }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="absolute top-[68px] left-0 right-0 bg-[#050505] border-b border-white/[0.04] p-6 space-y-1 animate-fade-in shadow-2xl">
+          <div className="absolute top-[68px] left-0 right-0 bg-surface-0 border-b border-white/[0.04] p-6 space-y-1 animate-fade-in shadow-2xl">
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 px-2 mb-3">{t.platform}</div>
             {PLATFORM_LINKS.map(item => {
               const Icon = item.icon
@@ -225,7 +225,7 @@ export function LandingNav({ lang = 'en' }: { lang?: Locale }) {
                 {t.signIn}
               </Link>
               <Link href={`/${lang}/contact`} onClick={() => setMobileOpen(false)}
-                className="w-full text-center py-3 rounded-xl bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#050505] text-sm font-semibold transition-colors">
+                className="w-full text-center py-3 rounded-xl bg-brand-400 hover:bg-brand-400/90 text-surface-0 text-sm font-semibold transition-colors">
                 {t.requestDemo}
               </Link>
             </div>

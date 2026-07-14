@@ -1,11 +1,10 @@
 'use client'
 
-import { CheckCircle2, Clock, AlertTriangle, Upload, FileText, MessageSquare, ArrowLeft, Download, CircleDot, ArrowRight } from 'lucide-react'
+import { CheckCircle2, Clock, AlertTriangle, Upload, FileText, MessageSquare, ArrowLeft, Download, CircleDot, ArrowRight, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { fetchClient } from '@/lib/api-client'
-import { formatDistanceToNow } from '@/lib/date-utils'
 
 // ── Shared Config ──────────────────────────────────────────────────────────────
 const STATUS: Record<string, { label: string; color: string; bg: string; border: string; icon: typeof CheckCircle2; dot: string }> = {
@@ -24,8 +23,6 @@ const DOC_STATUS: Record<string, { label: string; color: string; bg: string; bor
 function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`bg-white/[0.04] animate-pulse rounded-2xl ${className}`} />
 }
-
-import { XCircle } from 'lucide-react'
 
 // ── PIPELINE MAPPING ───────────────────────────────────────────────────────────
 const PIPELINE_MAPPING: Record<string, number> = {
@@ -137,7 +134,7 @@ export default function ApplicationDetailPage() {
           <div className="md:text-right flex-shrink-0">
             <div className="text-[12px] font-bold uppercase tracking-[0.1em] text-zinc-500 mb-1">Requested Amount</div>
             <div className="text-4xl font-black text-white tracking-tight">
-              {new Intl.NumberFormat('en-US', { style: 'currency', currency: appData.currency || 'USD' }).format(appData.requestedAmount)}
+              {new Intl.NumberFormat('fr-CM', { style: 'currency', currency: appData.currency || 'XAF', maximumFractionDigits: 0 }).format(appData.requestedAmount)}
             </div>
           </div>
         </div>

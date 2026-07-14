@@ -1,0 +1,188 @@
+{
+  "audit_timestamp": "2026-05-28T18:54:38.006305",
+  "n_samples": 307511,
+  "target_col": "TARGET",
+  "id_col": "SK_ID_CURR",
+  "sk_id_monotonicity": {
+    "test": "sk_id_monotonicity",
+    "error": "Colonne 'SK_ID_CURR' absente",
+    "safe_to_use_as_temporal_proxy": false
+  },
+  "feature_target_correlation": {
+    "test": "feature_target_correlation",
+    "n_features_tested": 142,
+    "n_alerts": 0,
+    "n_warnings": 0,
+    "top_correlations": [
+      {
+        "feature": "EXT_SOURCE_MEAN",
+        "spearman_r": -0.2043,
+        "abs_r": 0.2043,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EXT_SOURCE_3",
+        "spearman_r": -0.1663,
+        "abs_r": 0.1663,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EXT_SOURCE_PRODUCT",
+        "spearman_r": -0.1605,
+        "abs_r": 0.1605,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EXT_SOURCE_1",
+        "spearman_r": -0.1511,
+        "abs_r": 0.1511,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EXT_SOURCE_2",
+        "spearman_r": -0.1473,
+        "abs_r": 0.1473,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_DAYS_CREDIT_MEAN",
+        "spearman_r": 0.0953,
+        "abs_r": 0.0953,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_CREDIT_UTILIZATION",
+        "spearman_r": 0.085,
+        "abs_r": 0.085,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_DAYS_CREDIT_UPDATE_MEAN",
+        "spearman_r": 0.0826,
+        "abs_r": 0.0826,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "DAYS_EMPLOYED",
+        "spearman_r": 0.0803,
+        "abs_r": 0.0803,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "EMPLOYMENT_YEARS",
+        "spearman_r": -0.0803,
+        "abs_r": 0.0803,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "AGE_YEARS",
+        "spearman_r": -0.0783,
+        "abs_r": 0.0783,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_DAYS_CREDIT_MAX",
+        "spearman_r": 0.0743,
+        "abs_r": 0.0743,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_DAYS_CREDIT_MIN",
+        "spearman_r": 0.0725,
+        "abs_r": 0.0725,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "INST_LATE_PAYMENT_RATE",
+        "spearman_r": 0.0676,
+        "abs_r": 0.0676,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_DAYS_CREDIT_ENDDATE_MEAN",
+        "spearman_r": 0.0671,
+        "abs_r": 0.0671,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "GOODS_CREDIT_RATIO",
+        "spearman_r": -0.0667,
+        "abs_r": 0.0667,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "INST_IS_LATE_SUM",
+        "spearman_r": 0.0642,
+        "abs_r": 0.0642,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "BUREAU_DAYS_CREDIT_UPDATE_MIN",
+        "spearman_r": 0.0641,
+        "abs_r": 0.0641,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "INST_MAX_DAYS_LATE",
+        "spearman_r": 0.0638,
+        "abs_r": 0.0638,
+        "p_value": 0.0,
+        "status": "OK"
+      },
+      {
+        "feature": "INST_MEAN_DAYS_LATE",
+        "spearman_r": 0.0636,
+        "abs_r": 0.0636,
+        "p_value": 0.0,
+        "status": "OK"
+      }
+    ],
+    "alerts": [],
+    "leakage_suspected": false
+  },
+  "temporal_leakage_proxy": {
+    "error": "ID column 'SK_ID_CURR' not found. Cannot perform temporal leakage check."
+  },
+  "zero_variance": {
+    "test": "zero_variance_features",
+    "n_zero_variance": 0,
+    "n_low_variance": 1,
+    "zero_variance_features": [],
+    "low_variance_features": [
+      {
+        "feature": "BUREAU_BUREAU_STATUS_BAD DEBT_SUM",
+        "variance": 7.589844746132174e-05
+      }
+    ],
+    "leakage_suspected": false
+  },
+  "summary": {
+    "total_leakage_signals": 0,
+    "promotion_gate_pass": true,
+    "promotion_gate_status": "PASS \u2014 aucun signal de leakage critique d\u00e9tect\u00e9",
+    "signals": {
+      "sk_id_inversions": 0,
+      "correlation_alerts": 0,
+      "temporal_flags": 0,
+      "zero_var_features": 0
+    }
+  }
+}

@@ -19,9 +19,20 @@ export function InternalAuthWrapper({ children }: { children: React.ReactNode })
 
     fetchApi('/auth/me')
       .then(() => setStatus('ok'))
-      .catch(() => {
-        localStorage.removeItem(INTERNAL_TOKEN_KEY)
-        setStatus('unauth')
+      .catch((err: any) => {
+        // Only evict the token on an explicit auth rejection (401 / "Session expired").
+        // Network errors (backend unreachable) should not log the user out.
+        const isAuthError =
+          err?.message?.toLowerCase().includes('session') ||
+          err?.message?.toLowerCase().includes('unauthorized') ||
+          err?.message?.includes('401')
+        if (isAuthError) {
+          localStorage.removeItem(INTERNAL_TOKEN_KEY)
+          setStatus('unauth')
+        } else {
+          // Backend unreachable but token exists — allow access in degraded mode.
+          setStatus('ok')
+        }
       })
   }, [pathname])
 

@@ -108,11 +108,34 @@ class ExpectedLossCalculator:
         self.model_version = model_version
         self._audit_log: List[Dict] = []
 
+        # Priorité : LGDModelV2 (Two-Part Beta, secteurs CEMAC, vintage, downturn)
+        # Fallback : LGDModel v1 (règles statiques), puis default_lgd=45%.
+        self.lgd_model = None
+        self.lgd_model_version = "static_45pct"
+        try:
+            import sys as _sys, importlib.util as _ilu, os as _os
+            _lgd_v2_path = _os.path.join(
+                _os.path.dirname(__file__), "..", "02_modeling", "lgd_model", "lgd_model_v2.py"
+            )
+            _spec = _ilu.spec_from_file_location("lgd_model_v2", _lgd_v2_path)
+            _mod  = _ilu.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            self.lgd_model = _mod.LGDModelV2()
+            self.lgd_model_version = "two_part_beta_v2_cemac"
+        except Exception as _e:
+            logger.warning(f"LGDModelV2 non disponible ({_e}) — tentative LGDModel v1")
+            try:
+                from lgd_model import LGDModel
+                self.lgd_model = LGDModel()
+                self.lgd_model_version = "static_rules_v1"
+            except ImportError:
+                pass  # static default_lgd utilisé
+
         logger.info(
             f"ExpectedLossCalculator initialisé — "
             f"PD floor={'ON' if apply_pd_floor else 'OFF'}, "
             f"LGD floor={'ON' if apply_lgd_floor else 'OFF'}, "
-            f"Default LGD={default_lgd}"
+            f"LGD Model={self.lgd_model_version}"
         )
 
     def _validate_inputs(self, pd: float, lgd: float, ead: float) -> None:
@@ -158,24 +181,59 @@ class ExpectedLossCalculator:
     def compute(
         self,
         pd: float,
-        lgd: float,
         ead: float,
+        lgd: Optional[float] = None,
         exposure_id: Optional[str] = None,
         secured: Optional[bool] = None,
+        collateral_type: str = "UNSECURED",
+        is_subordinated: bool = False,
+        collateral_value: float = 0.0,
     ) -> ELResult:
         """
         Calcul de l'Expected Loss pour une exposition individuelle.
 
         Args:
             pd: Probability of Default (0-1)
-            lgd: Loss Given Default (0-1)
             ead: Exposure At Default (montant en devise)
+            lgd: Loss Given Default (0-1). Si None, calculé via LGDModel.
             exposure_id: Identifiant unique de l'exposition
             secured: Si l'exposition est garantie (affecte le floor LGD)
+            collateral_type: Type de collatéral pour calcul dynamique
+            is_subordinated: Dette subordonnée (True/False)
+            collateral_value: Valeur du collatéral en devise
 
         Returns:
             ELResult avec EL, EL rate, et metadata d'audit
         """
+        if lgd is None:
+            if self.lgd_model:
+                c_val = collateral_value if collateral_value > 0 else (ead if secured else 0.0)
+                try:
+                    if self.lgd_model_version == "two_part_beta_v2_cemac":
+                        # LGDModelV2 : Two-Part Beta, secteurs CEMAC, downturn
+                        result_v2 = self.lgd_model.estimate(
+                            exposure_id=exposure_id or "EL_CALC",
+                            collateral_type=collateral_type.lower(),
+                            collateral_value=c_val,
+                            ead=ead,
+                            seniority="subordinated" if is_subordinated else "senior",
+                            run_montecarlo=False,
+                        )
+                        lgd = result_v2.lgd_point_estimate
+                    else:
+                        # LGDModel v1 : interface compute_lgd()
+                        lgd = self.lgd_model.compute_lgd(
+                            ead=ead,
+                            collateral_value=c_val,
+                            collateral_type=collateral_type,
+                            is_subordinated=is_subordinated,
+                        )
+                except Exception as _lgd_err:
+                    logger.warning(f"LGD model error ({_lgd_err}) — using default {self.default_lgd}")
+                    lgd = self.default_lgd
+            else:
+                lgd = self.default_lgd
+
         self._validate_inputs(pd, lgd, ead)
 
         pd_adj, lgd_adj = self._apply_regulatory_floors(pd, lgd, secured)
@@ -239,13 +297,21 @@ class ExpectedLossCalculator:
         for idx, row in portfolio_df.iterrows():
             secured = row.get(secured_col) if secured_col else None
             exp_id = str(row.get(id_col, idx)) if id_col else str(idx)
+            
+            lgd_val = row.get(lgd_col) if lgd_col in row else None
+            col_type = row.get("collateral_type", "UNSECURED")
+            is_sub = bool(row.get("is_subordinated", False))
+            col_val = float(row.get("collateral_value", 0.0))
 
             result = self.compute(
                 pd=row[pd_col],
-                lgd=row[lgd_col],
+                lgd=lgd_val,
                 ead=row[ead_col],
                 exposure_id=exp_id,
                 secured=bool(secured) if secured is not None else None,
+                collateral_type=col_type,
+                is_subordinated=is_sub,
+                collateral_value=col_val,
             )
             results.append(result.to_dict())
 

@@ -12,15 +12,15 @@ const screens = [
     color: 'blue',
     tag: 'CRO Command View',
     metrics: [
-      { label: 'Total Exposure', value: '$2.4B', status: 'warn' },
-      { label: 'ECL Stage 2', value: '$18.7M', status: 'warn' },
-      { label: 'Avg. PD', value: '1.82%', status: 'ok' },
-      { label: 'Stage 3', value: '3 entities', status: 'alert' },
+      { label: 'Total Exposure', value: '1 580 Mds XAF', status: 'warn' },
+      { label: 'ECL Stage 2', value: '12,3 Mds XAF', status: 'warn' },
+      { label: 'Avg. PD', value: '1,82%', status: 'ok' },
+      { label: 'Stage 3', value: '3 contreparties', status: 'alert' },
     ],
     rows: [
-      { name: 'Acme Heavy Industries', rating: 'BBB', pd: '1.2%', stage: 'S1', exposure: '$12.0M', bar: 72 },
-      { name: 'Global Logistics Partners', rating: 'BB+', pd: '3.8%', stage: 'S2', exposure: '$8.5M', bar: 58 },
-      { name: 'Meridian Capital Group', rating: 'A−', pd: '0.7%', stage: 'S1', exposure: '$24.0M', bar: 88 },
+      { name: 'SOCOME Industries SA',   rating: 'BBB', pd: '1,2%', stage: 'S1', exposure: '8,0 Mds XAF',  bar: 72 },
+      { name: 'Trans-CEMAC Logistique', rating: 'BB+', pd: '3,8%', stage: 'S2', exposure: '5,6 Mds XAF',  bar: 58 },
+      { name: 'Hydrocam Energy Group',  rating: 'A−',  pd: '0,7%', stage: 'S1', exposure: '15,8 Mds XAF', bar: 88 },
     ],
   },
   {
@@ -67,7 +67,7 @@ const statusColor: Record<string, string> = {
 }
 
 const accentMap: Record<string, { icon: string; border: string; tag: string }> = {
-  blue:    { icon: 'text-[#3ECF8E]',    border: 'border-[#3ECF8E]/20',    tag: 'bg-[#3ECF8E]/10 text-[#3ECF8E]' },
+  blue:    { icon: 'text-brand-400',    border: 'border-brand-400/20',    tag: 'bg-brand-400/10 text-brand-400' },
   amber:   { icon: 'text-amber-400',   border: 'border-amber-500/20',   tag: 'bg-amber-500/10 text-amber-400' },
   emerald: { icon: 'text-emerald-400', border: 'border-emerald-500/20', tag: 'bg-emerald-500/10 text-emerald-400' },
 }
@@ -78,7 +78,7 @@ export function ShowcaseSection() {
       <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E] mb-4">Product Views</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400 mb-4">Product Views</div>
           <h2 className="text-3xl sm:text-4xl font-medium text-white mb-5 tracking-tight">
             See the Platform in Action
           </h2>
@@ -86,7 +86,7 @@ export function ShowcaseSection() {
             From executive portfolio oversight to operational decisioning and client collaboration, 
             every module is designed to work as part of one unified credit risk system.
           </p>
-          <Link href="/modules" className="inline-flex items-center gap-1.5 text-[13px] text-[#3ECF8E] hover:text-[#3ECF8E]/80 font-medium transition-colors">
+          <Link href="/modules" className="inline-flex items-center gap-1.5 text-[13px] text-brand-400 hover:text-brand-400/80 font-medium transition-colors">
             Explore Product Modules <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -102,9 +102,9 @@ export function ShowcaseSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.7, delay: idx * 0.15, ease: [0.16, 1, 0.3, 1] as const }}
-                className={`card-hover-lift group relative bg-[#050505] border border-white/[0.03] shadow-2xl rounded-2xl overflow-hidden transition-all duration-500 hover:border-white/[0.08] ${idx % 2 === 1 ? 'ml-0 lg:ml-12' : 'mr-0 lg:mr-12'}`}
+                className={`card-hover-lift group relative bg-surface-0 border border-white/[0.03] shadow-2xl rounded-2xl overflow-hidden transition-all duration-500 hover:border-white/[0.08] ${idx % 2 === 1 ? 'ml-0 lg:ml-12' : 'mr-0 lg:mr-12'}`}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#3ECF8E]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                 
                 {/* Header bar */}
                 <div className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/[0.03] bg-white/[0.01]">
@@ -143,7 +143,7 @@ export function ShowcaseSection() {
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${r.stage === 'S1' ? 'text-emerald-400 bg-emerald-500/10' : 'text-amber-400 bg-amber-500/10'}`}>{r.stage}</span>
                           <span className="text-[12px] text-zinc-500 w-16 text-right font-mono">{r.exposure}</span>
                           <div className="w-24 h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                            <div className="h-full bg-[#3ECF8E]/40 rounded-full" style={{ width: `${r.bar}%` }} />
+                            <div className="h-full bg-brand-400/40 rounded-full" style={{ width: `${r.bar}%` }} />
                           </div>
                         </div>
                       ))}

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { CheckCircle2, Clock, AlertTriangle, XCircle, Search, Plus, Loader2, FileText, ArrowRight, SlidersHorizontal, Calendar } from 'lucide-react'
 import Link from 'next/link'
@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 // ── Config ─────────────────────────────────────────────────────────────────────
 const STATUS: Record<string, { label: string; color: string; bg: string; border: string; icon: typeof CheckCircle2; dot: string }> = {
   approved:           { label: 'Approved',       color: 'text-emerald-400', bg: 'bg-emerald-500/8', border: 'border-emerald-500/20', icon: CheckCircle2,  dot: 'bg-emerald-400' },
-  under_review:       { label: 'Under Review',   color: 'text-[#3ECF8E]',   bg: 'bg-[#3ECF8E]/8',    border: 'border-[#3ECF8E]/20',    icon: Clock,         dot: 'bg-[#3ECF8E]' },
+  under_review:       { label: 'Under Review',   color: 'text-brand-400',   bg: 'bg-brand-400/8',    border: 'border-brand-400/20',    icon: Clock,         dot: 'bg-brand-400' },
   documents_required: { label: 'Action Required',color: 'text-amber-400',   bg: 'bg-amber-500/8',   border: 'border-amber-500/20',   icon: AlertTriangle, dot: 'bg-amber-400' },
   rejected:           { label: 'Not Approved',   color: 'text-red-400',     bg: 'bg-red-500/8',     border: 'border-red-500/20',     icon: XCircle,       dot: 'bg-red-400' },
 }
@@ -53,7 +53,7 @@ export default function ApplicationsPage() {
     <div className="relative space-y-7 pb-12 min-h-screen">
       
       {/* ── Ambient Glows (Glassmorphism) ────────────────────────────────────── */}
-      <div className="absolute top-[-50px] left-[-100px] w-[600px] h-[600px] bg-[#3ECF8E]/[0.03] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-50px] left-[-100px] w-[600px] h-[600px] bg-brand-400/[0.03] rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-[40%] right-[-150px] w-[500px] h-[500px] bg-blue-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="relative z-10 space-y-7">
@@ -62,7 +62,7 @@ export default function ApplicationsPage() {
         <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <FileText className="w-3.5 h-3.5 text-[#3ECF8E]" />
+              <FileText className="w-3.5 h-3.5 text-brand-400" />
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">Applications</span>
             </div>
             <h1 className="text-3xl font-medium text-white tracking-tight">My Applications</h1>
@@ -70,7 +70,7 @@ export default function ApplicationsPage() {
           </div>
           <Link
             href="/client-portal/applications/new"
-            className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#0a0a0a] rounded-xl text-[13px] font-semibold transition-all shadow-[0_0_24px_rgba(62,207,142,0.15)] hover:shadow-[0_0_36px_rgba(62,207,142,0.25)]"
+            className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-brand-400 hover:bg-brand-400/90 text-[#0a0a0a] rounded-xl text-[13px] font-semibold transition-all shadow-[0_0_24px_rgba(59,123,255,0.15)] hover:shadow-[0_0_36px_rgba(59,123,255,0.25)]"
           >
             <Plus className="w-4 h-4" />
             New Application
@@ -79,7 +79,7 @@ export default function ApplicationsPage() {
 
         {/* ── Filters Bar ────────────────────────────────────────────────────── */}
         <motion.div variants={itemVariants} className="bg-[#0a0a0a]/80 backdrop-blur-md border border-white/[0.06] rounded-2xl p-4 flex flex-wrap items-center gap-4 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#3ECF8E]/5 to-transparent opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 to-transparent opacity-50" />
           
           {/* Search */}
           <div className="relative flex-1 min-w-[200px] max-w-sm z-10">
@@ -89,7 +89,7 @@ export default function ApplicationsPage() {
               placeholder="Search by title or reference..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-white/[0.03] border border-white/[0.06] rounded-xl text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#3ECF8E]/50 focus:border-[#3ECF8E]/30 transition-all hover:bg-white/[0.05]"
+              className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-white/[0.03] border border-white/[0.06] rounded-xl text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-400/30 focus:border-brand-400/30 transition-all hover:bg-white/[0.05]"
             />
           </div>
 
@@ -102,7 +102,7 @@ export default function ApplicationsPage() {
                 onClick={() => setFilter(f)}
                 className={`px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
                   filter === f
-                    ? 'bg-[#3ECF8E]/15 border border-[#3ECF8E]/30 text-[#3ECF8E] shadow-[0_0_15px_rgba(62,207,142,0.15)]'
+                    ? 'bg-brand-400/15 border border-brand-400/30 text-brand-400 shadow-[0_0_15px_rgba(59,123,255,0.15)]'
                     : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
@@ -152,10 +152,10 @@ export default function ApplicationsPage() {
                     key={app.id}
                   >
                     <Link href={`/client-portal/applications/${app.id}`} className="block group">
-                      <div className="bg-[#0a0a0a] border border-white/[0.06] rounded-2xl p-5 hover:border-[#3ECF8E]/30 hover:bg-[#0c0c0e] transition-all relative overflow-hidden">
+                      <div className="bg-[#0a0a0a] border border-white/[0.06] rounded-2xl p-5 hover:border-brand-400/30 hover:bg-[#0c0c0e] transition-all relative overflow-hidden">
                         
                         {/* Hover glow effect */}
-                        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#3ECF8E]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-brand-400/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
                         <div className="flex items-start justify-between gap-4 relative z-10">
                           <div className="flex-1 min-w-0">
@@ -176,7 +176,7 @@ export default function ApplicationsPage() {
                             <div className="flex items-baseline gap-4 mb-4">
                               <h3 className="text-[16px] font-medium text-white tracking-tight">{app.title}</h3>
                               <span className="text-xl font-medium text-white/90 tracking-tight">
-                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: app.currency || 'USD', notation: 'compact' }).format(app.requestedAmount)}
+                                {new Intl.NumberFormat('fr-CM', { style: 'currency', currency: app.currency || 'XAF', notation: 'compact', maximumFractionDigits: 0 }).format(app.requestedAmount)}
                               </span>
                             </div>
 
@@ -203,8 +203,8 @@ export default function ApplicationsPage() {
                                 ETA: {app.eta}
                               </div>
                             )}
-                            <div className="w-8 h-8 rounded-full bg-white/[0.03] flex items-center justify-center group-hover:bg-[#3ECF8E]/10 transition-colors">
-                              <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-[#3ECF8E] group-hover:translate-x-0.5 transition-all" />
+                            <div className="w-8 h-8 rounded-full bg-white/[0.03] flex items-center justify-center group-hover:bg-brand-400/10 transition-colors">
+                              <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-brand-400 group-hover:translate-x-0.5 transition-all" />
                             </div>
                           </div>
                         </div>
@@ -227,7 +227,7 @@ export default function ApplicationsPage() {
                 <p className="text-[14px] font-medium text-white tracking-tight mb-1">No applications found</p>
                 <p className="text-[13px] text-zinc-500 mb-6">Try adjusting your search terms or filters.</p>
                 {filter !== 'All' && (
-                  <button onClick={() => setFilter('All')} className="text-[12px] font-medium text-[#3ECF8E] hover:text-[#3ECF8E]/80 bg-[#3ECF8E]/10 px-4 py-2 rounded-lg border border-[#3ECF8E]/20 transition-colors">
+                  <button onClick={() => setFilter('All')} className="text-[12px] font-medium text-brand-400 hover:text-brand-400/80 bg-brand-400/10 px-4 py-2 rounded-lg border border-brand-400/20 transition-colors">
                     Clear Filters
                   </button>
                 )}

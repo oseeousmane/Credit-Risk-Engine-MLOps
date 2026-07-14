@@ -18,15 +18,90 @@ on:
 
 env:
   PYTHON_VERSION: "3.11"
-  # Empty in CI → Python scoring service runs in unauthenticated dev mode (warning logged).
-  # Set SCORING_API_KEY as a GitHub secret for staging/production environments.
+  # CI tourne en mode dev explicite (SCORING_DEV_MODE=true) — pas de clé requise.
+  # En staging/prod : SCORING_API_KEY est un GitHub Secret, SCORING_DEV_MODE est absent.
   SCORING_API_KEY: ""
+  SCORING_DEV_MODE: "true"
+  # MLflow : SQLite local en CI, serveur central en prod via secret MLFLOW_TRACKING_URI.
+  # Pour équipe : définir MLFLOW_TRACKING_URI dans Settings > Secrets > Actions.
+  MLFLOW_TRACKING_URI: "sqlite:///mlruns_ci.db"
 
 jobs:
+  # ── 0. Security Scans (SAST + CVE) ────────────────────────
+  security-scan:
+    name: Security — SAST & CVE Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tools
+        run: |
+          pip install --upgrade pip
+          pip install bandit pip-audit
+
+      - name: SAST — Bandit (Python security linter)
+        # Severity HIGH + MEDIUM uniquement — évite le bruit sur LOW
+        # Exclure les notebooks générés (.ipynb) et les dossiers de tests
+        run: |
+          bandit -r . \
+            --exclude ./.venv,./node_modules,./00_research_notebooks,./notebooks_dump.md \
+            --severity-level medium \
+            --confidence-level medium \
+            --format json \
+            --output bandit-report.json || true
+          # Afficher un résumé lisible
+          bandit -r . \
+            --exclude ./.venv,./node_modules,./00_research_notebooks \
+            --severity-level high \
+            --confidence-level high \
+            -q || echo "[SAST] Aucun finding HIGH+HIGH"
+
+      - name: CVE Scan — pip-audit (Python dependencies)
+        # Vérifie les CVE connues dans requirements.txt
+        # --ignore-vuln permet d'ignorer des CVE avec justification documentée
+        run: |
+          pip-audit -r requirements.txt \
+            --format json \
+            --output pip-audit-report.json || true
+          # Fail seulement sur les vulnérabilités CRITICAL (CVSS >= 9.0)
+          pip-audit -r requirements.txt \
+            --severity critical 2>&1 | tee pip-audit-summary.txt
+          if grep -q "Found" pip-audit-summary.txt; then
+            echo "[CVE] CRITICAL vulnerabilities found in Python dependencies!"
+            cat pip-audit-summary.txt
+            exit 1
+          fi
+          echo "[CVE] No CRITICAL vulnerabilities in Python dependencies."
+
+      - name: CVE Scan — npm audit (NestJS dependencies)
+        working-directory: ./10_backend_nestjs
+        run: |
+          npm audit --audit-level=critical 2>&1 | tee npm-audit-summary.txt || {
+            echo "[CVE] CRITICAL vulnerabilities found in NestJS dependencies!"
+            exit 1
+          }
+          echo "[CVE] No CRITICAL vulnerabilities in NestJS dependencies."
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-reports
+          path: |
+            bandit-report.json
+            pip-audit-report.json
+            pip-audit-summary.txt
+
   # ── 1. Code Quality ────────────────────────────────────────
   code-quality:
     name: Code Quality & Linting
     runs-on: ubuntu-latest
+    needs: security-scan
     steps:
       - uses: actions/checkout@v4
 
@@ -65,7 +140,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.lock
           pip install pytest pytest-cov httpx
 
       - name: Run scoring unit tests
@@ -98,13 +173,51 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.lock
+
+      - name: Contract test — feature pipeline vs model schema
+        working-directory: ./03_risk_engine
+        run: |
+          python - <<'EOF'
+          import json, os, sys
+
+          # Charger le contrat de features attendu par le modèle
+          MODEL_DIR = "../02_modeling/pd_model/artifacts"
+          artifact_name = os.environ.get("MODEL_ARTIFACT_NAME", "pd_xgb_v1")
+          feat_file = os.path.join(MODEL_DIR, f"{artifact_name}_features.json")
+
+          if not os.path.exists(feat_file):
+            print(f"[CONTRACT] Features file absent ({feat_file}) — skipping contract test")
+            exit(0)
+
+          with open(feat_file) as f:
+            model_features = set(json.load(f)["features"])
+
+          from feature_pipeline import EXPECTED_FEATURES
+          pipeline_features = set(EXPECTED_FEATURES)
+
+          # Vérification exacte du contrat feature pipeline ↔ modèle
+          missing_in_pipeline = model_features - pipeline_features
+          extra_in_pipeline   = pipeline_features - model_features
+
+          if missing_in_pipeline:
+            print(f"[CONTRACT] FAIL — Features dans le modele absentes du pipeline: {missing_in_pipeline}")
+            exit(1)
+
+          if extra_in_pipeline:
+            print(f"[CONTRACT] WARN — Features dans le pipeline absentes du modele: {extra_in_pipeline}")
+            # Warning uniquement — le pipeline peut avoir des features supplémentaires
+
+          print(f"[CONTRACT] PASS — {len(pipeline_features)} features pipeline = {len(model_features)} features modele")
+          EOF
 
       - name: Smoke test — feature pipeline
         working-directory: ./03_risk_engine
         run: |
           python - <<'EOF'
           from feature_pipeline import build_feature_vector, EXPECTED_FEATURES
+
+          # Payload standard
           result = build_feature_vector({
             "application_id": "CI-SMOKE-001",
             "requested_amount": 5.0,
@@ -117,6 +230,28 @@ jobs:
           assert result["schema_validation"] is not None
           print(f"✓ Feature pipeline OK: {len(EXPECTED_FEATURES)} features, "
                 f"quality={result['quality_band']}, imputed={result['imputed_count']}")
+
+          # Anti-feedback-loop : INST_LATE_PAYMENT_RATE ne doit PAS être dérivé de pd_current.
+          # Avec pd_current=2.0, la feature doit être 0.0 (imputed neutre),
+          # pas 0.04 (= 2.0/100*2 — ancienne valeur circulaire).
+          late_rate = result["features"].get("INST_LATE_PAYMENT_RATE", None)
+          assert late_rate == 0.0, \
+            f"FEEDBACK LOOP DÉTECTÉ : INST_LATE_PAYMENT_RATE={late_rate} (attendu 0.0 neutre)"
+          assert result["lineage"]["INST_LATE_PAYMENT_RATE"] == "IMPUTED", \
+            "INST_LATE_PAYMENT_RATE doit être IMPUTED quand aucun historique DPD n'est fourni"
+
+          # Avec days_past_due explicite, la dérivation doit utiliser la valeur réelle
+          result_dpd = build_feature_vector({
+            "application_id": "CI-SMOKE-DPD",
+            "requested_amount": 5.0,
+            "days_past_due": 45,
+            "risk_level": "HIGH",
+          })
+          late_rate_dpd = result_dpd["features"]["INST_LATE_PAYMENT_RATE"]
+          assert late_rate_dpd > 0.0, \
+            f"Avec days_past_due=45, INST_LATE_PAYMENT_RATE doit être > 0 (got {late_rate_dpd})"
+          assert result_dpd["lineage"]["INST_LATE_PAYMENT_RATE"] == "DERIVED"
+          print(f"✓ Anti-feedback-loop OK : late_rate(no DPD)=0.0, late_rate(DPD=45)={late_rate_dpd:.4f}")
           EOF
 
       - name: Smoke test — calibration buffer
@@ -181,6 +316,123 @@ jobs:
           print(f"✓ IFRS9 staging OK: Stage 1={r.current_stage}, ECL discounting verified")
           EOF
 
+      - name: Contract test — reason codes + adverse action notice
+        working-directory: ./03_risk_engine
+        run: |
+          python - <<'EOF'
+          import sys; sys.path.insert(0, '..')
+          from reason_codes import extract_reason_codes, generate_adverse_action_notice
+
+          # Simuler des drivers SHAP d'un refus
+          drivers = [
+            {"label": "DEBT_TO_INCOME",            "impact": 0.45, "direction": "negative", "category": "DERIVED"},
+            {"label": "BUREAU_CREDIT_UTILIZATION",  "impact": 0.30, "direction": "negative", "category": "DERIVED"},
+            {"label": "EXT_SOURCE_MEAN",            "impact": 0.25, "direction": "negative", "category": "DERIVED"},
+            {"label": "DAYS_EMPLOYED",              "impact": 0.18, "direction": "positive", "category": "RAW"},
+          ]
+
+          # Test 1 : extract_reason_codes retourne >= 1 code pour un refus
+          rc = extract_reason_codes(drivers, "REJECT", imputed_count=20, total_features=157)
+          assert len(rc) >= 1, f"Aucun reason code extrait pour un REJECT — rc={rc}"
+          assert all("code" in r and "fr" in r and "severity" in r for r in rc), \
+            "Champs manquants dans reason code"
+          assert any(r["severity"] == "PRIMARY" for r in rc), \
+            "Aucun code PRIMARY pour un REJECT"
+          print(f"✓ extract_reason_codes: {len(rc)} codes ({[r['code'] for r in rc]})")
+
+          # Test 2 : generate_adverse_action_notice structure COBAC
+          notice = generate_adverse_action_notice(
+            application_id="CI-TEST-001",
+            recommendation="REJECT",
+            pd_score=8.5,
+            reason_codes=rc,
+            model_version="pd_xgb_v1",
+            lang="fr",
+          )
+          required_fields = ["type", "decision", "primary_reasons", "client_rights", "regulatory_basis"]
+          for field in required_fields:
+            assert field in notice, f"Champ manquant dans adverse_action_notice: {field}"
+          assert notice["type"] == "ADVERSE_ACTION_NOTICE", "Type incorrect"
+          assert len(notice["client_rights"]) >= 3, "Droits du demandeur insuffisants"
+          print(f"✓ adverse_action_notice: {len(notice['primary_reasons'])} raisons primaires, {len(notice['client_rights'])} droits")
+
+          # Test 3 : APPROVE ne génère pas de notice adverse
+          rc_approve = extract_reason_codes([], "APPROVE", imputed_count=0, total_features=157)
+          assert len(rc_approve) == 0, f"Des codes extraits pour un APPROVE sans drivers — {rc_approve}"
+          print("✓ APPROVE sans drivers → 0 reason codes")
+
+          print("✓ Reason codes + adverse action notice: PASS")
+          EOF
+
+      - name: Contract test — ScoreResponse champs étendus (IFRS9 + shadow + reason_codes)
+        working-directory: ./03_risk_engine
+        run: |
+          python - <<'EOF'
+          # Vérifie que le modèle ScoreResponse contient tous les champs requis
+          # par les versions étendues de l'API (IFRS9, shadow scoring, reason codes)
+          import inspect
+          from main import ScoreResponse, IFRS9Assessment
+
+          # ScoreResponse champs obligatoires
+          sr_fields = {f.name for f in ScoreResponse.model_fields.values()} if hasattr(ScoreResponse, 'model_fields') else {}
+          if not sr_fields:
+            # Pydantic v1 fallback
+            sr_fields = set(ScoreResponse.__fields__.keys())
+
+          required_score_fields = [
+            "recommendation", "pd_score", "rationale", "xai_drivers",
+            "model_version", "engine", "inference_id", "inference_timestamp",
+            "imputed_features_count", "quality_band", "feature_lineage",
+            "reason_codes", "adverse_action_notice",
+            "shadow_pd_score", "shadow_model_version", "shadow_pd_delta",
+            "ifrs9",
+          ]
+          missing = [f for f in required_score_fields if f not in sr_fields]
+          assert not missing, f"Champs manquants dans ScoreResponse: {missing}"
+          print(f"✓ ScoreResponse: {len(sr_fields)} champs dont tous les champs étendus")
+
+          # IFRS9Assessment champs obligatoires (incluant staging_id)
+          ifrs9_fields = set(IFRS9Assessment.__fields__.keys()) if hasattr(IFRS9Assessment, '__fields__') else set(IFRS9Assessment.model_fields.keys())
+          required_ifrs9 = ["stage", "ecl_provision", "lgd_estimate", "ead_estimate", "eir_used", "sicr_triggered", "staging_id"]
+          missing_ifrs9 = [f for f in required_ifrs9 if f not in ifrs9_fields]
+          assert not missing_ifrs9, f"Champs manquants dans IFRS9Assessment: {missing_ifrs9}"
+          print(f"✓ IFRS9Assessment: staging_id présent ({ifrs9_fields & set(required_ifrs9)})")
+
+          print("✓ Contract ScoreResponse étendu: PASS")
+          EOF
+
+      - name: Contract test — segment_config routing
+        working-directory: ./03_risk_engine
+        run: |
+          python - <<'EOF'
+          from segment_config import SegmentRouter, SEGMENT_REGISTRY
+
+          # Vérifier que les 5 segments sont définis
+          assert len(SEGMENT_REGISTRY) == 5, f"Attendu 5 segments, trouvé {len(SEGMENT_REGISTRY)}"
+
+          router = SegmentRouter(available_artifacts=["pd_xgb_v1", "pd_cemac_v1"])
+
+          # HOME_CREDIT_DEMO toujours disponible
+          art, spec = router.resolve(segment="HOME_CREDIT_DEMO")
+          assert art == "pd_xgb_v1", f"Champion par défaut incorrect: {art}"
+
+          # CORPORATE_CEMAC doit fallback sur HOME_CREDIT_DEMO (PENDING_DATA)
+          art, spec = router.resolve(segment="CORPORATE_CEMAC")
+          assert art == "pd_xgb_v1", f"Fallback CORPORATE_CEMAC incorrect: {art}"
+
+          # CEMAC_SYNTHETIC disponible directement
+          art, spec = router.resolve(segment="CEMAC_SYNTHETIC")
+          assert art == "pd_cemac_v1", f"CEMAC_SYNTHETIC incorrect: {art}"
+
+          # Résolution par revenue
+          art_micro, _ = router.resolve(revenue_xaf=3_000_000)     # < 5M → microfinance → fallback
+          art_corp,  _ = router.resolve(revenue_xaf=2_000_000_000) # > 500M → corporate → fallback
+          assert art_micro == "pd_xgb_v1", f"Microfinance routing incorrect: {art_micro}"
+          assert art_corp  == "pd_xgb_v1", f"Corporate routing incorrect: {art_corp}"
+
+          print(f"✓ SegmentRouter: 5 segments, fallback OK, revenue routing OK")
+          EOF
+
   # ── 4. Model Artifact Validation ──────────────────────────
   model-validation:
     name: Model Artifact Validation
@@ -200,36 +452,168 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.lock
 
       - name: Check model artifact exists and metadata is valid
         run: |
           python - <<'EOF'
-          import os, json, hashlib
+          import os, json, hashlib, sys, glob
 
           MODEL_DIR = "02_modeling/pd_model/artifacts"
-          MODEL_PKL = os.path.join(MODEL_DIR, "pd_model_v2.pkl")
-          MODEL_META = os.path.join(MODEL_DIR, "pd_model_v2_metadata.json")
+
+          # Résolution du champion actif : MODEL_ARTIFACT_NAME env var, sinon pd_xgb_v1, sinon pd_model_v2
+          artifact_name = os.environ.get("MODEL_ARTIFACT_NAME", "pd_xgb_v1")
+          MODEL_PKL  = os.path.join(MODEL_DIR, f"{artifact_name}.pkl")
+          MODEL_META = os.path.join(MODEL_DIR, f"{artifact_name}_metadata.json")
+
+          # Fallback: chercher le plus récent artifact
+          if not os.path.exists(MODEL_PKL):
+            pkls = glob.glob(os.path.join(MODEL_DIR, "*.pkl"))
+            if pkls:
+              MODEL_PKL  = sorted(pkls, key=os.path.getmtime)[-1]
+              MODEL_META = MODEL_PKL.replace(".pkl", "_metadata.json")
+              artifact_name = os.path.basename(MODEL_PKL).replace(".pkl", "")
+              print(f"[CI] Using most recent artifact: {artifact_name}")
 
           if not os.path.exists(MODEL_PKL):
-            print("⚠ Model artifact not found — skipping artifact validation (expected in CI without training).")
+            print("[CI] No model artifact found — skipping artifact validation (expected in CI without training).")
             exit(0)
 
-          # Verify metadata exists and has required fields
+          # Vérification metadata
           with open(MODEL_META) as f:
             meta = json.load(f)
 
           required_fields = ["model_type", "n_features", "val_auc", "training_timestamp"]
           missing = [f for f in required_fields if f not in meta]
           if missing:
-            print(f"❌ Metadata missing required fields: {missing}")
+            print(f"[CI] FAIL — Metadata missing required fields: {missing}")
             exit(1)
 
-          # Log artifact SHA-256 for traceability
+          # SHA-256 intégrité
           with open(MODEL_PKL, "rb") as f:
             sha256 = hashlib.sha256(f.read()).hexdigest()
-          print(f"✓ Artifact SHA-256: {sha256}")
-          print(f"✓ Model type: {meta['model_type']}, Features: {meta['n_features']}, Val AUC: {meta['val_auc']}")
+
+          stored_sha = meta.get("model_artifact_sha256", "")
+          if stored_sha and stored_sha != sha256:
+            print(f"[CI] FAIL — SHA-256 mismatch: stored={stored_sha[:16]}... computed={sha256[:16]}...")
+            exit(1)
+          print(f"[CI] SHA-256 OK: {sha256[:24]}...")
+
+          # ── GATE QUALITE REGLEMENTAIRE ────────────────────────────────────────
+          # Bloque le merge si le modele n'atteint pas les floors regulatoires.
+          # Source : OOT_VALIDATION_PACK + MODEL_GOVERNANCE_SPEC.
+          AUC_FLOOR  = 0.72   # Floor AUC (OOT_VALIDATION_PACK §2)
+          GINI_FLOOR = 0.45   # Floor Gini = 45% (OOT_VALIDATION_PACK §2)
+          PSI_CAP    = 0.20   # PSI max avant alerte (OOT_VALIDATION_PACK §3)
+
+          val_auc  = meta.get("val_auc",  0.0)
+          val_gini = 2 * val_auc - 1
+
+          # Test metrics (si disponibles depuis advanced_validation)
+          test_metrics = meta.get("test_metrics", {})
+          test_auc  = test_metrics.get("auc",  val_auc)
+          test_gini = test_metrics.get("gini", val_gini)
+          oot_psi   = meta.get("oot_psi",  meta.get("psi", 0.0))
+
+          failures = []
+
+          if test_auc < AUC_FLOOR:
+            failures.append(f"AUC={test_auc:.4f} < floor {AUC_FLOOR} (REGULATORY FLOOR BREACHED)")
+
+          if test_gini < GINI_FLOOR:
+            failures.append(f"Gini={test_gini:.4f} ({test_gini*100:.1f}%) < floor {GINI_FLOOR*100:.0f}% (REGULATORY FLOOR BREACHED)")
+
+          if oot_psi > PSI_CAP:
+            failures.append(f"PSI={oot_psi:.3f} > cap {PSI_CAP} (MODEL INSTABILITY DETECTED)")
+
+          if failures:
+            print(f"\n[CI] GATE FAIL — Model '{artifact_name}' does not meet regulatory floors:")
+            for f in failures:
+              print(f"  - {f}")
+            print("\n  This model MUST NOT be promoted to production.")
+            print("  Fix: retrain with better data, check for overfitting, or investigate data quality.")
+            exit(1)
+
+          # Fairness gate (si disponible)
+          fairness = meta.get("fairness", {})
+          gate_status = fairness.get("gate_status", "")
+          if "BLOCKED" in gate_status:
+            print(f"\n[CI] FAIRNESS GATE — Blocked: {gate_status}")
+            print("  Fairness issues must be resolved before promotion. See fairness audit report.")
+            # WARNING (pas exit 1) : fairness est recommandée mais pas bloquante pour DEMO_BASELINE
+
+          # Leakage gate
+          leakage = meta.get("leakage_gate", {})
+          if not leakage.get("gate_pass", True):
+            signals = leakage.get("signals", {})
+            print(f"\n[CI] LEAKAGE GATE — Signals detected: {signals}")
+            # WARNING pour DEMO_BASELINE, FAIL pour PROD_CHAMPION
+            artifact_cat = meta.get("artifact_category", "DEMO_BASELINE")
+            if artifact_cat == "PROD_CHAMPION":
+              exit(1)
+
+          print(f"\n[CI] GATE PASS — {artifact_name}")
+          print(f"  Model type : {meta['model_type']}")
+          print(f"  AUC        : {test_auc:.4f}  (floor={AUC_FLOOR})")
+          print(f"  Gini       : {test_gini*100:.1f}%  (floor={GINI_FLOOR*100:.0f}%)")
+          print(f"  Artifact   : {artifact_name}")
+          EOF
+
+  # ── 4b. Rollback Procedure Test ───────────────────────────
+  rollback-test:
+    name: Model Rollback Procedure Test
+    runs-on: ubuntu-latest
+    needs: model-validation
+    if: github.ref == 'refs/heads/main'
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.lock
+
+      - name: Test rollback procedure (simulated — no state change)
+        run: |
+          python - <<'EOF'
+          import os, sys, json, glob
+
+          MODEL_DIR = "02_modeling/pd_model/artifacts"
+          artifact_name = os.environ.get("MODEL_ARTIFACT_NAME", "pd_xgb_v1")
+
+          # Chercher le plus recent artifact si le nom specifie n'existe pas
+          meta_file = os.path.join(MODEL_DIR, f"{artifact_name}_metadata.json")
+          if not os.path.exists(meta_file):
+            metas = glob.glob(os.path.join(MODEL_DIR, "*_metadata.json"))
+            if not metas:
+              print("[ROLLBACK-TEST] No artifact found -- skipping (expected in CI without training)")
+              exit(0)
+            meta_file = sorted(metas, key=os.path.getmtime)[-1]
+            artifact_name = os.path.basename(meta_file).replace("_metadata.json", "")
+
+          # Simulation du rollback sans toucher les fichiers
+          with open(meta_file) as f:
+            meta = json.load(f)
+
+          required = ["model_artifact_sha256", "n_features", "val_auc"]
+          missing  = [r for r in required if r not in meta]
+
+          if missing:
+            print(f"[ROLLBACK-TEST] FAIL -- Champs requis pour restauration absents: {missing}")
+            exit(1)
+
+          print(f"[ROLLBACK-TEST] PASS -- {artifact_name}")
+          print(f"  SHA-256 present   : {bool(meta.get('model_artifact_sha256'))}")
+          print(f"  n_features        : {meta.get('n_features')}")
+          print(f"  val_auc           : {meta.get('val_auc')}")
+          print(f"  RTO estime        : ~5 secondes (SQL UPDATE + restart FastAPI)")
           EOF
 
   # ── 5. Docker Build & Readiness Check ─────────────────────

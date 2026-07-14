@@ -43,10 +43,10 @@ export function RoleSection() {
 
   return (
     <section className="py-28 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#3ECF8E]/[0.01] via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-brand-400/[0.01] via-transparent to-transparent" />
       <div className="relative max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
-          <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#3ECF8E] mb-4">{t.badge}</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-400 mb-4">{t.badge}</div>
           <h2 className="text-3xl sm:text-4xl lg:text-[2.5rem] font-medium text-white mb-5 tracking-tight">{t.title}</h2>
           <p className="text-[15px] font-medium text-zinc-400 max-w-2xl mx-auto leading-relaxed">{t.desc}</p>
         </div>
@@ -60,12 +60,12 @@ export function RoleSection() {
               key={r.role}
               variants={itemVariants}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="group relative bg-[#050505] border border-white/[0.03] rounded-2xl p-7 overflow-hidden transition-all duration-500 hover:border-white/[0.08]"
+              className="group relative bg-surface-0 border border-white/[0.03] rounded-2xl p-7 overflow-hidden transition-all duration-500 hover:border-white/[0.08]"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#3ECF8E]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative z-10 flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center flex-shrink-0 group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-all duration-500">
-                  <r.icon className="w-5 h-5 text-zinc-500 group-hover:text-[#3ECF8E] transition-colors duration-500" />
+                <div className="w-12 h-12 rounded-xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-center flex-shrink-0 group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-all duration-500">
+                  <r.icon className="w-5 h-5 text-zinc-500 group-hover:text-brand-400 transition-colors duration-500" />
                 </div>
                 <div className="mt-1">
                   <h3 className="text-[17px] font-medium tracking-tight text-zinc-200 group-hover:text-white transition-colors duration-500 mb-1.5">{r.role}</h3>
@@ -74,7 +74,7 @@ export function RoleSection() {
               </div>
               <div className="relative z-10 flex flex-wrap gap-2">
                 {r.tasks.map((task) => (
-                  <span key={task} className="text-[11px] font-medium text-zinc-500 bg-white/[0.02] border border-white/[0.04] rounded-lg px-3 py-1.5 group-hover:text-[#3ECF8E]/90 group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-all duration-500">
+                  <span key={task} className="text-[11px] font-medium text-zinc-500 bg-white/[0.02] border border-white/[0.04] rounded-lg px-3 py-1.5 group-hover:text-brand-400/90 group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-all duration-500">
                     {task}
                   </span>
                 ))}

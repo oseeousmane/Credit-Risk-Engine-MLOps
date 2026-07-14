@@ -57,7 +57,7 @@ export function ContactSection() {
               <div className="space-y-8">
                 <div className="flex items-center gap-4 group">
                   <div className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
-                    <Mail className="w-4 h-4 text-[#3ECF8E]" />
+                    <Mail className="w-4 h-4 text-brand-400" />
                   </div>
                   <div>
                     <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">{tx.inquiriesLabel}</div>
@@ -67,7 +67,7 @@ export function ContactSection() {
                 
                 <div className="flex items-center gap-4 group">
                   <div className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-[#3ECF8E]" />
+                    <Globe className="w-4 h-4 text-brand-400" />
                   </div>
                   <div>
                     <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">{tx.globalLabel}</div>
@@ -83,7 +83,7 @@ export function ContactSection() {
             </div>
 
             <div className="p-10 lg:p-12 bg-white/[0.01] flex flex-col justify-center gap-4">
-              <Link href={`/${locale}/contact`} className="flex items-center justify-center px-6 py-4 bg-[#3ECF8E] text-[#0a0a0a] text-[14px] font-bold rounded-lg hover:bg-[#3ECF8E]/90 transition-all">
+              <Link href={`/${locale}/contact`} className="flex items-center justify-center px-6 py-4 bg-brand-400 text-[#0a0a0a] text-[14px] font-bold rounded-lg hover:bg-brand-400/90 transition-all">
                 {tx.cta1}
               </Link>
               <Link href={`/${locale}/contact`} className="flex items-center justify-center px-6 py-4 bg-white/[0.03] border border-white/[0.08] text-white text-[14px] font-bold rounded-lg hover:bg-white/[0.06] transition-all">

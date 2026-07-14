@@ -1,0 +1,786 @@
+{
+  "model_name": "pd_xgb_v1",
+  "audit_timestamp": "2026-05-28T18:54:53.789853",
+  "n_samples": 61503,
+  "overall_default_rate": 0.079411,
+  "segment_performance": [
+    {
+      "segment_col": "CODE_GENDER",
+      "segment_value": "F",
+      "n_samples": 40552,
+      "default_rate": 0.069664,
+      "auc": 0.7861,
+      "gini": 0.5722,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "CODE_GENDER",
+      "segment_value": "M",
+      "n_samples": 20951,
+      "default_rate": 0.098277,
+      "auc": 0.7786,
+      "gini": 0.5573,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "35-45",
+      "n_samples": 16959,
+      "default_rate": 0.08438,
+      "auc": 0.7857,
+      "gini": 0.5715,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "45-55",
+      "n_samples": 14088,
+      "default_rate": 0.067433,
+      "auc": 0.7833,
+      "gini": 0.5665,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "25-35",
+      "n_samples": 14555,
+      "default_rate": 0.10663,
+      "auc": 0.7747,
+      "gini": 0.5495,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "55+",
+      "n_samples": 13498,
+      "default_rate": 0.0506,
+      "auc": 0.7715,
+      "gini": 0.5431,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "AGE_BUCKET",
+      "segment_value": "<25",
+      "n_samples": 2403,
+      "default_rate": 0.111527,
+      "auc": 0.7555,
+      "gini": 0.5109,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "Working",
+      "n_samples": 31671,
+      "default_rate": 0.09605,
+      "auc": 0.7827,
+      "gini": 0.5653,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "Commercial associate",
+      "n_samples": 14429,
+      "default_rate": 0.071731,
+      "auc": 0.775,
+      "gini": 0.5499,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "State servant",
+      "n_samples": 4338,
+      "default_rate": 0.053711,
+      "auc": 0.7857,
+      "gini": 0.5714,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_INCOME_TYPE",
+      "segment_value": "Pensioner",
+      "n_samples": 11055,
+      "default_rate": 0.051832,
+      "auc": 0.7777,
+      "gini": 0.5554,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "Secondary / secondary special",
+      "n_samples": 43542,
+      "default_rate": 0.088558,
+      "auc": 0.7807,
+      "gini": 0.5613,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "Higher education",
+      "n_samples": 15045,
+      "default_rate": 0.050847,
+      "auc": 0.7852,
+      "gini": 0.5704,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "Lower secondary",
+      "n_samples": 803,
+      "default_rate": 0.099626,
+      "auc": 0.779,
+      "gini": 0.5581,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_EDUCATION_TYPE",
+      "segment_value": "Incomplete higher",
+      "n_samples": 2077,
+      "default_rate": 0.088108,
+      "auc": 0.7942,
+      "gini": 0.5884,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "House / apartment",
+      "n_samples": 54443,
+      "default_rate": 0.076263,
+      "auc": 0.7874,
+      "gini": 0.5748,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "Rented apartment",
+      "n_samples": 1033,
+      "default_rate": 0.124879,
+      "auc": 0.7504,
+      "gini": 0.5009,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "Municipal apartment",
+      "n_samples": 2266,
+      "default_rate": 0.08782,
+      "auc": 0.7826,
+      "gini": 0.5652,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "With parents",
+      "n_samples": 2982,
+      "default_rate": 0.120054,
+      "auc": 0.7625,
+      "gini": 0.5249,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "Co-op apartment",
+      "n_samples": 238,
+      "default_rate": 0.046218,
+      "auc": 0.8867,
+      "gini": 0.7733,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    },
+    {
+      "segment_col": "NAME_HOUSING_TYPE",
+      "segment_value": "Office apartment",
+      "n_samples": 541,
+      "default_rate": 0.064695,
+      "auc": 0.7385,
+      "gini": 0.477,
+      "gini_floor_pass": true,
+      "status": "PASS"
+    }
+  ],
+  "disparate_impact": [
+    {
+      "protected_col": "CODE_GENDER",
+      "reference_group": "M",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": true,
+      "groups": [
+        {
+          "group": "F",
+          "reject_rate": 0.4097,
+          "n": 40552,
+          "disparate_impact_ratio": 0.728,
+          "adverse_impact_flag": true,
+          "is_reference": false
+        },
+        {
+          "group": "M",
+          "reject_rate": 0.5627,
+          "n": 20951,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        }
+      ]
+    },
+    {
+      "protected_col": "AGE_BUCKET",
+      "reference_group": "55+",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": false,
+      "groups": [
+        {
+          "group": "<25",
+          "reject_rate": 0.7145,
+          "n": 2403,
+          "disparate_impact_ratio": 2.1855,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "25-35",
+          "reject_rate": 0.586,
+          "n": 14555,
+          "disparate_impact_ratio": 1.7923,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "35-45",
+          "reject_rate": 0.4675,
+          "n": 16959,
+          "disparate_impact_ratio": 1.4301,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "45-55",
+          "reject_rate": 0.4128,
+          "n": 14088,
+          "disparate_impact_ratio": 1.2625,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "55+",
+          "reject_rate": 0.3269,
+          "n": 13498,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_INCOME_TYPE",
+      "reference_group": "Pensioner",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": false,
+      "groups": [
+        {
+          "group": "Commercial associate",
+          "reject_rate": 0.4293,
+          "n": 14429,
+          "disparate_impact_ratio": 1.2269,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "Pensioner",
+          "reject_rate": 0.3499,
+          "n": 11055,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        },
+        {
+          "group": "State servant",
+          "reject_rate": 0.3578,
+          "n": 4338,
+          "disparate_impact_ratio": 1.0225,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "Working",
+          "reject_rate": 0.5299,
+          "n": 31671,
+          "disparate_impact_ratio": 1.5146,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_EDUCATION_TYPE",
+      "reference_group": "Higher education",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": false,
+      "groups": [
+        {
+          "group": "Higher education",
+          "reject_rate": 0.3081,
+          "n": 15045,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        },
+        {
+          "group": "Incomplete higher",
+          "reject_rate": 0.5007,
+          "n": 2077,
+          "disparate_impact_ratio": 1.625,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "Lower secondary",
+          "reject_rate": 0.6177,
+          "n": 803,
+          "disparate_impact_ratio": 2.0045,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "Secondary / secondary special",
+          "reject_rate": 0.5102,
+          "n": 43542,
+          "disparate_impact_ratio": 1.6559,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_HOUSING_TYPE",
+      "reference_group": "Co-op apartment",
+      "reject_threshold": 0.06,
+      "has_adverse_impact": false,
+      "groups": [
+        {
+          "group": "Co-op apartment",
+          "reject_rate": 0.4118,
+          "n": 238,
+          "disparate_impact_ratio": 1.0,
+          "adverse_impact_flag": false,
+          "is_reference": true
+        },
+        {
+          "group": "House / apartment",
+          "reject_rate": 0.4476,
+          "n": 54443,
+          "disparate_impact_ratio": 1.0871,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "Municipal apartment",
+          "reject_rate": 0.4651,
+          "n": 2266,
+          "disparate_impact_ratio": 1.1296,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "Office apartment",
+          "reject_rate": 0.5083,
+          "n": 541,
+          "disparate_impact_ratio": 1.2345,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "Rented apartment",
+          "reject_rate": 0.6621,
+          "n": 1033,
+          "disparate_impact_ratio": 1.6081,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        },
+        {
+          "group": "With parents",
+          "reject_rate": 0.6445,
+          "n": 2982,
+          "disparate_impact_ratio": 1.5653,
+          "adverse_impact_flag": false,
+          "is_reference": false
+        }
+      ]
+    }
+  ],
+  "equal_opportunity": [
+    {
+      "protected_col": "CODE_GENDER",
+      "tpr_gap": 0.1467,
+      "gap_flag": true,
+      "groups": [
+        {
+          "group": "F",
+          "tpr": 0.6195,
+          "n": 40552
+        },
+        {
+          "group": "M",
+          "tpr": 0.4728,
+          "n": 20951
+        }
+      ]
+    },
+    {
+      "protected_col": "AGE_BUCKET",
+      "tpr_gap": 0.3805,
+      "gap_flag": true,
+      "groups": [
+        {
+          "group": "35-45",
+          "tpr": 0.5665,
+          "n": 16959
+        },
+        {
+          "group": "45-55",
+          "tpr": 0.6155,
+          "n": 14088
+        },
+        {
+          "group": "25-35",
+          "tpr": 0.4507,
+          "n": 14555
+        },
+        {
+          "group": "55+",
+          "tpr": 0.6938,
+          "n": 13498
+        },
+        {
+          "group": "<25",
+          "tpr": 0.3133,
+          "n": 2403
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_INCOME_TYPE",
+      "tpr_gap": 0.1658,
+      "gap_flag": true,
+      "groups": [
+        {
+          "group": "Working",
+          "tpr": 0.5061,
+          "n": 31671
+        },
+        {
+          "group": "Commercial associate",
+          "tpr": 0.5998,
+          "n": 14429
+        },
+        {
+          "group": "State servant",
+          "tpr": 0.6653,
+          "n": 4338
+        },
+        {
+          "group": "Pensioner",
+          "tpr": 0.6719,
+          "n": 11055
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_EDUCATION_TYPE",
+      "tpr_gap": 0.3003,
+      "gap_flag": true,
+      "groups": [
+        {
+          "group": "Secondary / secondary special",
+          "tpr": 0.5234,
+          "n": 43542
+        },
+        {
+          "group": "Higher education",
+          "tpr": 0.7139,
+          "n": 15045
+        },
+        {
+          "group": "Lower secondary",
+          "tpr": 0.4136,
+          "n": 803
+        },
+        {
+          "group": "Incomplete higher",
+          "tpr": 0.5354,
+          "n": 2077
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_HOUSING_TYPE",
+      "tpr_gap": 0.2428,
+      "gap_flag": true,
+      "groups": [
+        {
+          "group": "House / apartment",
+          "tpr": 0.5836,
+          "n": 54443
+        },
+        {
+          "group": "Rented apartment",
+          "tpr": 0.3739,
+          "n": 1033
+        },
+        {
+          "group": "Municipal apartment",
+          "tpr": 0.5704,
+          "n": 2266
+        },
+        {
+          "group": "With parents",
+          "tpr": 0.3937,
+          "n": 2982
+        },
+        {
+          "group": "Co-op apartment",
+          "tpr": 0.6167,
+          "n": 238
+        },
+        {
+          "group": "Office apartment",
+          "tpr": 0.5138,
+          "n": 541
+        }
+      ]
+    }
+  ],
+  "group_calibration": [
+    {
+      "protected_col": "CODE_GENDER",
+      "has_calibration_issues": false,
+      "groups": [
+        {
+          "group": "F",
+          "n": 40552,
+          "observed_dr": 0.069664,
+          "predicted_dr": 0.074482,
+          "eo_ratio": 1.0692,
+          "calibration_flag": false
+        },
+        {
+          "group": "M",
+          "n": 20951,
+          "observed_dr": 0.098277,
+          "predicted_dr": 0.103581,
+          "eo_ratio": 1.054,
+          "calibration_flag": false
+        }
+      ]
+    },
+    {
+      "protected_col": "AGE_BUCKET",
+      "has_calibration_issues": false,
+      "groups": [
+        {
+          "group": "35-45",
+          "n": 16959,
+          "observed_dr": 0.08438,
+          "predicted_dr": 0.085765,
+          "eo_ratio": 1.0164,
+          "calibration_flag": false
+        },
+        {
+          "group": "45-55",
+          "n": 14088,
+          "observed_dr": 0.067433,
+          "predicted_dr": 0.074589,
+          "eo_ratio": 1.1061,
+          "calibration_flag": false
+        },
+        {
+          "group": "25-35",
+          "n": 14555,
+          "observed_dr": 0.10663,
+          "predicted_dr": 0.108852,
+          "eo_ratio": 1.0208,
+          "calibration_flag": false
+        },
+        {
+          "group": "55+",
+          "n": 13498,
+          "observed_dr": 0.0506,
+          "predicted_dr": 0.057514,
+          "eo_ratio": 1.1366,
+          "calibration_flag": false
+        },
+        {
+          "group": "<25",
+          "n": 2403,
+          "observed_dr": 0.111527,
+          "predicted_dr": 0.135056,
+          "eo_ratio": 1.211,
+          "calibration_flag": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_INCOME_TYPE",
+      "has_calibration_issues": true,
+      "groups": [
+        {
+          "group": "Working",
+          "n": 31671,
+          "observed_dr": 0.09605,
+          "predicted_dr": 0.098248,
+          "eo_ratio": 1.0229,
+          "calibration_flag": false
+        },
+        {
+          "group": "Commercial associate",
+          "n": 14429,
+          "observed_dr": 0.071731,
+          "predicted_dr": 0.077423,
+          "eo_ratio": 1.0794,
+          "calibration_flag": false
+        },
+        {
+          "group": "State servant",
+          "n": 4338,
+          "observed_dr": 0.053711,
+          "predicted_dr": 0.067179,
+          "eo_ratio": 1.2507,
+          "calibration_flag": true
+        },
+        {
+          "group": "Pensioner",
+          "n": 11055,
+          "observed_dr": 0.051832,
+          "predicted_dr": 0.060547,
+          "eo_ratio": 1.1681,
+          "calibration_flag": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_EDUCATION_TYPE",
+      "has_calibration_issues": false,
+      "groups": [
+        {
+          "group": "Secondary / secondary special",
+          "n": 43542,
+          "observed_dr": 0.088558,
+          "predicted_dr": 0.093226,
+          "eo_ratio": 1.0527,
+          "calibration_flag": false
+        },
+        {
+          "group": "Higher education",
+          "n": 15045,
+          "observed_dr": 0.050847,
+          "predicted_dr": 0.056693,
+          "eo_ratio": 1.115,
+          "calibration_flag": false
+        },
+        {
+          "group": "Lower secondary",
+          "n": 803,
+          "observed_dr": 0.099626,
+          "predicted_dr": 0.111658,
+          "eo_ratio": 1.1208,
+          "calibration_flag": false
+        },
+        {
+          "group": "Incomplete higher",
+          "n": 2077,
+          "observed_dr": 0.088108,
+          "predicted_dr": 0.089582,
+          "eo_ratio": 1.0167,
+          "calibration_flag": false
+        }
+      ]
+    },
+    {
+      "protected_col": "NAME_HOUSING_TYPE",
+      "has_calibration_issues": true,
+      "groups": [
+        {
+          "group": "House / apartment",
+          "n": 54443,
+          "observed_dr": 0.076263,
+          "predicted_dr": 0.081535,
+          "eo_ratio": 1.0691,
+          "calibration_flag": false
+        },
+        {
+          "group": "Rented apartment",
+          "n": 1033,
+          "observed_dr": 0.124879,
+          "predicted_dr": 0.120767,
+          "eo_ratio": 0.9671,
+          "calibration_flag": false
+        },
+        {
+          "group": "Municipal apartment",
+          "n": 2266,
+          "observed_dr": 0.08782,
+          "predicted_dr": 0.086465,
+          "eo_ratio": 0.9846,
+          "calibration_flag": false
+        },
+        {
+          "group": "With parents",
+          "n": 2982,
+          "observed_dr": 0.120054,
+          "predicted_dr": 0.121297,
+          "eo_ratio": 1.0104,
+          "calibration_flag": false
+        },
+        {
+          "group": "Co-op apartment",
+          "n": 238,
+          "observed_dr": 0.046218,
+          "predicted_dr": 0.078723,
+          "eo_ratio": 1.7033,
+          "calibration_flag": true
+        },
+        {
+          "group": "Office apartment",
+          "n": 541,
+          "observed_dr": 0.064695,
+          "predicted_dr": 0.093151,
+          "eo_ratio": 1.4398,
+          "calibration_flag": true
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "protected_variables_tested": [
+      "CODE_GENDER",
+      "AGE_BUCKET",
+      "NAME_INCOME_TYPE",
+      "NAME_EDUCATION_TYPE",
+      "NAME_HOUSING_TYPE"
+    ],
+    "n_underperforming_segments": 0,
+    "underperforming_segments": [],
+    "n_adverse_impact_flags": 1,
+    "n_equal_opportunity_gaps": 5,
+    "n_calibration_issues": 2,
+    "promotion_gate_pass": false,
+    "promotion_gate_status": "BLOCKED \u2014 corriger les segments en sous-performance et les biais d\u00e9tect\u00e9s"
+  }
+}

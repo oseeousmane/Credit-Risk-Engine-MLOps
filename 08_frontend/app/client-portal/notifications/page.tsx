@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState } from 'react'
 import { Bell, CheckCircle2, AlertTriangle, Loader2, Clock, Check } from 'lucide-react'
@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 const TYPE_CONFIG: Record<string, { dot: string; bg: string; border: string; iconBase: string }> = {
   action:  { dot: 'bg-amber-400',  bg: 'bg-amber-500/5',  border: 'border-amber-500/20', iconBase: 'text-amber-400' },
   success: { dot: 'bg-emerald-400', bg: 'bg-emerald-500/5', border: 'border-emerald-500/20', iconBase: 'text-emerald-400' },
-  info:    { dot: 'bg-[#3ECF8E]',   bg: 'bg-[#3ECF8E]/5',   border: 'border-[#3ECF8E]/20', iconBase: 'text-[#3ECF8E]' },
+  info:    { dot: 'bg-brand-400',   bg: 'bg-brand-400/5',   border: 'border-brand-400/20', iconBase: 'text-brand-400' },
 }
 
 const containerVariants = {
@@ -60,7 +60,7 @@ export default function NotificationsPage() {
     <div className="max-w-3xl mx-auto space-y-7 pb-12 relative min-h-screen">
 
       {/* ── Ambient Glows (Glassmorphism) ────────────────────────────────────── */}
-      <div className="absolute top-[-50px] right-[-100px] w-[500px] h-[500px] bg-[#3ECF8E]/[0.03] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-50px] right-[-100px] w-[500px] h-[500px] bg-brand-400/[0.03] rounded-full blur-[100px] pointer-events-none" />
 
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="relative z-10 space-y-7">
         
@@ -68,13 +68,13 @@ export default function NotificationsPage() {
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Bell className="w-3.5 h-3.5 text-[#3ECF8E]" />
+              <Bell className="w-3.5 h-3.5 text-brand-400" />
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">Notifications</span>
             </div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-medium text-white tracking-tight">Notification Centre</h1>
               {unreadCount > 0 && (
-                <span className="bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 text-[#3ECF8E] text-[10px] font-bold uppercase tracking-wider rounded-full px-2.5 py-0.5 shadow-[0_0_15px_rgba(62,207,142,0.15)]">
+                <span className="bg-brand-400/10 border border-brand-400/20 text-brand-400 text-[10px] font-bold uppercase tracking-wider rounded-full px-2.5 py-0.5 shadow-[0_0_15px_rgba(59,123,255,0.15)]">
                   {unreadCount} Unread
                 </span>
               )}
@@ -100,7 +100,7 @@ export default function NotificationsPage() {
             onClick={() => setFilter('all')}
             className={`px-5 py-2 rounded-xl text-[12.5px] font-medium transition-all ${
               filter === 'all'
-                ? 'bg-[#3ECF8E] border border-[#3ECF8E]/50 shadow-[0_0_15px_rgba(62,207,142,0.2)] text-[#0a0a0a]'
+                ? 'bg-brand-400 border border-brand-400/50 shadow-[0_0_15px_rgba(59,123,255,0.2)] text-[#0a0a0a]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
@@ -110,7 +110,7 @@ export default function NotificationsPage() {
             onClick={() => setFilter('unread')}
             className={`px-5 py-2 rounded-xl text-[12.5px] font-medium transition-all ${
               filter === 'unread'
-                ? 'bg-[#3ECF8E] border border-[#3ECF8E]/50 shadow-[0_0_15px_rgba(62,207,142,0.2)] text-[#0a0a0a]'
+                ? 'bg-brand-400 border border-brand-400/50 shadow-[0_0_15px_rgba(59,123,255,0.2)] text-[#0a0a0a]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
@@ -152,7 +152,7 @@ export default function NotificationsPage() {
                     onClick={() => unread && markReadMutation.mutate(notif.id)}
                     className={`relative overflow-hidden border rounded-[20px] p-5 md:p-6 flex flex-col sm:flex-row sm:items-start gap-5 transition-all group ${
                       unread
-                        ? `cursor-pointer bg-[#0a0a0a]/90 backdrop-blur-md border-white/[0.1] hover:border-[#3ECF8E]/30 hover:bg-[#0c0c0c] shadow-[0_4px_24px_rgba(0,0,0,0.2)]`
+                        ? `cursor-pointer bg-[#0a0a0a]/90 backdrop-blur-md border-white/[0.1] hover:border-brand-400/30 hover:bg-[#0c0c0c] shadow-[0_4px_24px_rgba(0,0,0,0.2)]`
                         : `bg-[#0a0a0a]/40 border-white/[0.03] opacity-70`
                     }`}
                   >
@@ -197,7 +197,7 @@ export default function NotificationsPage() {
                           onClick={e => e.stopPropagation()}
                           className={`inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-widest px-4 py-2 rounded-xl border transition-all ${
                             unread
-                              ? 'text-[#3ECF8E] bg-[#3ECF8E]/5 border-[#3ECF8E]/20 hover:bg-[#3ECF8E]/15 shadow-[0_0_10px_rgba(62,207,142,0.1)]'
+                              ? 'text-brand-400 bg-brand-400/5 border-brand-400/20 hover:bg-brand-400/15 shadow-[0_0_10px_rgba(59,123,255,0.1)]'
                               : 'text-zinc-500 bg-white/[0.02] border-white/[0.05] hover:text-zinc-300 hover:bg-white/[0.04]'
                           }`}
                         >

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import * as React from 'react'
 import { useState } from 'react'
 import { TrendingUp, ShieldCheck } from 'lucide-react'
@@ -12,7 +12,7 @@ export default function InternalLoginPage() {
   const [error, setError] = useState('')
   const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -36,6 +36,7 @@ export default function InternalLoginPage() {
 
   const fillDemo = (demoEmail: string) => {
     setEmail(demoEmail)
+    setPassword('Demo@2026')
   }
 
   return (
@@ -43,15 +44,15 @@ export default function InternalLoginPage() {
       <div className="w-full max-w-md">
         
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-[#3ECF8E]/10 border border-[#3ECF8E]/25 flex items-center justify-center shadow-[0_0_24px_rgba(62,207,142,0.2)] mb-4">
-            <TrendingUp className="w-6 h-6 text-[#3ECF8E]" />
+          <div className="w-12 h-12 rounded-xl bg-brand-400/10 border border-brand-400/25 flex items-center justify-center shadow-[0_0_24px_rgba(59,123,255,0.2)] mb-4">
+            <TrendingUp className="w-6 h-6 text-brand-400" />
           </div>
-          <h1 className="text-2xl font-black text-white" style={{letterSpacing: '-0.03em'}}>RiskEngine</h1>
-          <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-[0.18em] mt-1">Internal Platform Auth</p>
+          <h1 className="text-2xl font-black text-white" style={{letterSpacing: '-0.03em'}}>ORE</h1>
+          <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-[0.18em] mt-1">Octaix Risk Engine · Accès Interne</p>
         </div>
 
         <div className="bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#3ECF8E]/8 rounded-full blur-[80px]" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-brand-400/8 rounded-full blur-[80px]" />
           
           <h2 className="text-lg font-bold text-white mb-2 relative">Secure Access</h2>
           <p className="text-[12px] text-zinc-500 mb-8 relative">Please authenticate using your corporate credentials.</p>
@@ -64,7 +65,7 @@ export default function InternalLoginPage() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full bg-[#141414] border border-white/[0.08] text-sm text-white rounded-lg px-4 py-3 outline-none focus:border-[#3ECF8E]/50 focus:shadow-[0_0_0_3px_rgba(62,207,142,0.08)] transition-all"
+                className="w-full bg-[#141414] border border-white/[0.08] text-sm text-white rounded-lg px-4 py-3 outline-none focus:border-brand-400/50 focus:shadow-[0_0_0_3px_rgba(59,123,255,0.08)] transition-all"
                 placeholder="Ex: analyst@riskengine.com"
               />
             </div>
@@ -76,7 +77,7 @@ export default function InternalLoginPage() {
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full bg-[#141414] border border-white/[0.08] text-sm text-white rounded-lg px-4 py-3 outline-none focus:border-[#3ECF8E]/50 focus:shadow-[0_0_0_3px_rgba(62,207,142,0.08)] transition-all"
+                className="w-full bg-[#141414] border border-white/[0.08] text-sm text-white rounded-lg px-4 py-3 outline-none focus:border-brand-400/50 focus:shadow-[0_0_0_3px_rgba(59,123,255,0.08)] transition-all"
                 placeholder="••••••••••"
               />
             </div>
@@ -90,7 +91,7 @@ export default function InternalLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#3ECF8E] hover:opacity-90 text-[#0a0a0a] font-bold py-3 rounded-lg transition-all shadow-[0_0_24px_rgba(62,207,142,0.25)] hover:shadow-[0_0_36px_rgba(62,207,142,0.35)] disabled:opacity-50 disabled:cursor-not-allowed text-[14px]"
+              className="w-full bg-brand-400 hover:opacity-90 text-[#0a0a0a] font-bold py-3 rounded-lg transition-all shadow-[0_0_24px_rgba(59,123,255,0.25)] hover:shadow-[0_0_36px_rgba(59,123,255,0.35)] disabled:opacity-50 disabled:cursor-not-allowed text-[14px]"
               style={{letterSpacing: '-0.01em'}}
             >
               {loading ? 'Authenticating...' : 'Sign In'}
@@ -110,7 +111,7 @@ export default function InternalLoginPage() {
               className="w-full bg-transparent hover:bg-white/[0.03] text-white border border-white/[0.1] hover:border-white/[0.2] font-bold py-3 rounded-lg transition-all text-[14px] flex items-center justify-center gap-2"
               style={{letterSpacing: '-0.01em'}}
             >
-              <ShieldCheck className="w-4 h-4 text-[#3ECF8E]" />
+              <ShieldCheck className="w-4 h-4 text-brand-400" />
               Enterprise SSO
             </button>
           </form>

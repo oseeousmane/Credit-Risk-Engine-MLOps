@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 // Default settings seeded on first use
 const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group: string }> = [
   { key: 'xai_visibility', value: 'FULL', label: 'XAI Driver Visibility', group: 'scoring_policy' },
-  { key: 'auto_approve_enabled', value: 'true', label: 'Auto-Approve Enabled', group: 'scoring_policy' },
+  { key: 'auto_approve_enabled', value: 'false', label: 'Auto-Approve Enabled', group: 'scoring_policy' },
   { key: 'auto_approve_max_pd', value: '0.5', label: 'Auto-Approve Max PD (%)', group: 'scoring_policy' },
   { key: 'auto_reject_min_pd', value: '6.0', label: 'Auto-Reject Min PD (%)', group: 'scoring_policy' },
   { key: 'review_min_exposure', value: '100', label: 'Escalation Threshold ($M)', group: 'scoring_policy' },

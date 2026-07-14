@@ -76,3 +76,6 @@ logs/
 10_backend_nestjs/test-pg*.js
 10_backend_nestjs/test-prisma.ts
 10_backend_nestjs/prisma/safe_migration.ts
+
+# Large local archives (too big for GitHub)
+06_monitoring.zip

@@ -18,12 +18,10 @@ import { DeploymentSection } from '@/components/landing/DeploymentSection'
 import { FAQSection } from '@/components/landing/FAQSection'
 import { motion } from 'framer-motion'
 
-import { useEffect } from 'react'
-
 function SectionDivider() {
   return (
     <div className="max-w-6xl mx-auto px-6">
-      <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-blue-400/[0.08] to-transparent" />
     </div>
   )
 }

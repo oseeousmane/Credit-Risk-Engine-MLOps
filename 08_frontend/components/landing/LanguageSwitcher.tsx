@@ -11,7 +11,7 @@ export function LanguageSwitcher() {
         onClick={() => setLocale('en')}
         className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-widest transition-all duration-200 ${
           locale === 'en'
-            ? 'bg-[#3ECF8E]/15 text-[#3ECF8E] border border-[#3ECF8E]/20'
+            ? 'bg-brand-400/15 text-brand-400 border border-brand-400/20'
             : 'text-zinc-500 hover:text-zinc-300'
         }`}
       >
@@ -21,7 +21,7 @@ export function LanguageSwitcher() {
         onClick={() => setLocale('fr')}
         className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-widest transition-all duration-200 ${
           locale === 'fr'
-            ? 'bg-[#3ECF8E]/15 text-[#3ECF8E] border border-[#3ECF8E]/20'
+            ? 'bg-brand-400/15 text-brand-400 border border-brand-400/20'
             : 'text-zinc-500 hover:text-zinc-300'
         }`}
       >

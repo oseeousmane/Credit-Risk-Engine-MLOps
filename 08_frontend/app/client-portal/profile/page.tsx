@@ -1,11 +1,11 @@
-'use client'
+﻿'use client'
 
 import { Building2, Globe, Users, Phone, Mail, MapPin, Edit3, CheckCircle2, Shield, User } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const PROFILE = {
-  legalName: 'Global Logistics Partners LLC',
+  legalName: 'Trans-CEMAC Logistique SARL',
   tradingName: 'GLP Group',
   registrationNumber: 'RC-2014-00872',
   lei: '549300ABCXYZ0123456789',
@@ -13,11 +13,11 @@ const PROFILE = {
   incorporationCountry: 'Cameroon',
   operatingCountries: ['Cameroon', 'Nigeria', 'Gabon', 'DR Congo'],
   employeeCount: '250–500',
-  annualTurnover: '$45M–$60M',
+  annualTurnover: '30–40 Mds XAF',
   website: 'www.glp-group.com',
   address: '14 Avenue du Général de Gaulle, Douala, Cameroon',
   contacts: [
-    { name: 'Tom Eriksen', title: 'Chief Executive Officer', email: 'tom.eriksen@glp-group.com', phone: '+237 699 001 234', primary: true },
+    { name: 'Jean-Baptiste Mbarga', title: 'Directeur Général', email: 'jb.mbarga@glp-group.com', phone: '+237 699 001 234', primary: true },
     { name: 'Aïcha Ngoma', title: 'Chief Financial Officer', email: 'a.ngoma@glp-group.com', phone: '+237 699 005 678', primary: false },
   ],
   bankingRelationship: {
@@ -46,7 +46,7 @@ export default function ProfilePage() {
     <div className="relative space-y-7 max-w-5xl mx-auto pb-12 min-h-screen">
       
       {/* ── Ambient Glows ────────────────────────────────────────────────────── */}
-      <div className="absolute top-[-50px] right-[-100px] w-[500px] h-[500px] bg-[#3ECF8E]/[0.03] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-50px] right-[-100px] w-[500px] h-[500px] bg-brand-400/[0.03] rounded-full blur-[100px] pointer-events-none" />
 
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="relative z-10 space-y-7">
         
@@ -54,7 +54,7 @@ export default function ProfilePage() {
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Building2 className="w-3.5 h-3.5 text-[#3ECF8E]" />
+              <Building2 className="w-3.5 h-3.5 text-brand-400" />
               <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">Company Profile</span>
             </div>
             <h1 className="text-3xl font-medium text-white tracking-tight">Organization Settings</h1>
@@ -64,7 +64,7 @@ export default function ProfilePage() {
             onClick={() => setEditing(!editing)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
               editing
-                ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                ? 'bg-brand-400 text-white hover:bg-brand-400/90 shadow-brand'
                 : 'bg-white/[0.04] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.08] hover:text-white'
             }`}
           >
@@ -80,19 +80,19 @@ export default function ProfilePage() {
             {/* Identity Box */}
             <motion.div variants={itemVariants} className="bg-[#0a0a0a]/90 backdrop-blur-md border border-white/[0.06] rounded-[24px] p-8 md:p-10 relative overflow-hidden group">
               {/* Background glow */}
-              <div className={`absolute -top-10 -right-10 w-[300px] h-[300px] bg-[#3ECF8E]/5 blur-[80px] pointer-events-none rounded-full transition-opacity opacity-50 group-hover:opacity-100`} />
-              <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#3ECF8E]/[0.02] to-transparent pointer-events-none" />
+              <div className={`absolute -top-10 -right-10 w-[300px] h-[300px] bg-brand-400/5 blur-[80px] pointer-events-none rounded-full transition-opacity opacity-50 group-hover:opacity-100`} />
+              <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-brand-400/[0.02] to-transparent pointer-events-none" />
 
               <div className="relative z-10">
                 <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#3ECF8E] to-emerald-900 flex items-center justify-center text-[#0a0a0a] text-3xl font-black shadow-[0_0_30px_rgba(62,207,142,0.3)] flex-shrink-0">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-500 flex items-center justify-center text-[#0a0a0a] text-3xl font-black shadow-[0_0_30px_rgba(59,123,255,0.3)] flex-shrink-0">
                     {PROFILE.legalName.substring(0, 3)}
                   </div>
                   <div>
                     <h2 className="text-2xl md:text-3xl font-medium text-white tracking-tight mb-1.5">{PROFILE.legalName}</h2>
                     <p className="text-[14px] text-zinc-400 font-medium">{PROFILE.tradingName} · {PROFILE.sector}</p>
                     <div className="flex items-center gap-3 mt-3">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#3ECF8E] bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(62,207,142,0.1)]">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-brand-400 bg-brand-400/10 border border-brand-400/20 px-3 py-1 rounded-full shadow-[0_0_10px_rgba(59,123,255,0.1)]">
                         {PROFILE.bankingRelationship.tier}
                       </span>
                       <span className="text-[12px] text-zinc-500 font-medium">Client Since {PROFILE.bankingRelationship.clientSince}</span>
@@ -111,7 +111,7 @@ export default function ProfilePage() {
                   ].map(field => (
                     <div key={field.label}>
                       <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-500 mb-1">{field.label}</div>
-                      <div className={`text-[15px] font-medium text-zinc-200 ${field.mono ? 'font-mono tracking-tight text-[#3ECF8E]' : ''}`}>{field.value}</div>
+                      <div className={`text-[15px] font-medium text-zinc-200 ${field.mono ? 'font-mono tracking-tight text-brand-400' : ''}`}>{field.value}</div>
                     </div>
                   ))}
                 </div>
@@ -130,12 +130,12 @@ export default function ProfilePage() {
 
                 <div className="mt-8 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center gap-5 text-[13.5px] text-zinc-400 font-medium">
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#3ECF8E]" />
+                    <MapPin className="w-4 h-4 text-brand-400" />
                     {PROFILE.address}
                   </div>
                   <div className="hidden sm:block w-1 h-1 rounded-full bg-zinc-700" />
-                  <div className="flex items-center gap-2 hover:text-[#3ECF8E] transition-colors cursor-pointer">
-                    <Globe className="w-4 h-4 text-[#3ECF8E]" />
+                  <div className="flex items-center gap-2 hover:text-brand-400 transition-colors cursor-pointer">
+                    <Globe className="w-4 h-4 text-brand-400" />
                     {PROFILE.website}
                   </div>
                 </div>
@@ -145,16 +145,16 @@ export default function ProfilePage() {
             {/* Contacts Box */}
             <motion.div variants={itemVariants} className="bg-[#0a0a0a]/90 backdrop-blur-md border border-white/[0.06] rounded-[24px] p-8 md:p-10">
               <div className="flex items-center gap-2 mb-6">
-                <Users className="w-4 h-4 text-[#3ECF8E]" />
+                <Users className="w-4 h-4 text-brand-400" />
                 <h3 className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">Authorized Contacts</h3>
               </div>
               <div className="space-y-4">
                 {PROFILE.contacts.map((contact, i) => (
                   <div key={i} className={`flex flex-col sm:flex-row sm:items-center gap-4 p-5 md:p-6 rounded-2xl border transition-all ${
-                    contact.primary ? 'bg-[#3ECF8E]/5 border-[#3ECF8E]/20 shadow-[0_0_15px_rgba(62,207,142,0.05)]' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/[0.1]'
+                    contact.primary ? 'bg-brand-400/5 border-brand-400/20 shadow-[0_0_15px_rgba(59,123,255,0.05)]' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/[0.1]'
                   }`}>
                     <div className={`w-14 h-14 rounded-full flex items-center justify-center text-[15px] font-bold flex-shrink-0 transition-colors ${
-                      contact.primary ? 'bg-[#3ECF8E] text-[#0a0a0a] shadow-[0_0_15px_rgba(62,207,142,0.3)]' : 'bg-white/[0.05] text-zinc-400'
+                      contact.primary ? 'bg-brand-400 text-[#0a0a0a] shadow-[0_0_15px_rgba(59,123,255,0.3)]' : 'bg-white/[0.05] text-zinc-400'
                     }`}>
                       {contact.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                     </div>
@@ -162,7 +162,7 @@ export default function ProfilePage() {
                       <div className="flex items-center gap-3 mb-1">
                         <span className="text-[15px] font-medium text-white tracking-tight">{contact.name}</span>
                         {contact.primary && (
-                          <span className="text-[9px] bg-[#3ECF8E]/10 text-[#3ECF8E] border border-[#3ECF8E]/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                          <span className="text-[9px] bg-brand-400/10 text-brand-400 border border-brand-400/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                             Primary
                           </span>
                         )}
@@ -189,26 +189,26 @@ export default function ProfilePage() {
           <div className="col-span-1 lg:col-span-4 space-y-6 lg:space-y-8">
             
             {/* RM Card */}
-            <motion.div variants={itemVariants} className="bg-gradient-to-br from-[#3ECF8E]/10 via-[#3ECF8E]/[0.02] to-[#0a0a0a] border border-[#3ECF8E]/20 rounded-[24px] p-8 relative overflow-hidden group">
-              <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-[#3ECF8E]/[0.05] to-transparent pointer-events-none" />
-              <div className="text-[10px] font-bold text-[#3ECF8E]/80 uppercase tracking-widest mb-6 relative z-10">Your Banking Team</div>
-              <div className="w-16 h-16 rounded-2xl bg-[#3ECF8E]/10 border border-[#3ECF8E]/30 flex items-center justify-center text-[18px] text-[#3ECF8E] font-bold mb-5 shadow-[0_0_20px_rgba(62,207,142,0.2)] relative z-10 transition-transform group-hover:scale-105">
+            <motion.div variants={itemVariants} className="bg-gradient-to-br from-brand-400/10 via-brand-400/[0.02] to-[#0a0a0a] border border-brand-400/20 rounded-[24px] p-8 relative overflow-hidden group">
+              <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-brand-400/[0.05] to-transparent pointer-events-none" />
+              <div className="text-[10px] font-bold text-brand-400/80 uppercase tracking-widest mb-6 relative z-10">Your Banking Team</div>
+              <div className="w-16 h-16 rounded-2xl bg-brand-400/10 border border-brand-400/30 flex items-center justify-center text-[18px] text-brand-400 font-bold mb-5 shadow-[0_0_20px_rgba(59,123,255,0.2)] relative z-10 transition-transform group-hover:scale-105">
                 {PROFILE.bankingRelationship.relationshipManager.split(' ').map(n => n[0]).join('').slice(0, 2)}
               </div>
               <div className="font-medium text-[18px] text-white tracking-tight relative z-10">{PROFILE.bankingRelationship.relationshipManager}</div>
-              <div className="text-[#3ECF8E]/70 text-[13px] font-medium mt-1 relative z-10">Relationship Manager · Corporate</div>
+              <div className="text-brand-400/70 text-[13px] font-medium mt-1 relative z-10">Relationship Manager · Corporate</div>
               
               <div className="mt-8 space-y-3.5 relative z-10">
                 <div className="flex items-center gap-3 text-[13px] text-zinc-300 font-medium">
-                  <Mail className="w-4 h-4 text-[#3ECF8E]" />
+                  <Mail className="w-4 h-4 text-brand-400" />
                   {PROFILE.bankingRelationship.rmEmail}
                 </div>
                 <div className="flex items-center gap-3 text-[13px] text-zinc-300 font-medium">
-                  <Phone className="w-4 h-4 text-[#3ECF8E]" />
+                  <Phone className="w-4 h-4 text-brand-400" />
                   {PROFILE.bankingRelationship.rmPhone}
                 </div>
               </div>
-              <button className="mt-8 w-full py-3 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 rounded-xl text-[13px] text-[#0a0a0a] font-bold transition-all shadow-[0_0_20px_rgba(62,207,142,0.3)] relative z-10">
+              <button className="mt-8 w-full py-3 bg-brand-400 hover:bg-brand-400/90 rounded-xl text-[13px] text-[#0a0a0a] font-bold transition-all shadow-[0_0_20px_rgba(59,123,255,0.3)] relative z-10">
                 Send a Secure Message
               </button>
             </motion.div>
@@ -227,7 +227,7 @@ export default function ProfilePage() {
                     <span className="text-[13px] text-zinc-500 font-medium">{item.label}</span>
                     <div className={`text-[13px] font-bold flex items-center gap-2 ${
                       item.green ? 'text-emerald-400' : 
-                      item.blue ? 'text-[#3ECF8E]' : 
+                      item.blue ? 'text-brand-400' : 
                       'text-zinc-300'
                     }`}>
                       {item.green && <CheckCircle2 className="w-4 h-4" />}
@@ -236,8 +236,8 @@ export default function ProfilePage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 p-4 bg-[#3ECF8E]/[0.03] border border-[#3ECF8E]/10 rounded-xl flex gap-3">
-                <Shield className="w-5 h-5 text-[#3ECF8E] flex-shrink-0" />
+              <div className="mt-6 p-4 bg-brand-400/[0.03] border border-brand-400/10 rounded-xl flex gap-3">
+                <Shield className="w-5 h-5 text-brand-400 flex-shrink-0" />
                 <p className="text-[12px] text-zinc-400 leading-relaxed font-medium">
                   Your account is in good standing and meets all current regulatory compliance requirements.
                 </p>

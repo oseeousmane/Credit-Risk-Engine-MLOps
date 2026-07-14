@@ -37,20 +37,52 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# ═══════════════════════════════════════════════════════════════════════════
+# DÉFINITION FORMELLE DU DÉFAUT — SOCLE RÉGLEMENTAIRE
+# ═══════════════════════════════════════════════════════════════════════════
+# Source : Basel III §452 (BCBS 2004/2017) + pratiques COBAC CEMAC.
+# Cette définition DOIT être reproduite identiquement dans le Modèle Card
+# et le rapport de validation MRM externe avant toute promotion PROD_CHAMPION.
+#
+# Pour les données Home Credit (DEMO_BASELINE) :
+#   TARGET = 1  ↔  client en défaut dans les 12 mois suivant la demande
+#   Définition Home Credit : retard de paiement > 60/90 DPD sur toute
+#   obligation de crédit. Observation window : 12 mois post-décaissement.
+#
+# Pour PROD_CHAMPION (données bancaires CEMAC réelles) — à confirmer avec
+# le partenaire bancaire — la définition recommandée est :
+#   Défaut = DPD ≥ 90 jours  OU  "unlikely to pay" (restructuration,
+#             passage en contentieux, provision ≥ 100% de l'EAD).
+#   Observation window : 12 mois (IFRS 9 Stage 1 ECL horizon).
+#   Période d'exclusion post-décaissement (performance period) : 3 mois minimum.
+DEFAULT_DEFINITION = {
+    "regulatory_basis":      "Basel III §452 + IFRS 9 §B5.5.37 + COBAC CEMAC",
+    "default_event_primary": "DPD >= 90 jours sur toute obligation (critère irréfutable)",
+    "default_event_secondary": "Unlikely to pay : restructuration, contentieux, provision >= 100%",
+    "observation_window_months": 12,
+    "performance_period_months": 3,
+    "target_variable":       "TARGET (1 = défaut, 0 = sain)",
+    "demo_dataset_note": (
+        "Home Credit (données russo-asiatiques 2016-2018). "
+        "Définition exacte Home Credit non divulguée publiquement — approximation "
+        "60-90 DPD. Non certifiable COBAC en l'état. Retraining sur données CEMAC requis."
+    ),
+}
+
 # ─── Default Hyperparameters (optimisés pour crédit scoring) ────────────
 DEFAULT_PARAMS = {
     "objective": "binary",
     "metric": ["auc", "binary_logloss"],
     "boosting_type": "gbdt",
     "n_estimators": 2000,
-    "learning_rate": 0.02,
-    "num_leaves": 63,
-    "max_depth": 7,
-    "min_child_samples": 50,     # Éviter overfitting sur petits segments
+    "learning_rate": 0.005,      # Réduit pour éviter l'overshoot avec scale_pos_weight
+    "num_leaves": 31,            # Réduit pour limiter l'overfitting
+    "max_depth": 5,              # Réduit
+    "min_child_samples": 100,    # Éviter overfitting sur petits segments
     "subsample": 0.8,
     "colsample_bytree": 0.8,
-    "reg_alpha": 0.1,
-    "reg_lambda": 1.0,
+    "reg_alpha": 0.5,            # Augmenté pour régularisation
+    "reg_lambda": 2.0,           # Augmenté pour régularisation
     "scale_pos_weight": 1,       # Sera ajusté dynamiquement
     "random_state": 42,
     "n_jobs": -1,
@@ -219,6 +251,106 @@ class PDModelTrainer:
 
         return X_train, X_val, X_test, y_train, y_val, y_test
 
+    def prepare_data_oot_calendar(
+        self,
+        df: pd.DataFrame,
+        date_col: str,
+        oot_start: str,
+        target_col: str = "TARGET",
+        val_ratio: float = 0.15,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame,
+               pd.Series, pd.Series, pd.Series]:
+        """
+        Split OOT calendaire conforme Basel III / IFRS 9.
+
+        Contrairement à prepare_data_temporal() qui utilise SK_ID_CURR comme
+        proxy, cette méthode exige une colonne date réelle et garantit un gap
+        calendaire minimum de 6 mois entre fin du train et début de l'OOT.
+
+        Ordre : [──── TRAIN + VAL ─────────][──── OOT ────]
+                  dates < oot_start             dates >= oot_start
+
+        Usage (données CEMAC réelles) :
+            X_train, X_val, X_oot, y_train, y_val, y_oot = trainer.prepare_data_oot_calendar(
+                df=df_cemac,
+                date_col="date_octroi",
+                oot_start="2024-01-01",   # >= 6 mois après la fin du train
+                target_col="defaut_90j",
+            )
+
+        Args:
+            df:         DataFrame complet avec la colonne date.
+            date_col:   Colonne datetime (ou parseable en datetime).
+            oot_start:  Date ISO 8601 de début de la fenêtre OOT.
+                        Doit être >= 6 mois après la date max du train.
+            target_col: Variable cible binaire (1 = défaut).
+            val_ratio:  Fraction du jeu train réservée pour la validation.
+
+        Raises:
+            ValueError: Si le gap calendaire < 6 mois (non-conforme Basel III).
+            ValueError: Si moins de 500 observations dans la fenêtre OOT.
+        """
+        import pandas as pd
+
+        df = df.copy()
+        df[date_col] = pd.to_datetime(df[date_col])
+        oot_cutoff = pd.Timestamp(oot_start)
+
+        train_val_df = df[df[date_col] < oot_cutoff]
+        oot_df       = df[df[date_col] >= oot_cutoff]
+
+        if len(oot_df) < 500:
+            raise ValueError(
+                f"OOT trop petit : {len(oot_df)} observations (min 500 requis). "
+                f"Reculer oot_start ou ajouter des données."
+            )
+
+        train_max_date = train_val_df[date_col].max()
+        calendar_gap   = (oot_cutoff - train_max_date).days
+        MIN_GAP_DAYS   = 180  # 6 mois
+
+        if calendar_gap < MIN_GAP_DAYS:
+            raise ValueError(
+                f"Gap calendaire insuffisant : {calendar_gap} jours < {MIN_GAP_DAYS} jours (6 mois). "
+                f"Basel III CRE36 exige un gap minimum de 6 mois entre le train et l'OOT. "
+                f"Décaler oot_start au-delà de {(train_max_date + pd.Timedelta(days=MIN_GAP_DAYS)).date()}."
+            )
+
+        logger.info(
+            f"[OOT_CALENDAR] Gap calendaire : {calendar_gap} jours — conforme Basel III "
+            f"(>= {MIN_GAP_DAYS}j). Train max date : {train_max_date.date()}, OOT start : {oot_cutoff.date()}"
+        )
+
+        feature_cols = [
+            c for c in df.columns
+            if c not in EXCLUDE_COLUMNS and c != date_col
+            and df[c].dtype in ['int64', 'float64', 'int32', 'float32', 'bool', 'category']
+        ]
+        self.feature_names = feature_cols
+
+        # Val split à l'intérieur du train/val (chronologique)
+        train_val_sorted = train_val_df.sort_values(date_col)
+        n_tv = len(train_val_sorted)
+        val_cut = int(n_tv * (1 - val_ratio))
+        train_df = train_val_sorted.iloc[:val_cut]
+        val_df   = train_val_sorted.iloc[val_cut:]
+
+        X_train, y_train = train_df[feature_cols], train_df[target_col]
+        X_val,   y_val   = val_df[feature_cols],   val_df[target_col]
+        X_oot,   y_oot   = oot_df[feature_cols],   oot_df[target_col]
+
+        logger.info(
+            f"[OOT_CALENDAR] Train: {len(X_train)} ({y_train.mean():.2%}) | "
+            f"Val: {len(X_val)} ({y_val.mean():.2%}) | "
+            f"OOT: {len(X_oot)} ({y_oot.mean():.2%})"
+        )
+        logger.info(
+            f"[OOT_CALENDAR] OOT période : {oot_df[date_col].min().date()} → "
+            f"{oot_df[date_col].max().date()} ({calendar_gap // 30} mois de gap)"
+        )
+
+        return X_train, X_val, X_oot, y_train, y_val, y_oot
+
     def prepare_data(
         self,
         df: pd.DataFrame,
@@ -281,7 +413,7 @@ class PDModelTrainer:
         y_train: pd.Series,
         X_val: pd.DataFrame,
         y_val: pd.Series,
-        early_stopping_rounds: int = 100,
+        early_stopping_rounds: int = 200,
     ) -> lgb.LGBMClassifier:
         """
         Entraîne le modèle LightGBM avec early stopping.
@@ -398,12 +530,24 @@ class PDModelTrainer:
         X: pd.DataFrame,
         y: pd.Series,
         n_folds: int = 5,
+        compute_feature_stability: bool = True,
     ) -> Dict:
         """
-        Validation croisée stratifiée pour estimation robuste.
+        Validation croisée stratifiée avec analyse de stabilité des feature importances.
+
+        En plus des métriques AUC/Brier par fold, calcule :
+        - Importance moyenne par feature sur les N folds
+        - CV (coefficient de variation) de l'importance par feature
+        - Features instables : CV > 50% signale une importance peu fiable
+          (la feature contribue de façon inconsistante selon l'échantillon)
+
+        Une feature avec CV > 50% sur son importance devrait être examinée :
+        elle peut capter du bruit plutôt qu'un signal stable, ce qui fragilise
+        la fiabilité des SHAP drivers pour les adverse action codes.
         """
         skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
         fold_results = []
+        fold_importances: List[np.ndarray] = []
 
         for fold_idx, (train_idx, val_idx) in enumerate(skf.split(X, y)):
             X_fold_train = X.iloc[train_idx]
@@ -428,20 +572,65 @@ class PDModelTrainer:
             fold_results.append({"fold": fold_idx, "auc": auc, "brier": brier})
             logger.info(f"Fold {fold_idx}: AUC={auc:.4f}, Brier={brier:.4f}")
 
+            if compute_feature_stability and hasattr(model, "feature_importances_"):
+                imps = model.feature_importances_.astype(float)
+                total = imps.sum()
+                fold_importances.append(imps / total if total > 0 else imps)
+
         results_df = pd.DataFrame(fold_results)
         cv_summary = {
-            "mean_auc": round(results_df["auc"].mean(), 6),
-            "std_auc": round(results_df["auc"].std(), 6),
+            "mean_auc":   round(results_df["auc"].mean(), 6),
+            "std_auc":    round(results_df["auc"].std(), 6),
             "mean_brier": round(results_df["brier"].mean(), 6),
-            "std_brier": round(results_df["brier"].std(), 6),
-            "n_folds": n_folds,
+            "std_brier":  round(results_df["brier"].std(), 6),
+            "n_folds":    n_folds,
             "fold_details": fold_results,
         }
+
+        # ── Stabilité des feature importances ──────────────────────────────
+        if fold_importances and len(fold_importances) == n_folds:
+            imp_matrix = np.stack(fold_importances, axis=0)  # (n_folds, n_features)
+            mean_imp = imp_matrix.mean(axis=0)
+            std_imp  = imp_matrix.std(axis=0)
+            # Coefficient de variation : std/mean (robuste uniquement si mean > 0)
+            cv_imp = np.where(mean_imp > 1e-6, std_imp / mean_imp, 0.0)
+
+            feature_stability = []
+            cols = list(X.columns)
+            for i, feat in enumerate(cols):
+                feature_stability.append({
+                    "feature":       feat,
+                    "mean_importance": round(float(mean_imp[i]), 6),
+                    "std_importance":  round(float(std_imp[i]), 6),
+                    "cv_importance":   round(float(cv_imp[i]), 4),
+                    "stable":          bool(cv_imp[i] < 0.50),
+                })
+
+            feature_stability.sort(key=lambda x: x["mean_importance"], reverse=True)
+            unstable = [f for f in feature_stability if not f["stable"]]
+
+            cv_summary["feature_importance_stability"] = {
+                "n_features":         len(cols),
+                "n_unstable":         len(unstable),
+                "unstable_features":  [f["feature"] for f in unstable[:10]],
+                "top_stable_features": feature_stability[:20],
+                "stability_rate":     round(1 - len(unstable) / max(len(cols), 1), 4),
+            }
+
+            if unstable:
+                logger.warning(
+                    f"[FEATURE_STABILITY] {len(unstable)} features instables (CV > 50%) : "
+                    f"{[f['feature'] for f in unstable[:5]]}... "
+                    "Ces features peuvent capturer du bruit — vérifier leur pertinence métier."
+                )
+            logger.info(
+                f"[FEATURE_STABILITY] {len(cols) - len(unstable)}/{len(cols)} features stables "
+                f"(CV < 50%) | Taux de stabilité: {cv_summary['feature_importance_stability']['stability_rate']:.1%}"
+            )
 
         logger.info(
             f"CV Results — AUC: {cv_summary['mean_auc']:.4f} ± {cv_summary['std_auc']:.4f}"
         )
-
         return cv_summary
 
     def get_feature_importance(self, importance_type: str = "gain") -> pd.DataFrame:
@@ -484,7 +673,22 @@ class PDModelTrainer:
         if self.model is None:
             raise ValueError("Aucun modèle à sauvegarder")
 
-        # Modèle
+        # Format natif LightGBM .txt (cross-language, auditabilité MRM, conforme §1)
+        # Priorité sur pickle pour la validation externe.
+        try:
+            lgb_path = os.path.join(self.model_dir, f"{model_name}.txt")
+            base_estimator = self.model.estimator if hasattr(self.model, 'estimator') else self.model
+            if hasattr(base_estimator, 'booster_'):
+                base_estimator.booster_.save_model(lgb_path)
+                logger.info(f"Booster LightGBM natif sauvegarde : {lgb_path}")
+            else:
+                logger.warning("Booster LightGBM non accessible — format natif non sauvegarde.")
+        except Exception as _e:
+            logger.warning(f"Save format natif LightGBM echoue : {_e}")
+
+        # Format pickle — pipeline complet (calibrateur inclus)
+        # NOTE : pickle est vulnérable à la désérialisation malveillante.
+        # En PROD_CHAMPION : migrer vers format natif + calibrateur JSON séparé.
         model_path = os.path.join(self.model_dir, f"{model_name}.pkl")
         with open(model_path, "wb") as f:
             pickle.dump(self.model, f)
@@ -513,6 +717,111 @@ class PDModelTrainer:
 
         logger.info(f"Modèle sauvegardé dans {self.model_dir} (SHA-256: {artifact_sha256[:16]}…)")
         return model_path
+
+    @staticmethod
+    def validate_sk_id_monotonicity(df: pd.DataFrame, id_col: str = "SK_ID_CURR") -> Dict:
+        """
+        Vérifie que SK_ID_CURR est bien monotone croissant avec l'ordre de dépôt.
+
+        Hypothèse du split temporel : SK_ID_CURR croît monotoniquement avec la date
+        de soumission dans Home Credit. Si cette hypothèse est fausse (inversions),
+        le split walk-forward introduit du leakage temporel caché.
+
+        Returns:
+            Dict avec {is_monotone, n_inversions, inversion_rate, safe_to_use_as_temporal_proxy}
+        """
+        if id_col not in df.columns:
+            return {"error": f"Colonne '{id_col}' absente", "safe_to_use_as_temporal_proxy": False}
+
+        ids = df[id_col].values
+        n_inversions = int((np.diff(ids) < 0).sum())
+        total_pairs = len(ids) - 1
+        inversion_rate = n_inversions / total_pairs if total_pairs > 0 else 0.0
+        is_monotone = n_inversions == 0
+
+        if not is_monotone:
+            logger.warning(
+                f"[TEMPORAL_VALIDITY] SK_ID_CURR non-monotone : "
+                f"{n_inversions} inversions ({inversion_rate:.2%}) sur {total_pairs} paires. "
+                "Le split walk-forward peut introduire du leakage temporel."
+            )
+        else:
+            logger.info(
+                f"[TEMPORAL_VALIDITY] SK_ID_CURR monotone confirmé sur {len(ids)} obs. "
+                "Proxy chronologique valide pour le split walk-forward."
+            )
+
+        return {
+            "id_column": id_col,
+            "n_observations": int(len(ids)),
+            "n_inversions": n_inversions,
+            "inversion_rate": round(inversion_rate, 6),
+            "is_monotone": is_monotone,
+            "safe_to_use_as_temporal_proxy": inversion_rate < 0.001,
+        }
+
+    @staticmethod
+    def seed_sensitivity_test(
+        df: pd.DataFrame,
+        target_col: str = "TARGET",
+        seeds: Optional[List[int]] = None,
+        n_estimators: int = 200,
+    ) -> Dict:
+        """
+        Teste la sensibilité de l'AUC aux graines aléatoires.
+
+        Un modèle robuste doit avoir un écart-type AUC < 0.005 sur 5 seeds
+        différents. Un écart > 0.01 signale une instabilité liée à la
+        variabilité du split ou au petit échantillon.
+
+        Returns:
+            Dict avec {mean_auc, std_auc, cv_auc (coefficient de variation),
+                       seeds_results, stability_status}
+        """
+        seeds = seeds or [42, 7, 123, 99, 2024]
+        logger.info(f"[SEED_SENSITIVITY] Test sur {len(seeds)} seeds : {seeds}")
+
+        feature_cols = [
+            c for c in df.columns
+            if c not in EXCLUDE_COLUMNS
+            and df[c].dtype in ['int64', 'float64', 'int32', 'float32', 'bool']
+        ]
+        X = df[feature_cols].fillna(0)
+        y = df[target_col]
+
+        results = []
+        for seed in seeds:
+            X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.20, random_state=seed, stratify=y)
+            params = {**DEFAULT_PARAMS, "random_state": seed, "n_estimators": n_estimators, "verbose": -1}
+            m = lgb.LGBMClassifier(**params)
+            m.fit(X_tr, y_tr, eval_set=[(X_te, y_te)],
+                  callbacks=[lgb.early_stopping(50, verbose=False), lgb.log_evaluation(0)])
+            auc = roc_auc_score(y_te, m.predict_proba(X_te)[:, 1])
+            results.append({"seed": seed, "auc": round(auc, 6)})
+            logger.info(f"  Seed {seed:5d} → AUC={auc:.4f}")
+
+        aucs = [r["auc"] for r in results]
+        mean_auc = float(np.mean(aucs))
+        std_auc = float(np.std(aucs))
+        cv_auc = std_auc / mean_auc if mean_auc > 0 else 0.0
+
+        status = "STABLE" if std_auc < 0.005 else "WARNING" if std_auc < 0.01 else "UNSTABLE"
+
+        summary = {
+            "mean_auc": round(mean_auc, 6),
+            "std_auc": round(std_auc, 6),
+            "cv_auc": round(cv_auc, 6),
+            "min_auc": round(float(min(aucs)), 6),
+            "max_auc": round(float(max(aucs)), 6),
+            "stability_status": status,
+            "seeds_results": results,
+        }
+
+        logger.info(
+            f"[SEED_SENSITIVITY] AUC={mean_auc:.4f} ± {std_auc:.4f} | "
+            f"CV={cv_auc:.3f} | Status={status}"
+        )
+        return summary
 
     def load_model(self, model_name: str = "pd_model_v1") -> lgb.LGBMClassifier:
         """Charge un modèle sauvegardé."""
@@ -573,17 +882,31 @@ class PDXGBTrainer(PDModelTrainer):
 
         params = {**self.params, "monotone_constraints": constraints}
 
-        base_model = xgb.XGBClassifier(**{
-            k: v for k, v in params.items()
-            if k not in ("eval_metric",)  # eval_metric géré séparément dans fit
-        })
+        # XGBoost 3.x ne supporte pas le dtype 'category' pandas.
+        # Convertir en float avant de passer au modèle (codes numériques).
+        def _encode_cats(df: pd.DataFrame) -> pd.DataFrame:
+            df = df.copy()
+            for col in df.select_dtypes(include="category").columns:
+                df[col] = df[col].cat.codes.astype(float)
+            return df
+
+        X_train_xgb = _encode_cats(X_train)
+        X_val_xgb   = _encode_cats(X_val)
+
+        # XGBoost ≥ 2.0 : early_stopping_rounds passe dans le constructeur, pas dans fit().
+        base_model = xgb.XGBClassifier(
+            early_stopping_rounds=early_stopping_rounds,
+            **{k: v for k, v in params.items() if k not in ("eval_metric",)}
+        )
 
         base_model.fit(
-            X_train, y_train,
-            eval_set=[(X_val, y_val)],
+            X_train_xgb, y_train,
+            eval_set=[(X_val_xgb, y_val)],
             verbose=False,
-            early_stopping_rounds=early_stopping_rounds,
         )
+
+        # Remplacer X_train/X_val par les versions encodées pour la suite
+        X_train, X_val = X_train_xgb, X_val_xgb
 
         val_pred_base = base_model.predict_proba(X_val)[:, 1]
         base_auc = roc_auc_score(y_val, val_pred_base)
@@ -649,6 +972,10 @@ class PDXGBTrainer(PDModelTrainer):
         with open(model_path, "wb") as f:
             pickle.dump(self.model, f)
 
+        # SHA-256 de l'artefact (integrity check au startup FastAPI)
+        with open(model_path, "rb") as f:
+            artifact_sha256 = hashlib.sha256(f.read()).hexdigest()
+
         # Format JSON natif XGBoost (auditabilité cross-language)
         if self._xgb_booster is not None:
             json_path = os.path.join(self.model_dir, f"{model_name}.json")
@@ -658,8 +985,11 @@ class PDXGBTrainer(PDModelTrainer):
         # Metadata
         meta_path = os.path.join(self.model_dir, f"{model_name}_metadata.json")
         metadata_serializable = self.training_metadata.copy()
+        metadata_serializable["model_artifact_sha256"] = artifact_sha256
         with open(meta_path, "w") as f:
             json.dump(metadata_serializable, f, indent=2, default=str)
+
+        logger.info(f"Artefact SHA-256 : {artifact_sha256[:16]}...")
 
         # Features
         features_path = os.path.join(self.model_dir, f"{model_name}_features.json")
@@ -668,6 +998,47 @@ class PDXGBTrainer(PDModelTrainer):
 
         logger.info(f"Modèle XGBoost sauvegardé dans {self.model_dir} (pkl + json)")
         return model_path
+
+    def cross_validate(self, X: pd.DataFrame, y: pd.Series, n_folds: int = 5) -> Dict:
+        """CV 5-folds XGBoost — override nécessaire car la classe parente utilise LightGBM."""
+        from sklearn.model_selection import StratifiedKFold
+
+        def _encode_cats(df: pd.DataFrame) -> pd.DataFrame:
+            df = df.copy()
+            for col in df.select_dtypes(include="category").columns:
+                df[col] = df[col].cat.codes.astype(float)
+            return df
+
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
+        fold_results = []
+
+        for fold_idx, (train_idx, val_idx) in enumerate(skf.split(X, y)):
+            X_tr = _encode_cats(X.iloc[train_idx])
+            y_tr = y.iloc[train_idx]
+            X_vl = _encode_cats(X.iloc[val_idx])
+            y_vl = y.iloc[val_idx]
+
+            m = xgb.XGBClassifier(
+                early_stopping_rounds=30,
+                **{k: v for k, v in XGBOOST_PARAMS.items() if k != "eval_metric"}
+            )
+            m.fit(X_tr, y_tr, eval_set=[(X_vl, y_vl)], verbose=False)
+            auc   = roc_auc_score(y_vl, m.predict_proba(X_vl)[:, 1])
+            brier = brier_score_loss(y_vl, m.predict_proba(X_vl)[:, 1])
+            fold_results.append({"fold": fold_idx, "auc": round(auc, 6), "brier": round(brier, 6)})
+            logger.info(f"XGB CV Fold {fold_idx}: AUC={auc:.4f}, Brier={brier:.4f}")
+
+        results_df = pd.DataFrame(fold_results)
+        summary = {
+            "mean_auc":   round(float(results_df["auc"].mean()), 6),
+            "std_auc":    round(float(results_df["auc"].std()), 6),
+            "mean_brier": round(float(results_df["brier"].mean()), 6),
+            "std_brier":  round(float(results_df["brier"].std()), 6),
+            "n_folds":    n_folds,
+            "fold_details": fold_results,
+        }
+        logger.info(f"XGB CV: AUC={summary['mean_auc']:.4f} +/- {summary['std_auc']:.4f}")
+        return summary
 
     def get_feature_importance(self, importance_type: str = "gain") -> pd.DataFrame:
         """Importance des features XGBoost (gain-based pour SHAP-alignment)."""
@@ -687,32 +1058,69 @@ def run_training_pipeline(
     model_name: str = "pd_model_v2",
     model_type: str = "lightgbm",
     use_temporal_split: bool = True,
+    run_cross_validation: bool = False,
+    run_seed_sensitivity: bool = False,
+    # ── Domain Adaptation (Stratégie B) ──────────────────────────────────────
+    cemac_data_path: Optional[str] = None,
+    cemac_weight_multiplier: float = 10.0,
+    # ── CEMAC Synthetic Generation ────────────────────────────────────────────
+    generate_cemac_synthetic: bool = False,
+    cemac_n_samples: int = 50_000,
 ) -> Dict:
     """
     Pipeline complet d'entrainement PD Model.
 
     Args:
-        data_path:           Chemin explicite vers le dataset. Si None, résolution automatique.
-        model_name:          Nom de l'artefact sauvegardé.
-        model_type:          'lightgbm' (démonstration) ou 'xgboost' (cible PROD_CHAMPION).
-        use_temporal_split:  Si True, split walk-forward chronologique (recommandé).
-                             Si False, split aléatoire stratifié (legacy — leakage possible).
+        data_path:             Chemin explicite vers le dataset. Si None, résolution automatique.
+        model_name:            Nom de l'artefact sauvegardé.
+        model_type:            'lightgbm' (démonstration) ou 'xgboost' (cible PROD_CHAMPION).
+        use_temporal_split:    Si True, split walk-forward chronologique (recommandé).
+                               Si False, split aléatoire stratifié (legacy — leakage possible).
+        run_cross_validation:  Si True, exécute une CV 5-folds pour estimation robuste.
+        run_seed_sensitivity:  Si True, exécute le test de sensibilité aux seeds (5 seeds).
 
     Etapes :
-    1. Chargement des donnees (ABT curated ou raw + feature engineering)
+    1. Chargement des données (ABT curated ou raw + feature engineering)
     2. Hash SHA-256 du dataset (reproductibilité / audit trail)
-    3. Split Train/Val/Test (temporel par défaut)
-    4. Entrainement LightGBM ou XGBoost selon model_type
-    5. Validation avancee (AUC, Gini, KS, calibration, deciles)
-    6. Sauvegarde modele + metadata avec data_hash
+    3. Validation monotonie SK_ID_CURR (proxy temporel)
+    4. Split Train/Val/Test (temporel par défaut)
+    5. Entraînement LightGBM ou XGBoost selon model_type
+    6. Validation avancée (AUC, Gini, KS, calibration sur X_TEST, deciles)
+    7. Calibration évaluée sur X_test — indépendant du jeu d'entraînement calibration
+    8. [Optionnel] Cross-validation 5 folds
+    9. [Optionnel] Seed sensitivity test
+    10. Sauvegarde modèle + metadata avec data_hash
     """
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+    # ── Génération auto du dataset CEMAC synthétique si demandé ──────────────
+    if generate_cemac_synthetic:
+        logger.info("[CEMAC] Génération du dataset synthétique CEMAC...")
+        try:
+            cemac_gen_path = os.path.join(
+                os.path.dirname(__file__), "..", "..",
+                "01_data_layer", "cemac_synthetic", "cemac_generator.py"
+            )
+            import importlib.util as _ilu
+            _spec = _ilu.spec_from_file_location("cemac_generator", cemac_gen_path)
+            _mod  = _ilu.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            _gen = _mod.CemacSyntheticGenerator(seed=42)
+            _, _cemac_path = _gen.generate_and_save(n_samples=cemac_n_samples)
+            logger.info(f"[CEMAC] Dataset synthétique généré : {_cemac_path}")
+            if data_path is None:
+                data_path = _cemac_path
+                logger.info("[CEMAC] Dataset CEMAC synthétique utilisé comme source principale.")
+        except Exception as _e:
+            logger.error(f"[CEMAC] Génération synthétique échouée : {_e}")
 
     # Smart data resolution chain
     base_dir = os.path.join(os.path.dirname(__file__), "..", "..")
     candidate_paths = [
         data_path,
+        # CEMAC synthétique généré précédemment
+        os.path.join(base_dir, "01_data_layer", "curated", "cemac_synthetic.parquet"),
         os.path.join(base_dir, "01_data_layer", "curated", "curated_dataset.parquet"),
         os.path.join(base_dir, "01_data_layer", "curated", "modeling_base_table.parquet"),
         os.path.join(base_dir, "01_data_layer", "curated", "curated_dataset.csv"),
@@ -738,6 +1146,18 @@ def run_training_pipeline(
     # ── Hash SHA-256 pour reproductibilité (lien artefact ↔ snapshot data) ──
     data_hash = compute_data_hash(df)
     logger.info(f"Data hash (SHA-256 partiel): {data_hash} | Shape: {df.shape} | Source: {resolved_path}")
+
+    # ── Validation monotonie SK_ID_CURR (proxy temporel) ─────────────────────
+    # Vérifie que le tri chronologique proxy est valide avant le split walk-forward.
+    # Si SK_ID_CURR n'est pas monotone, le split est biaisé et le leakage temporel
+    # est possible. Ce check est enregistré dans les metadata pour l'audit MRM.
+    monotonicity_check = PDModelTrainer.validate_sk_id_monotonicity(df)
+    logger.info(f"[MONOTONICITY] SK_ID_CURR proxy check: {monotonicity_check}")
+    if not monotonicity_check.get("safe_to_use_as_temporal_proxy", True):
+        logger.error(
+            "[MONOTONICITY] ⚠️ SK_ID_CURR présente trop d'inversions pour être un proxy "
+            "temporel fiable. Fournir une colonne de date explicite via temporal_col=."
+        )
 
     # Apply feature engineering if loading raw data
     if 'DEBT_TO_INCOME' not in df.columns and 'AMT_ANNUITY' in df.columns:
@@ -775,6 +1195,50 @@ def run_training_pipeline(
         )
         X_train, X_val, X_test, y_train, y_val, y_test = trainer.prepare_data(df)
 
+    # ── Stratégie B : mixing avec données CEMAC réelles (si fournies) ─────────
+    sample_weights_train = None
+    cemac_mixing_meta: Dict = {"strategy": "none"}
+
+    if cemac_data_path and os.path.exists(cemac_data_path):
+        logger.info(f"[DOMAIN_ADAPT] Chargement données CEMAC réelles : {cemac_data_path}")
+        try:
+            sys.path.insert(0, os.path.dirname(__file__))
+            from two_stage_trainer import create_mixed_dataset, build_sample_weights
+
+            if cemac_data_path.endswith(".parquet"):
+                df_cemac = pd.read_parquet(cemac_data_path)
+            else:
+                df_cemac = pd.read_csv(cemac_data_path)
+
+            # Colonnes de contexte CEMAC à exclure de l'entraînement
+            df_cemac = df_cemac[[c for c in df_cemac.columns if not c.startswith("_")]]
+
+            # Aligner les colonnes avec le dataset principal
+            common_features = [f for f in trainer.feature_names if f in df_cemac.columns]
+            X_cemac_train = df_cemac[common_features].fillna(0)
+            y_cemac_train = df_cemac["TARGET"] if "TARGET" in df_cemac.columns else pd.Series(np.zeros(len(df_cemac)))
+
+            # Concaténer : Home Credit (w=1) + CEMAC réel (w=cemac_weight_multiplier)
+            n_hc = len(X_train)
+            n_cemac = len(X_cemac_train)
+            X_train = pd.concat([X_train[common_features], X_cemac_train], ignore_index=True)
+            y_train = pd.concat([y_train, y_cemac_train], ignore_index=True)
+            sample_weights_train, cemac_mixing_meta = build_sample_weights(
+                n_home_credit=n_hc,
+                n_cemac=n_cemac,
+                cemac_weight_multiplier=cemac_weight_multiplier,
+            )
+            cemac_mixing_meta["strategy"] = "B_sample_weighted"
+            cemac_mixing_meta["cemac_data_path"] = cemac_data_path
+
+            logger.info(
+                f"[DOMAIN_ADAPT] Strategy B activée — "
+                f"Home Credit: {n_hc:,} (w=1.0) | CEMAC réel: {n_cemac:,} (w={cemac_weight_multiplier}) | "
+                f"Ratio effectif CEMAC: {cemac_mixing_meta['effective_cemac_ratio']:.1%}"
+            )
+        except Exception as _e:
+            logger.error(f"[DOMAIN_ADAPT] Mixing CEMAC échoué : {_e}. Entraînement sans mixing.")
+
     trainer.train(X_train, y_train, X_val, y_val)
 
     # Injecter le hash dans les metadata avant sauvegarde
@@ -782,16 +1246,88 @@ def run_training_pipeline(
     trainer.training_metadata["data_source_path"] = str(resolved_path)
     trainer.training_metadata["split_strategy"] = "temporal_walkforward" if use_temporal_split else "random_stratified"
     trainer.training_metadata["model_type_requested"] = model_type
+    trainer.training_metadata["default_definition"] = DEFAULT_DEFINITION
+    trainer.training_metadata["sk_id_monotonicity_check"] = monotonicity_check
+    trainer.training_metadata["domain_adaptation"] = cemac_mixing_meta
+    # Artifact category : déterminé par la source de données
+    if "cemac_synthetic" in str(resolved_path):
+        trainer.training_metadata["artifact_category"] = "SYNTHETIC_CEMAC"
+    elif cemac_data_path and cemac_mixing_meta.get("strategy") != "none":
+        trainer.training_metadata["artifact_category"] = "MIXED_CEMAC_REAL"
+    else:
+        trainer.training_metadata["artifact_category"] = "DEMO_BASELINE"
+
+    # ── Évaluation de calibration sur X_TEST (indépendant du jeu de calibration) ──
+    # La calibration isotonique a été fittée sur X_val. Si on évalue seulement sur X_val,
+    # on ne détecte pas l'overfit du calibrateur. X_test est ici un témoin indépendant.
+    y_test_pred_for_calib = trainer.model.predict_proba(X_test)[:, 1]
+    from sklearn.metrics import brier_score_loss as _brier
+    test_brier_calib = _brier(y_test, y_test_pred_for_calib)
+    val_brier_calib  = trainer.training_metadata.get("val_brier", None)
+    calib_overfit_flag = False
+    if val_brier_calib is not None:
+        calib_overfit_flag = (test_brier_calib - val_brier_calib) > 0.005
+        if calib_overfit_flag:
+            logger.warning(
+                f"[CALIBRATION] Overfit du calibrateur détecté : "
+                f"Brier(val)={val_brier_calib:.4f} → Brier(test)={test_brier_calib:.4f} "
+                f"(delta={test_brier_calib - val_brier_calib:+.4f}). "
+                "Considérer cv='prefit' ou réduire le jeu de calibration."
+            )
+        else:
+            logger.info(
+                f"[CALIBRATION] Généralisation confirmée sur X_test : "
+                f"Brier(val)={val_brier_calib:.4f}, Brier(test)={test_brier_calib:.4f}"
+            )
+    trainer.training_metadata["test_brier_calibration_check"] = {
+        "test_brier": round(test_brier_calib, 6),
+        "val_brier":  round(val_brier_calib, 6) if val_brier_calib else None,
+        "overfit_flag": calib_overfit_flag,
+    }
+
+    # ── Cross-Validation (optionnelle) ────────────────────────────────────────
+    if run_cross_validation:
+        logger.info("[CV] Lancement de la validation croisée 5-folds...")
+        X_full = pd.concat([X_train, X_val, X_test])
+        y_full = pd.concat([y_train, y_val, y_test])
+        cv_results = trainer.cross_validate(X_full, y_full, n_folds=5)
+        trainer.training_metadata["cross_validation"] = cv_results
+        logger.info(
+            f"[CV] Résultat : AUC={cv_results['mean_auc']:.4f} ± {cv_results['std_auc']:.4f}"
+        )
+
+    # ── Seed Sensitivity Test (optionnel) ─────────────────────────────────────
+    if run_seed_sensitivity:
+        logger.info("[SEED] Test de sensibilité aux seeds (5 seeds)...")
+        df_full = pd.concat([X_train, X_val, X_test], axis=0).copy()
+        df_full["TARGET"] = pd.concat([y_train, y_val, y_test]).values
+        seed_results = PDModelTrainer.seed_sensitivity_test(df_full)
+        trainer.training_metadata["seed_sensitivity"] = seed_results
+        logger.info(
+            f"[SEED] Status={seed_results['stability_status']} | "
+            f"AUC={seed_results['mean_auc']:.4f} ± {seed_results['std_auc']:.4f}"
+        )
 
     # Save
     model_path = trainer.save_model(model_name)
 
     # ── MLflow Experiment Tracking ────────────────────────────────────────────
-    # Logs params, metrics, and artifact for experiment traceability.
-    # mlflow==2.10.2 is in requirements.txt. MLFLOW_TRACKING_URI defaults to
-    # ./mlruns (local). Point to the MLflow server via env var for team tracking.
+    # URI de tracking : MLFLOW_TRACKING_URI env var (priorité).
+    # Exemples :
+    #   SQLite local  : sqlite:///mlruns.db  (défaut si env var absente)
+    #   Serveur dédié : http://mlflow.octaix.internal:5000
+    #   Supabase/PG   : postgresql://user:pass@host/mlflow_db
+    #   S3 + PG       : export MLFLOW_TRACKING_URI=http://mlflow-server:5000
+    # Pour équipe distribuée : déployer un serveur MLflow central et définir
+    # MLFLOW_TRACKING_URI dans les secrets GitHub Actions.
     try:
         import mlflow
+        _tracking_uri = os.environ.get(
+            "MLFLOW_TRACKING_URI",
+            f"sqlite:///{os.path.join(os.path.dirname(__file__), 'mlflow.db')}"
+        )
+        mlflow.set_tracking_uri(_tracking_uri)
+        logger.info(f"[MLflow] Tracking URI: {_tracking_uri}")
         mlflow.set_experiment(f"pd_model_{model_type}")
         with mlflow.start_run(run_name=f"{model_name}_{data_hash}"):
             meta = trainer.training_metadata
@@ -837,12 +1373,20 @@ def run_training_pipeline(
         y_test_pred = trainer.model.predict_proba(X_test)[:, 1]
         y_train_pred = trainer.model.predict_proba(X_train)[:, 1]
 
+        # SK_ID_CURR comme proxy temporel pour la vintage analysis
+        _id_proxy = None
+        if "SK_ID_CURR" in X_test.columns:
+            _id_proxy = X_test["SK_ID_CURR"].values
+        elif hasattr(X_test, "index"):
+            _id_proxy = X_test.index.values
+
         val_report = validator.run_full_validation(
             y_true=y_test.values if hasattr(y_test, 'values') else y_test,
             y_pred=y_test_pred,
             y_true_train=y_train.values if hasattr(y_train, 'values') else y_train,
             y_pred_train=y_train_pred,
             model_name=model_name,
+            id_proxy=_id_proxy,
         )
         validator.save_report()
 
@@ -864,6 +1408,74 @@ def run_training_pipeline(
     except Exception as e:
         logger.warning(f"Advanced validation skipped: {e}")
 
+    # --- Leakage Gate automatique ---
+    try:
+        sys.path.append(os.path.dirname(__file__))
+        from leakage_detector import run_leakage_gate
+
+        df_full_audit = pd.concat([X_train, X_val, X_test], axis=0).copy()
+        df_full_audit["TARGET"] = pd.concat([y_train, y_val, y_test]).values
+        leakage_gate_pass, leakage_report = run_leakage_gate(
+            df_full_audit,
+            output_dir=os.path.join(trainer.model_dir, "validation"),
+        )
+        trainer.training_metadata["leakage_gate"] = {
+            "gate_pass": leakage_gate_pass,
+            "signals": leakage_report.get("summary", {}).get("signals", {}),
+            "promotion_gate_status": leakage_report.get("summary", {}).get("promotion_gate_status", ""),
+        }
+        if not leakage_gate_pass:
+            logger.error(
+                "[LEAKAGE GATE] ⛔ Promotion bloquée — investiguer les signaux de leakage "
+                "dans le rapport avant de passer en CHALLENGER."
+            )
+    except Exception as e:
+        logger.warning(f"Leakage gate skipped: {e}")
+
+    # --- NOUVEAU : Audit de Fairness Automatique ---
+    try:
+        import sys
+        sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "01_data_layer", "fairness_checks"))
+        from fairness_validator import FairnessValidator
+
+        fairness_val = FairnessValidator(
+            output_dir=os.path.join(trainer.model_dir, "validation")
+        )
+        
+        df_test = X_test.copy()
+        
+        fairness_report = fairness_val.run_full_fairness_audit(
+            df=df_test,
+            y_true=y_test.values if hasattr(y_test, 'values') else y_test,
+            y_pred=y_test_pred,
+            model_name=model_name
+        )
+        fairness_val.save_report(fairness_report)
+
+        trainer.training_metadata["fairness"] = {
+            "gate_status": fairness_report["summary"]["promotion_gate_status"],
+            "underperforming_segments": fairness_report["summary"]["n_underperforming_segments"],
+            "adverse_impact_flags": fairness_report["summary"]["n_adverse_impact_flags"]
+        }
+    except Exception as e:
+        logger.warning(f"Fairness validation skipped: {e}")
+
+    # ── Lifecycle auto-advance : DEV_ALPHA → CANDIDATE ───────────────────────
+    # Le training positionne l'artefact en CANDIDATE si les gates passent.
+    # L'avancement CANDIDATE → CHALLENGER nécessite un appel explicite
+    # (CI gate ou décision humaine avec `python model_lifecycle.py --action advance`).
+    try:
+        lifecycle_path = os.path.join(os.path.dirname(__file__), "..", "..", "04_model_risk_management", "model_lifecycle.py")
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("model_lifecycle", lifecycle_path)
+        _mlc  = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_mlc)
+        lifecycle_result = _mlc.auto_advance_lifecycle(model_name, actor="run_training_pipeline")
+        trainer.training_metadata["lifecycle"] = lifecycle_result
+        logger.info(f"[LIFECYCLE] {model_name}: {lifecycle_result.get('current_stage', 'unknown')}")
+    except Exception as _lc_err:
+        logger.warning(f"[LIFECYCLE] auto_advance skipped: {_lc_err}")
+
     return {
         "model_path": model_path,
         "training_metadata": trainer.training_metadata,
@@ -876,18 +1488,40 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(description="PD Model Training Pipeline")
-    parser.add_argument("--model-type", choices=["lightgbm", "xgboost"], default="lightgbm",
-                        help="lightgbm (démo) ou xgboost (cible PROD_CHAMPION)")
+    parser.add_argument("--model-type", choices=["lightgbm", "xgboost"], default="xgboost",
+                        help="lightgbm (demo) ou xgboost (cible PROD_CHAMPION)")
     parser.add_argument("--model-name", default="pd_model_v2")
+    parser.add_argument("--data-path", type=str, default=None,
+                        help="Chemin explicite vers le dataset (Parquet ou CSV)")
     parser.add_argument("--no-temporal-split", action="store_true",
                         help="Désactive le split temporel (non recommandé)")
+    parser.add_argument("--cross-validate", action="store_true",
+                        help="Lance la validation croisée 5-folds après training")
+    parser.add_argument("--seed-sensitivity", action="store_true",
+                        help="Lance le test de sensibilité aux seeds (5 seeds)")
+    # ── Domain Adaptation ────────────────────────────────────────────────────
+    parser.add_argument("--cemac-data", type=str, default=None,
+                        help="Chemin vers données CEMAC réelles (Stratégie B — mixing)")
+    parser.add_argument("--cemac-weight", type=float, default=10.0,
+                        help="Poids relatif des données CEMAC vs Home Credit (défaut: 10)")
+    parser.add_argument("--generate-cemac", action="store_true",
+                        help="Générer automatiquement des données synthétiques CEMAC avant training")
+    parser.add_argument("--cemac-n-samples", type=int, default=50_000,
+                        help="Nombre de dossiers CEMAC synthétiques à générer (défaut: 50 000)")
     args = parser.parse_args()
 
     try:
         results = run_training_pipeline(
+            data_path=args.data_path,
             model_name=args.model_name,
             model_type=args.model_type,
             use_temporal_split=not args.no_temporal_split,
+            run_cross_validation=args.cross_validate,
+            run_seed_sensitivity=args.seed_sensitivity,
+            cemac_data_path=args.cemac_data,
+            cemac_weight_multiplier=args.cemac_weight,
+            generate_cemac_synthetic=args.generate_cemac,
+            cemac_n_samples=args.cemac_n_samples,
         )
         meta = results["training_metadata"]
         print(f"\n{'='*60}")
@@ -899,7 +1533,7 @@ if __name__ == "__main__":
         print(f"  Val AUC:   {meta['val_auc']:.4f}")
         if "test_metrics" in meta:
             t = meta["test_metrics"]
-            gini_ok = "✅" if t.get("gini", 0) >= 0.45 else "❌ SOUS LE FLOOR 45%"
+            gini_ok = "[OK]" if t.get("gini", 0) >= 0.45 else "[SOUS LE FLOOR 45%]"
             print(f"  Test AUC:  {t['auc']:.4f}")
             print(f"  Test Gini: {t['gini']:.4f} {gini_ok}")
             print(f"  Test KS:   {t['ks']:.4f}")

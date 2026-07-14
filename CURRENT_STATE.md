@@ -1,56 +1,103 @@
-# 🚀 Credit Risk Engine - Current State
+# État Actuel du Projet : Octaix Credit Risk Engine
+**Date de mise à jour : 28 Mai 2026**
+**Statut officiel : PILOTE TECHNIQUE — Non Production-Ready**
 
-**Last Updated:** May 01, 2026
-**Status:** Controlled pilot hardening in progress. The platform is a governed dual-domain credit operating system candidate, not yet a production-truth platform.
+---
 
-## 🏗️ Architecture Setup
-- **Frontend:** Next.js 16 (running on `http://localhost:3000`)
-- **Backend:** NestJS 11 (running on `http://localhost:3001` with SWC and WebSockets)
-- **Scoring Engine:** Canonical FastAPI scorer is `03_risk_engine.main:app` on `http://localhost:8000`; it exposes `/score` with feature lineage, payload quality, imputation metrics, and fallback signaling expected by NestJS.
-- **Database:** Supabase PostgreSQL (Cloud) via Connection Pooler (IPv4 bypass).
-- **ORM:** Prisma Client (with `$env:PRISMA_ENGINES_MIRROR` workaround for corporate network).
+> **DÉCLARATION OBLIGATOIRE**
+> Ce document remplace la version précédente qui déclarait le projet "Production-Ready"
+> et "120/120 audit". Ces mentions étaient inexactes et ont été supprimées.
+> Le projet est un pilote technique avancé avec des lacunes réglementaires documentées
+> qui empêchent tout déploiement en production bancaire réelle à ce jour.
 
-## 🔐 Authentication
-The `DEV BYPASS` has been **REMOVED**. The platform is strictly secured via JWT Strategy. You MUST log in to access the Dashboard.
+---
 
-**Demo Credentials (Seeded in DB):**
-- **Analyst:** `analyst@riskengine.com`
-- **Risk Manager:** `manager@riskengine.com`
-- **CRO:** `cro@riskengine.com`
-- **Client:** `tom.eriksen@glp-group.com`
-- **Universal Password:** `Demo@2026!`
+## 1. Modèle de Crédit — Statut Réel
 
-*(Note: demo seed primarily uses bcrypt. A temporary SHA-256 bridge remains only for legacy demo accounts and migrates those accounts on successful login.)*
+**Modèle actif : `pd_xgb_v1` (XGBoost + IsotonicCalibration)**
 
-## 🛠️ How to Resume Work (Next Session)
+| Dimension | Statut | Détail |
+|---|---|---|
+| Catégorie artefact | **DEMO_BASELINE** | Entraîné sur Home Credit (données publiques russo-asiatiques, 2016-2018) |
+| Gini (test) | 57.4% | Au-dessus du floor réglementaire 45% |
+| AUC (test) | 0.787 | Au-dessus du floor 0.72 |
+| Calibration | Vérifiée sur test set | Brier = 0.065 |
+| Contraintes monotones | 15 features actives | DTI, EXT_SOURCE, DPD — conformes Basel §4 |
+| Données CEMAC réelles | **ABSENTES** | Aucun accord de partage de données bancaires signé |
+| Validation MRM externe | **ABSENTE** | Auto-validation interne uniquement |
+| Promotion PROD_CHAMPION | **NON ATTEINTE** | Voir checklist OOT_VALIDATION_PACK §7 |
 
-1. **Start the Frontend:**
-   ```bash
-   cd 08_frontend
-   npm run dev
-   ```
-2. **Start the Canonical Scoring Engine:**
-   ```bash
-   cd 03_risk_engine
-   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-   ```
+**Conséquence directe :** Aucune décision de crédit réelle ne peut s'appuyer sur ce modèle
+devant un auditeur COBAC ou un comité des risques bancaire.
 
-3. **Start the Backend:**
-   ```bash
-   cd 10_backend_nestjs
-   npm run start:dev
-   ```
-   *(If you encounter an `EADDRINUSE` error on port 3001, make sure to kill the hanging node process).*
+---
 
-4. **Database Changes:**
-   If you change the Prisma Schema, push using the mirror. This command prompts before any destructive change — **do not add `--accept-data-loss`**:
-   ```powershell
-   $env:PRISMA_ENGINES_MIRROR="https://registry.npmmirror.com/-/binary/prisma"; npx prisma db push
-   npx prisma db seed
-   ```
+## 2. Ce qui a été construit (vérifié)
 
-## 📋 Next Steps
-- Finish credibility hardening: canonical scoring path, RBAC, and documentation consistency.
-- Narrow microfinance pilot readiness to one controlled EMF slice before alternative-data expansion.
-- Keep thin-file scoring rules-first and human-in-the-loop until real repayment/outcome data exists.
-- Replace static/simulated monitoring and compliance surfaces with evidenced runtime data where pilot-critical.
+**Architecture et pipeline :**
+- API FastAPI (Python) avec XGBoost, SHAP explainability, Prometheus metrics
+- Backend NestJS (TypeScript), Prisma ORM, auth JWT + refresh rotation + bcrypt(12)
+- Frontend Next.js, multilingue fr/en, 4 personas (Analyst, Manager, CRO, Client Portal)
+- Supabase PostgreSQL avec Row Level Security (RLS)
+- CI/CD GitHub Actions avec smoke tests, leakage gate, fairness audit automatiques
+
+**Modélisation :**
+- Pipeline walk-forward chronologique anti-leakage
+- Détection de leakage (corrélation TARGET, temporal proxy, variance nulle)
+- Calibration isotonique vérifiée sur jeu de test indépendant
+- Fairness audit (CODE_GENDER, AGE_BUCKET, NAME_INCOME_TYPE)
+- Domain adaptation infrastructure (two-stage trainer, CEMAC synthetic generator)
+
+**Réglementation :**
+- IFRS 9 staging (Stage 1/2/3) avec SICR bi-critère et triggers qualitatifs
+- ECL formula correcte (PD × LGD × EAD, actualisé à l'EIR)
+- Expected Loss calculator avec floors prudentiels Basel III
+- RAROC calculator avec capital IRB
+
+---
+
+## 3. Lacunes documentées (à corriger avant production)
+
+| Lacune | Gravité | Référence |
+|---|---|---|
+| Données bancaires CEMAC réelles absentes | **CRITIQUE** | OOT_VALIDATION_PACK §7 |
+| Pas de validation MRM externe indépendante | **CRITIQUE** | MODEL_GOVERNANCE_SPEC §2 |
+| LGD statique (45% uniforme) | HAUTE | Rôle 2 — audit indépendant |
+| EIR hardcodé à 8% BEAC pour toutes expositions | HAUTE | ifrs9_staging.py ligne 118 |
+| Zero-Touch Auto-Approve désactivée | RÉSOLUE (28/05/2026) | decisioning.service.ts |
+| LEGACY_SHA256_BRIDGE encore actif | MOYENNE | auth.service.ts ligne 13 |
+| Drift monitoring non automatisé | MOYENNE | Rôle 4 — audit indépendant |
+| SAST/CVE scan absent du CI | MOYENNE | ci.yml |
+| Audit log IFRS9 en mémoire (non persisté) | MOYENNE | ifrs9_staging.py ligne 295 |
+| Stress testing sans matrice de migration | BASSE | TRANSFORMATION_ROADMAP §3 |
+
+---
+
+## 4. Données disponibles
+
+| Dataset | Statut | Usage |
+|---|---|---|
+| `curated_dataset.parquet` | Home Credit (307K obs, 2016-2018) | DEMO_BASELINE uniquement |
+| `cemac_synthetic.parquet` | 50K dossiers synthétiques CEMAC | Bridge — non certifiable COBAC |
+| Données bancaires CEMAC réelles | **NON DISPONIBLES** | Accord de partage requis |
+
+---
+
+## 5. Roadmap vers PROD_CHAMPION
+
+1. **Accord de partage de données** avec une institution financière CEMAC (EMF ou banque)
+2. **Retraining** sur données réelles — `python train.py --data-path cemac_reel.parquet --model-type xgboost`
+3. **Validation OOT calendaire** avec gap ≥ 6 mois train → OOT
+4. **Validation MRM externe indépendante** par un cabinet agréé
+5. **Approbation Comité des Risques** avec seuils et périmètre documentés
+6. **Réactivation Zero-Touch** uniquement après étapes 1-5 complètes (`ZERO_TOUCH_ENABLED=true`)
+
+---
+
+## 6. Architecture technique en place
+
+- **Frontend :** Next.js 16 (React), Tailwind CSS, TypeScript
+- **Backend :** NestJS 11 (TypeScript), Prisma ORM, Circuit Breaker actif
+- **Risk Engine :** FastAPI (Python), XGBoost `pd_xgb_v1`, SHAP explainability
+- **Base de données :** Supabase PostgreSQL + RLS
+- **Modèle CEMAC bridge :** `pd_cemac_v1` (XGBoost sur données synthétiques)

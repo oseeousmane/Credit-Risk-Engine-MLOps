@@ -57,7 +57,7 @@ export function AnalystDashboard() {
         <motion.div variants={itemVariants} className="lg:col-span-2 space-y-4">
            <div className="flex justify-between items-center">
              <h3 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Urgent Cases (SLA &lt; 48H)</h3>
-             <span className="text-[10px] font-bold text-[#3ECF8E] bg-[#3ECF8E]/10 px-2 py-0.5 rounded uppercase tracking-widest">SORTED BY PRIORITY</span>
+             <span className="text-[10px] font-bold text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded uppercase tracking-widest">SORTED BY PRIORITY</span>
            </div>
            <div className="bg-[#0a0a0a] border border-white/[0.08] rounded-xl overflow-hidden">
              {[
@@ -66,7 +66,7 @@ export function AnalystDashboard() {
                { id: 'APP-2026-804', name: 'Blue Horizon Logistics', stage: 'KYC Validation', sla: '22 hrs', urgent: false, p: 3 },
              ].map((app, i) => (
                 <Link key={i} href="/pipeline" className="flex items-center justify-between p-4 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.03] transition-colors group relative overflow-hidden">
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-[#3ECF8E] transition-colors" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-brand-400 transition-colors" />
                   <div className="flex items-center gap-4">
                     <div className="flex flex-col items-center justify-center w-8">
                        <span className="text-[10px] text-zinc-600 font-bold">#{app.p}</span>
@@ -75,7 +75,7 @@ export function AnalystDashboard() {
                        <FileText className={`w-4 h-4 ${app.urgent ? 'text-rose-400' : 'text-blue-400'}`} />
                     </div>
                     <div>
-                      <div className="text-[13px] font-bold text-white mb-0.5 group-hover:text-[#3ECF8E] transition-colors">{app.name}</div>
+                      <div className="text-[13px] font-bold text-white mb-0.5 group-hover:text-brand-400 transition-colors">{app.name}</div>
                       <div className="text-[11px] text-zinc-500 font-mono">{app.id} <span className="mx-1">•</span> {app.stage}</div>
                     </div>
                   </div>
@@ -83,7 +83,7 @@ export function AnalystDashboard() {
                     <div className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-md border ${app.urgent ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.15)]' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
                       <Clock className="w-3 h-3" /> {app.sla} left
                     </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-[#3ECF8E] transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-brand-400 transition-colors" />
                   </div>
                 </Link>
              ))}
@@ -97,14 +97,14 @@ export function AnalystDashboard() {
              <AlertBlock severity="INFO" title="Policy Update" body="New thresholds active for short-term trade finance limits." />
            </div>
            
-           <div className="bg-[#3ECF8E]/5 border border-[#3ECF8E]/20 rounded-xl p-5 relative overflow-hidden group">
-             <div className="absolute inset-0 bg-gradient-to-br from-[#3ECF8E]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-             <h4 className="text-[11px] font-bold text-[#3ECF8E] uppercase tracking-widest mb-2 flex items-center gap-2">
+           <div className="bg-brand-400/5 border border-brand-400/20 rounded-xl p-5 relative overflow-hidden group">
+             <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+             <h4 className="text-[11px] font-bold text-brand-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" /> Ready for Booking
              </h4>
              <p className="text-sm font-medium text-white">Global Ports PLC</p>
              <p className="text-xs text-zinc-400 mt-1">Approved by committee. Awaiting final signature.</p>
-             <button className="mt-4 w-full bg-[#3ECF8E]/10 hover:bg-[#3ECF8E]/20 text-[#3ECF8E] text-[12px] font-bold py-2 rounded-lg transition-colors border border-[#3ECF8E]/30">
+             <button className="mt-4 w-full bg-brand-400/10 hover:bg-brand-400/20 text-brand-400 text-[12px] font-bold py-2 rounded-lg transition-colors border border-brand-400/30">
                 Review Documents
              </button>
            </div>

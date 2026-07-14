@@ -3,8 +3,8 @@ import './globals.css'
 import AppLayoutClient from './AppLayoutClient'
 
 export const metadata: Metadata = {
-  title: 'RiskEngine | Enterprise Credit Risk Platform',
-  description: 'Institutional-grade AI-powered credit risk platform. IFRS 9 · Basel III · COBAC compliant.',
+  title: 'Octaix Risk Engine | Institutional Credit Risk Platform',
+  description: 'Octaix Risk Engine (ORE) — plateforme de risque de crédit institutionnel. IFRS 9 · Bâle III · Conforme COBAC. Zone CEMAC.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

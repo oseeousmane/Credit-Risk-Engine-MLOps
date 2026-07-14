@@ -46,7 +46,7 @@ export default function PlatformPage() {
         <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{ backgroundImage:'linear-gradient(to right,#fff 1px,transparent 1px),linear-gradient(to bottom,#fff 1px,transparent 1px)', backgroundSize:'32px 32px',
             maskImage:'radial-gradient(ellipse 80% 80% at 50% 40%, black 20%, transparent 100%)',WebkitMaskImage:'radial-gradient(ellipse 80% 80% at 50% 40%, black 20%, transparent 100%)' }} />
-        <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[#3ECF8E]/[0.12] blur-[120px] rounded-[100%] mix-blend-screen opacity-60 pointer-events-none" />
+        <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-brand-400/[0.12] blur-[120px] rounded-[100%] mix-blend-screen opacity-60 pointer-events-none" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -59,7 +59,7 @@ export default function PlatformPage() {
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-[4rem] font-medium tracking-tight leading-[1.1] mb-8 max-w-5xl mx-auto">
             <span className="text-white block">{tx.titleLine1}</span>
-            <span className="text-[#3ECF8E] block">{tx.titleLine2}</span>
+            <span className="text-brand-400 block">{tx.titleLine2}</span>
           </h1>
           <p className="text-[18px] text-zinc-400 leading-relaxed font-light max-w-2xl mx-auto">
             {tx.desc}
@@ -83,9 +83,9 @@ export default function PlatformPage() {
 
       <TechStackSection />
 
-      <div className="max-w-4xl mx-auto px-6 text-center mt-32 relative overflow-hidden bg-[#050505] border border-white/[0.03] rounded-3xl p-16">
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#3ECF8E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
-        <Link href={`/${locale}/contact`} className="relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#3ECF8E] text-[#050505] rounded-md font-semibold text-[13px] hover:bg-[#3ECF8E]/90 transition-all duration-300 shadow-[0_0_24px_rgba(62,207,142,0.2)]">
+      <div className="max-w-4xl mx-auto px-6 text-center mt-32 relative overflow-hidden bg-surface-0 border border-white/[0.03] rounded-3xl p-16">
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-400/[0.02] rounded-full blur-[100px] pointer-events-none" />
+        <Link href={`/${locale}/contact`} className="relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2 bg-brand-400 text-surface-0 rounded-md font-semibold text-[13px] hover:bg-brand-400/90 transition-all duration-300 shadow-[0_0_24px_rgba(59,123,255,0.2)]">
           {tx.cta}
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>

@@ -77,24 +77,24 @@ export default function DocsPage() {
   const t = translations[locale]
 
   return (
-    <main className="antialiased min-h-screen bg-[#050505]">
+    <main className="antialiased min-h-screen bg-surface-0">
       
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative pt-36 pb-24 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{ backgroundImage:'linear-gradient(to right,#fff 1px,transparent 1px),linear-gradient(to bottom,#fff 1px,transparent 1px)', backgroundSize:'32px 32px',
             maskImage:'radial-gradient(ellipse 80% 80% at 50% 40%, black 20%, transparent 100%)',WebkitMaskImage:'radial-gradient(ellipse 80% 80% at 50% 40%, black 20%, transparent 100%)' }} />
-        <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[#3ECF8E]/[0.12] blur-[120px] rounded-[100%] mix-blend-screen opacity-60 pointer-events-none" />
+        <div className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-brand-400/[0.12] blur-[120px] rounded-[100%] mix-blend-screen opacity-60 pointer-events-none" />
 
         <motion.div initial="hidden" animate="visible" variants={containerVariants} className="max-w-4xl mx-auto px-6 text-center relative z-10 mb-8">
           <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-8 cursor-default shadow-sm">
-            <Book className="w-3.5 h-3.5 text-[#3ECF8E]" />
+            <Book className="w-3.5 h-3.5 text-brand-400" />
             <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-300">{t.badge}</span>
           </motion.div>
 
           <motion.h1 variants={itemVariants} className="text-4xl sm:text-5xl lg:text-[4rem] font-medium tracking-tight leading-[1.1] mb-8 max-w-5xl mx-auto">
             <span className="text-white block">{t.titleLine1}</span>
-            <span className="text-[#3ECF8E] block">{t.titleLine2}</span>
+            <span className="text-brand-400 block">{t.titleLine2}</span>
           </motion.h1>
 
           <motion.p variants={itemVariants} className="text-[18px] text-zinc-400 leading-relaxed font-light max-w-2xl mx-auto mb-12">
@@ -104,11 +104,11 @@ export default function DocsPage() {
           {/* Search Bar */}
           <motion.div variants={itemVariants} className="relative max-w-xl mx-auto mb-8 group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-zinc-500 group-focus-within:text-[#3ECF8E] transition-colors" />
+              <Search className="h-5 w-5 text-zinc-500 group-focus-within:text-brand-400 transition-colors" />
             </div>
             <input
               type="text"
-              className="block w-full pl-12 pr-4 py-4 bg-[#0a0a0a] border border-white/[0.05] hover:border-white/[0.1] focus:border-[#3ECF8E]/50 focus:bg-[#0c0c0c] focus:shadow-[0_0_20px_rgba(62,207,142,0.1)] rounded-xl text-white placeholder-zinc-500 transition-all outline-none text-[15px]"
+              className="block w-full pl-12 pr-4 py-4 bg-[#0a0a0a] border border-white/[0.05] hover:border-white/[0.1] focus:border-brand-400/50 focus:bg-[#0c0c0c] focus:shadow-[0_0_20px_rgba(59,123,255,0.1)] rounded-xl text-white placeholder-zinc-500 transition-all outline-none text-[15px]"
               placeholder={t.searchPlaceholder}
             />
             <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
@@ -143,10 +143,10 @@ export default function DocsPage() {
               return (
                 <motion.div key={i} variants={itemVariants} whileHover={{ y: -6, transition: { duration: 0.2 } }}>
                   <Link href={`/${locale}/docs/${guide.href}`} className="relative flex flex-col h-full p-8 bg-[#080808] border border-white/[0.03] hover:border-white/[0.08] rounded-2xl transition-all duration-500 group overflow-hidden shadow-xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#3ECF8E]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-400/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                     
-                    <div className="relative z-10 w-12 h-12 rounded-xl flex items-center justify-center bg-white/[0.02] border border-white/[0.04] group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-all duration-500 mb-6">
-                      <Icon className="w-5 h-5 text-zinc-500 group-hover:text-[#3ECF8E] transition-colors" />
+                    <div className="relative z-10 w-12 h-12 rounded-xl flex items-center justify-center bg-white/[0.02] border border-white/[0.04] group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-all duration-500 mb-6">
+                      <Icon className="w-5 h-5 text-zinc-500 group-hover:text-brand-400 transition-colors" />
                     </div>
                     
                     <h3 className="relative z-10 text-xl font-medium tracking-tight text-zinc-200 group-hover:text-white transition-colors duration-500 mb-3">{guide.title}</h3>
@@ -159,7 +159,7 @@ export default function DocsPage() {
                           {guide.meta}
                         </span>
                       </div>
-                      <div className="text-[13px] font-semibold text-[#3ECF8E] flex items-center gap-1.5">
+                      <div className="text-[13px] font-semibold text-brand-400 flex items-center gap-1.5">
                         {guide.cta} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
@@ -184,8 +184,8 @@ export default function DocsPage() {
               return (
                 <motion.div key={i} variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
                   <div className="flex items-start gap-5 p-8 bg-[#080808] border border-white/[0.03] rounded-2xl hover:border-white/[0.08] transition-all duration-300 cursor-pointer group shadow-xl">
-                    <div className="w-12 h-12 bg-white/[0.02] border border-white/[0.04] rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-[#3ECF8E]/10 group-hover:border-[#3ECF8E]/20 transition-all duration-300">
-                      <Icon className="w-5 h-5 text-zinc-500 group-hover:text-[#3ECF8E] transition-colors" />
+                    <div className="w-12 h-12 bg-white/[0.02] border border-white/[0.04] rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-brand-400/10 group-hover:border-brand-400/20 transition-all duration-300">
+                      <Icon className="w-5 h-5 text-zinc-500 group-hover:text-brand-400 transition-colors" />
                     </div>
                     <div>
                       <h4 className="text-[16px] font-medium text-white mb-2">{res.title}</h4>
@@ -203,7 +203,7 @@ export default function DocsPage() {
       <section className="max-w-4xl mx-auto px-6 pb-32 mt-12">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
           className="relative bg-[#080808] border border-white/[0.03] rounded-3xl p-16 text-center overflow-hidden shadow-2xl">
-          <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-[#3ECF8E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-brand-400/[0.02] rounded-full blur-[100px] pointer-events-none" />
           <div className="relative z-10">
             <h2 className="text-3xl font-medium tracking-tight text-white mb-4">
               {t.ctaText}
@@ -211,7 +211,7 @@ export default function DocsPage() {
             <p className="text-[15px] text-zinc-400 mb-8 max-w-lg mx-auto leading-relaxed">
               Our engineering team is available to assist with custom integrations, API keys, and deployment architectures.
             </p>
-            <Link href={`/${locale}/contact`} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#3ECF8E] text-[#050505] rounded-md font-semibold text-[13px] hover:bg-[#3ECF8E]/90 transition-all shadow-[0_0_30px_rgba(62,207,142,0.25)]">
+            <Link href={`/${locale}/contact`} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-400 text-surface-0 rounded-md font-semibold text-[13px] hover:bg-brand-400/90 transition-all shadow-[0_0_30px_rgba(59,123,255,0.25)]">
               {t.ctaBtn} <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

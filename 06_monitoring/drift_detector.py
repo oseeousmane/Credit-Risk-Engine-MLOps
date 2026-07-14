@@ -1,267 +1,102 @@
 """
-Drift Detector — Population & Feature Drift Monitoring
-=========================================================
-Détection de la dérive des données et des scores pour le monitoring
-continu des modèles de risque de crédit.
+Data Drift Detector
+===================
+Calcul du Population Stability Index (PSI) pour détecter les dérives (Drift)
+entre les données d'entraînement (Expected) et les données d'inférence (Actual).
 
-Métriques de dérive :
-- PSI (Population Stability Index) — Distribution des scores
-- CSI (Characteristic Stability Index) — Distribution des features
-- KL Divergence — Messure théorique de dérive
-- Wasserstein Distance — Distance de transport optimal
-
-Seuils (standards bancaires) :
-- PSI < 0.10 → Stable
-- 0.10 ≤ PSI < 0.25 → Investigation requise 
-- PSI ≥ 0.25 → Action immédiate
+Si PSI > 0.20 : Dérive significative (alerte critique)
+Si PSI > 0.10 : Dérive légère (surveillance)
+Si PSI < 0.10 : Pas de dérive
 
 Auteur  : Credit Risk Engine
-Version : 1.0.0
+Version : 2.0.0
 """
 
 import numpy as np
 import pandas as pd
-import json
-import os
 import logging
-from typing import Optional, Dict, List, Tuple
-from datetime import datetime
-from scipy import stats
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
-
 class DriftDetector:
-    """
-    Détecteur de dérive pour monitoring continu.
-    
-    Compare la distribution de référence (training/baseline)
-    avec la distribution courante (production) pour détecter
-    les dérives de données (data drift) et de concept (concept drift).
-    """
+    def __init__(self, alert_threshold: float = 0.20):
+        self.alert_threshold = alert_threshold
 
-    PSI_STABLE = 0.10
-    PSI_WARNING = 0.25
-    CSI_STABLE = 0.10
-    CSI_WARNING = 0.25
-
-    def __init__(self, output_dir: Optional[str] = None):
-        self.output_dir = output_dir or os.path.join(
-            os.path.dirname(__file__), "reports"
-        )
-        os.makedirs(self.output_dir, exist_ok=True)
-        self._history: List[Dict] = []
-
-    def compute_psi(
-        self,
-        reference: np.ndarray,
-        current: np.ndarray,
-        n_bins: int = 10,
-        label: str = "score",
-    ) -> Dict:
+    def calculate_psi(self, expected: np.ndarray, actual: np.ndarray, buckets: int = 10) -> float:
         """
-        Population Stability Index (PSI).
+        Calcule le Population Stability Index (PSI) pour une seule feature continue.
+        """
+        # Gérer les valeurs manquantes
+        expected = expected[~np.isnan(expected)]
+        actual = actual[~np.isnan(actual)]
         
-        PSI = Σ (P_current_i - P_reference_i) × ln(P_current_i / P_reference_i)
-        """
-        bins = np.percentile(reference, np.linspace(0, 100, n_bins + 1))
+        if len(expected) == 0 or len(actual) == 0:
+            return 0.0
+
+        # Définir les bins basés sur la distribution attendue
+        breakpoints = np.arange(0, buckets + 1) / buckets * 100
+        bins = np.percentile(expected, breakpoints)
+        # S'assurer que les bords couvrent toutes les données
         bins[0] = -np.inf
         bins[-1] = np.inf
+        
+        # Enlever les bins dupliqués (ex: quand il y a beaucoup de 0)
+        bins = np.unique(bins)
+        if len(bins) < 2:
+            return 0.0
 
-        ref_counts = np.histogram(reference, bins=bins)[0]
-        cur_counts = np.histogram(current, bins=bins)[0]
+        # Calcul des fréquences
+        expected_percents = np.histogram(expected, bins)[0] / len(expected)
+        actual_percents = np.histogram(actual, bins)[0] / len(actual)
 
-        ref_pct = (ref_counts + 1e-6) / (ref_counts.sum() + n_bins * 1e-6)
-        cur_pct = (cur_counts + 1e-6) / (cur_counts.sum() + n_bins * 1e-6)
+        # Eviter la division par zero
+        expected_percents = np.where(expected_percents == 0, 0.0001, expected_percents)
+        actual_percents = np.where(actual_percents == 0, 0.0001, actual_percents)
 
-        psi_bins = (cur_pct - ref_pct) * np.log(cur_pct / ref_pct)
-        psi_total = float(psi_bins.sum())
+        # Formule du PSI
+        psi_value = np.sum((actual_percents - expected_percents) * np.log(actual_percents / expected_percents))
+        return float(psi_value)
 
-        if psi_total >= self.PSI_WARNING:
-            status = "CRITICAL"
-            action = "Recalibration ou réentraînement immédiat"
-        elif psi_total >= self.PSI_STABLE:
-            status = "WARNING"
-            action = "Investigation de la dérive requise"
-        else:
-            status = "STABLE"
-            action = "Aucune action nécessaire"
-
-        result = {
-            "metric": "PSI",
-            "variable": label,
-            "value": round(psi_total, 6),
-            "status": status,
-            "action": action,
-            "n_bins": n_bins,
-            "ref_size": len(reference),
-            "cur_size": len(current),
-            "psi_by_bin": [round(float(x), 6) for x in psi_bins],
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-        self._history.append(result)
-        return result
-
-    def compute_csi(
-        self,
-        reference_df: pd.DataFrame,
-        current_df: pd.DataFrame,
-        features: Optional[List[str]] = None,
-        n_bins: int = 10,
-    ) -> pd.DataFrame:
+    def detect_drift_batch(self, expected_df: pd.DataFrame, actual_df: pd.DataFrame) -> Dict[str, float]:
         """
-        Characteristic Stability Index (CSI).
-        Calcule le PSI pour chaque feature individuellement.
+        Calcule le PSI pour toutes les colonnes numériques communes.
+        Retourne un dict {feature_name: psi_score}.
         """
-        if features is None:
-            features = [
-                c for c in reference_df.columns
-                if reference_df[c].dtype in ['float64', 'int64', 'float32', 'int32']
-            ]
-
-        results = []
-        for feat in features:
-            ref_vals = reference_df[feat].dropna().values
-            cur_vals = current_df[feat].dropna().values
-
-            if len(ref_vals) == 0 or len(cur_vals) == 0:
-                results.append({
-                    "feature": feat,
-                    "csi": None,
-                    "status": "INSUFFICIENT_DATA",
-                })
-                continue
-
-            psi_result = self.compute_psi(
-                ref_vals, cur_vals, n_bins=n_bins, label=feat
-            )
-
-            results.append({
-                "feature": feat,
-                "csi": psi_result["value"],
-                "status": psi_result["status"],
-                "action": psi_result["action"],
-            })
-
-        results_df = pd.DataFrame(results)
-        results_df = results_df.sort_values("csi", ascending=False, na_position="last")
-
-        return results_df
-
-    def compute_ks_drift(
-        self,
-        reference: np.ndarray,
-        current: np.ndarray,
-        label: str = "feature",
-    ) -> Dict:
-        """
-        Test de Kolmogorov-Smirnov bilatéral pour détection de dérive.
-        """
-        ks_stat, p_value = stats.ks_2samp(reference, current)
-
-        return {
-            "metric": "KS_2SAMP",
-            "variable": label,
-            "ks_statistic": round(float(ks_stat), 6),
-            "p_value": round(float(p_value), 6),
-            "drift_detected": p_value < 0.05,
-            "significance": "5%",
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-    def generate_drift_report(
-        self,
-        reference_scores: np.ndarray,
-        current_scores: np.ndarray,
-        reference_features: Optional[pd.DataFrame] = None,
-        current_features: Optional[pd.DataFrame] = None,
-        report_name: str = "drift_report",
-        top_n_features: int = 10,
-    ) -> Dict:
-        """
-        Rapport de dérive complet pour monitoring mensuel.
-        """
-        report = {
-            "report_id": datetime.utcnow().strftime("%Y%m%d_%H%M%S"),
-            "report_name": report_name,
-            "timestamp": datetime.utcnow().isoformat(),
-            "period": {
-                "reference_size": len(reference_scores),
-                "current_size": len(current_scores),
-            },
-        }
-
-        # Score drift (PSI)
-        report["score_drift"] = self.compute_psi(
-            reference_scores, current_scores, label="pd_score"
-        )
-
-        # Score drift (KS)
-        report["score_ks_test"] = self.compute_ks_drift(
-            reference_scores, current_scores, label="pd_score"
-        )
-
-        # Score statistics comparison
-        report["score_statistics"] = {
-            "reference": {
-                "mean": round(float(reference_scores.mean()), 6),
-                "median": round(float(np.median(reference_scores)), 6),
-                "std": round(float(reference_scores.std()), 6),
-                "p5": round(float(np.percentile(reference_scores, 5)), 6),
-                "p95": round(float(np.percentile(reference_scores, 95)), 6),
-            },
-            "current": {
-                "mean": round(float(current_scores.mean()), 6),
-                "median": round(float(np.median(current_scores)), 6),
-                "std": round(float(current_scores.std()), 6),
-                "p5": round(float(np.percentile(current_scores, 5)), 6),
-                "p95": round(float(np.percentile(current_scores, 95)), 6),
-            },
-        }
-
-        # Feature drift (CSI) if features provided
-        if reference_features is not None and current_features is not None:
-            csi_df = self.compute_csi(reference_features, current_features)
-            report["feature_drift"] = csi_df.head(top_n_features).to_dict("records")
+        common_cols = list(set(expected_df.columns) & set(actual_df.columns))
+        num_cols = expected_df[common_cols].select_dtypes(include=[np.number]).columns
+        
+        drift_report = {}
+        drift_count = 0
+        
+        for col in num_cols:
+            psi = self.calculate_psi(expected_df[col].values, actual_df[col].values)
+            drift_report[col] = round(psi, 4)
             
-            drifted_features = csi_df[csi_df["status"].isin(["WARNING", "CRITICAL"])]
-            report["n_drifted_features"] = len(drifted_features)
-        else:
-            report["feature_drift"] = "NOT_COMPUTED"
-
-        # Overall assessment
-        score_psi = report["score_drift"]["value"]
-        if score_psi >= self.PSI_WARNING:
-            assessment = "CRITICAL_DRIFT"
-        elif score_psi >= self.PSI_STABLE:
-            assessment = "MODERATE_DRIFT"
-        else:
-            assessment = "NO_SIGNIFICANT_DRIFT"
-
-        report["overall_assessment"] = assessment
-
-        # Save
-        report_path = os.path.join(
-            self.output_dir, f"{report_name}_{report['report_id']}.json"
-        )
-        with open(report_path, "w") as f:
-            json.dump(report, f, indent=2, default=str)
-
-        logger.info(f"Drift report: {assessment} (PSI={score_psi:.4f})")
-        return report
-
-    def get_history(self) -> List[Dict]:
-        return self._history.copy()
-
+            if psi >= self.alert_threshold:
+                drift_count += 1
+                logger.warning(f"🚨 [DATA DRIFT] Feature '{col}' a un PSI de {psi:.3f} (>= {self.alert_threshold})")
+                
+        logger.info(f"Drift check completed sur {len(num_cols)} features. {drift_count} dérives critiques détectées.")
+        return drift_report
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    detector = DriftDetector()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--alert_threshold", type=float, default=0.20)
+    args = parser.parse_args()
 
-    np.random.seed(42)
-    reference = np.random.beta(2, 20, 5000)
-    current = np.random.beta(2.2, 18, 5000)  # Légère dérive
-
-    report = detector.generate_drift_report(reference, current)
-    print(f"Score PSI: {report['score_drift']['value']:.4f} → {report['overall_assessment']}")
+    # Simulation d'un test de dérive
+    print("Simulation: Running Data Drift Detection (PSI)...")
+    detector = DriftDetector(alert_threshold=args.alert_threshold)
+    
+    # Données d'entraînement normales (Moyenne 0)
+    train_data = pd.DataFrame({"EXT_SOURCE_1": np.random.normal(0, 1, 1000)})
+    # Données de production dérivées (Moyenne 1.5)
+    prod_data = pd.DataFrame({"EXT_SOURCE_1": np.random.normal(1.5, 1, 1000)})
+    
+    report = detector.detect_drift_batch(train_data, prod_data)
+    print("\nRapport PSI:")
+    for feat, psi in report.items():
+        status = "CRITICAL" if psi >= args.alert_threshold else ("WARNING" if psi >= 0.10 else "OK")
+        print(f"{feat}: {psi:.4f} [{status}]")

@@ -79,18 +79,18 @@ export function ProblemSection() {
           </div>
 
           {/* Solutions */}
-          <div className="bg-[#0a0a0a] border border-[#3ECF8E]/[0.12] rounded-2xl p-8 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#3ECF8E]/[0.03] to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="bg-[#0a0a0a] border border-brand-400/[0.12] rounded-2xl p-8 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/[0.03] to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10 flex items-center gap-3 mb-8">
-              <div className="w-8 h-8 rounded-lg bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-[#3ECF8E]" />
+              <div className="w-8 h-8 rounded-lg bg-brand-400/10 border border-brand-400/20 flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-brand-400" />
               </div>
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-[#3ECF8E]">{t.solutionLabel}</span>
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-brand-400">{t.solutionLabel}</span>
             </div>
             <div className="relative z-10 space-y-5">
               {t.solutions.map((s) => (
                 <div key={s} className="flex items-start gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-[#3ECF8E]/70 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-brand-400/70 mt-0.5 flex-shrink-0" />
                   <span className="text-[14px] font-medium text-zinc-200 leading-relaxed tracking-tight">{s}</span>
                 </div>
               ))}

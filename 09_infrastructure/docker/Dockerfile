@@ -15,9 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Install Python dependencies strictly from lockfile
+COPY requirements.lock.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.lock.txt
 
 # ── Stage 2: Runtime ─────────────────────────────────────────
 FROM python:3.11-slim as runtime

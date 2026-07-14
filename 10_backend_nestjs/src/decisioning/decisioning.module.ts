@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { DecisioningService } from './decisioning.service';
 import { DecisioningController } from './decisioning.controller';
 import { AuditModule } from '../audit/audit.module';
@@ -9,8 +9,9 @@ import { MonitoringModule } from '../monitoring/monitoring.module';
 import { WebhookModule } from '../webhook/webhook.module';
 
 @Module({
-  imports: [AuditModule, PipelineModule, ScoringModule, RiskMathModule, MonitoringModule, WebhookModule],
+  imports: [AuditModule, forwardRef(() => PipelineModule), ScoringModule, RiskMathModule, MonitoringModule, WebhookModule],
   controllers: [DecisioningController],
   providers: [DecisioningService],
+  exports: [DecisioningService],
 })
 export class DecisioningModule {}

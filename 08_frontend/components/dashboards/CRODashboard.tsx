@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import * as React from 'react'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -7,6 +7,7 @@ import {
 import {
   Download, AlertCircle, Loader2, RefreshCw, TrendingUp, TrendingDown,
   ShieldAlert, Brain, Clock, Users, BarChart2, Activity, AlertTriangle,
+  Info, Zap, Flame, CheckCircle2, ArrowRight,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
@@ -19,7 +20,7 @@ const fmt = (v: number | null | undefined, digits = 1) =>
   v == null ? '—' : v.toFixed(digits)
 
 const fmtM = (v: number | null | undefined) =>
-  v == null ? '—' : `$${v.toFixed(1)}M`
+  v == null ? '—' : `${v.toFixed(1)} Mds XAF`
 
 const item = {
   hidden: { opacity: 0, y: 12 },
@@ -38,21 +39,46 @@ function EclTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-[#0a0a0a] border border-white/[0.1] rounded-xl p-3 shadow-xl text-xs backdrop-blur-md">
       <p className="text-zinc-500 font-mono uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-[#3ECF8E] font-bold">{fmtM(payload[0]?.value)} ECL cumulé</p>
+      <p className="text-brand-400 font-bold">{fmtM(payload[0]?.value)} ECL cumulé</p>
       {payload[1] && <p className="text-blue-400">{fmtM(payload[1]?.value)} nouvelles originations</p>}
     </div>
   )
 }
 
-function SeverityDot({ severity }: { severity: string }) {
-  const c = severity === 'CRITICAL' ? 'bg-rose-500' : severity === 'WARNING' ? 'bg-amber-500' : 'bg-blue-500'
-  return <span className={`inline-block w-2 h-2 rounded-full ${c} flex-shrink-0 mt-1.5`} />
+// Severity — icône + couleur + texte (triple redondance WCAG)
+const SEV_CFG = {
+  CRITICAL: { Icon: ShieldAlert, color: 'text-rose-400',  bg: 'bg-rose-500/10',  border: 'border-rose-500/20'  },
+  WARNING:  { Icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  INFO:     { Icon: Info,          color: 'text-blue-400',  bg: 'bg-blue-500/10',  border: 'border-blue-500/20'  },
+} as const
+
+function SeverityBadge({ severity }: { severity: string }) {
+  const cfg = SEV_CFG[severity as keyof typeof SEV_CFG] ?? SEV_CFG.INFO
+  const { Icon, color, bg, border } = cfg
+  return (
+    <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${color} ${bg} ${border}`}>
+      <Icon className="w-2.5 h-2.5 flex-shrink-0" aria-hidden="true" />
+      {severity}
+    </span>
+  )
 }
 
 function PriorityBadge({ priority, sla }: { priority: string; sla: boolean }) {
-  if (sla) return <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-400">SLA BREACH</span>
-  if (priority === 'URGENT') return <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400">URGENT</span>
-  if (priority === 'HIGH') return <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-400">HIGH</span>
+  if (sla) return (
+    <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-400">
+      <Flame className="w-2.5 h-2.5" aria-hidden="true" /> SLA BREACH
+    </span>
+  )
+  if (priority === 'URGENT') return (
+    <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-400">
+      <Zap className="w-2.5 h-2.5" aria-hidden="true" /> URGENT
+    </span>
+  )
+  if (priority === 'HIGH') return (
+    <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-400">
+      <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" /> HIGH
+    </span>
+  )
   return <span className="text-[9px] font-mono text-zinc-600">—</span>
 }
 
@@ -228,7 +254,7 @@ export function CRODashboard() {
       <div className="grid grid-cols-12 gap-4">
 
         {/* ECL Trend — données réelles */}
-        <motion.div variants={item} className="col-span-8 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+        <motion.div variants={item} className="col-span-8 card-glow p-5">
           <div className="flex items-start justify-between mb-1">
             <div>
               <h3 className="text-sm font-bold text-white">ECL Évolution — Stock Provisions</h3>
@@ -265,8 +291,8 @@ export function CRODashboard() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.02)" />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#52525b' }} tickLine={false} axisLine={false} dy={6} />
-                <YAxis tick={{ fontSize: 10, fill: '#52525b' }} tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(1)}M`} />
-                <Tooltip content={<EclTooltip />} cursor={{ stroke: 'rgba(62,207,142,0.15)', strokeWidth: 1 }} />
+                <YAxis tick={{ fontSize: 10, fill: '#52525b' }} tickLine={false} axisLine={false} tickFormatter={v => `${v.toFixed(1)} Mds`} />
+                <Tooltip content={<EclTooltip />} cursor={{ stroke: 'rgba(59,123,255,0.15)', strokeWidth: 1 }} />
                 <Area type="monotone" dataKey="cumulativeEcl" stroke="#3ECF8E" strokeWidth={2.5}
                   fill="url(#eclGrad)" dot={false} activeDot={{ r: 5, fill: '#3ECF8E' }} name="ECL cumulé" />
                 <Area type="monotone" dataKey="newEcl" stroke="#60a5fa" strokeWidth={1.5}
@@ -275,13 +301,13 @@ export function CRODashboard() {
             </ResponsiveContainer>
           </div>
           <div className="flex items-center gap-4 mt-2">
-            <span className="flex items-center gap-1.5 text-[10px] text-zinc-500"><span className="w-3 h-0.5 bg-[#3ECF8E] inline-block rounded" /> ECL stock cumulé</span>
+            <span className="flex items-center gap-1.5 text-[10px] text-zinc-500"><span className="w-3 h-0.5 bg-brand-400 inline-block rounded" /> ECL stock cumulé</span>
             <span className="flex items-center gap-1.5 text-[10px] text-zinc-500"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> Nouvelles originations ECL</span>
           </div>
         </motion.div>
 
         {/* IFRS 9 Stage Allocation */}
-        <motion.div variants={item} className="col-span-4 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+        <motion.div variants={item} className="col-span-4 card-glow p-5">
           <h3 className="text-sm font-bold text-white mb-0.5">Allocation IFRS 9</h3>
           <p className="text-[10px] text-zinc-500 mb-4">Répartition par stade de dépréciation</p>
 
@@ -336,7 +362,7 @@ export function CRODashboard() {
       <div className="grid grid-cols-12 gap-4">
 
         {/* Real alerts from /monitoring/alerts */}
-        <motion.div variants={item} className="col-span-5 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+        <motion.div variants={item} className="col-span-5 card-glow p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-400" />
@@ -351,37 +377,50 @@ export function CRODashboard() {
           {alerts.length === 0 && !alertsQ.isLoading ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2">
               <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <Activity className="w-4 h-4 text-emerald-400" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               </div>
               <p className="text-zinc-500 text-xs">Aucune alerte active</p>
             </div>
           ) : (
-            <div className="space-y-2.5">
-              {alerts.map((a: any) => (
-                <div key={a.id} className={`flex gap-2.5 p-3 rounded-lg border ${
-                  a.severity === 'CRITICAL' ? 'border-rose-500/20 bg-rose-500/5' :
-                  a.severity === 'WARNING' ? 'border-amber-500/20 bg-amber-500/5' :
-                  'border-blue-500/20 bg-blue-500/5'
-                }`}>
-                  <SeverityDot severity={a.severity} />
-                  <div className="min-w-0">
-                    <p className={`text-xs font-semibold truncate ${
-                      a.severity === 'CRITICAL' ? 'text-rose-400' :
-                      a.severity === 'WARNING' ? 'text-amber-400' : 'text-blue-400'
-                    }`}>{a.message}</p>
-                    {a.detail && <p className="text-[10px] text-zinc-600 mt-0.5 line-clamp-2">{a.detail}</p>}
-                    <p className="text-[9px] text-zinc-700 mt-1 font-mono">
-                      {new Date(a.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-2">
+              {/* CRO view — max 3 alertes, triées par sévérité */}
+              {[...alerts]
+                .sort((a, b) => {
+                  const order: Record<string, number> = { CRITICAL: 0, WARNING: 1, INFO: 2 }
+                  return (order[a.severity] ?? 3) - (order[b.severity] ?? 3)
+                })
+                .slice(0, 3)
+                .map((a: any) => {
+                  const cfg = SEV_CFG[a.severity as keyof typeof SEV_CFG] ?? SEV_CFG.INFO
+                  const { Icon, color, bg, border } = cfg
+                  return (
+                    <div key={a.id} className={`flex gap-2.5 p-3 rounded-lg border ${border} ${bg}`}>
+                      <Icon className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${color}`} aria-hidden="true" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <SeverityBadge severity={a.severity} />
+                          <span className="text-[9px] font-mono text-zinc-700">
+                            {new Date(a.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-semibold text-zinc-200 truncate">{a.message}</p>
+                        {a.detail && <p className="text-[10px] text-zinc-600 mt-0.5 line-clamp-1">{a.detail}</p>}
+                      </div>
+                    </div>
+                  )
+                })}
+              {alerts.length > 3 && (
+                <p className="text-[10px] text-zinc-600 text-center pt-1 flex items-center justify-center gap-1">
+                  <ArrowRight className="w-3 h-3" />
+                  {alerts.length - 3} alerte{alerts.length - 3 > 1 ? 's' : ''} supplémentaire{alerts.length - 3 > 1 ? 's' : ''} — voir Alert Center
+                </p>
+              )}
             </div>
           )}
         </motion.div>
 
         {/* Override Rate + Fallback + Model metrics */}
-        <motion.div variants={item} className="col-span-7 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-5">
+        <motion.div variants={item} className="col-span-7 card-glow p-5">
           <div className="flex items-center gap-2 mb-4">
             <Brain className="w-4 h-4 text-blue-400" />
             <h3 className="text-sm font-bold text-white">Gouvernance MRM</h3>
@@ -463,7 +502,7 @@ export function CRODashboard() {
       </div>
 
       {/* ── Row 4: Decision Queue with SLA + Priority ── */}
-      <motion.div variants={item} className="rounded-xl border border-white/[0.08] bg-[#0a0a0a] overflow-hidden">
+      <motion.div variants={item} className="card-glow overflow-hidden">
         <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-zinc-400" />
@@ -491,50 +530,61 @@ export function CRODashboard() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-white/[0.04]">
-                  {['Dossier', 'Contrepartie', 'Secteur', 'Montant', 'Rating', 'PD', 'Stage', 'Âge', 'Priorité', 'Statut'].map(h => (
+                  {['Contrepartie', 'Montant', 'PD', 'Stage IFRS 9', 'Âge / SLA', 'Priorité'].map(h => (
                     <th key={h} className="px-4 py-2.5 text-left text-[9px] font-bold uppercase tracking-widest text-zinc-600 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {queue.map((d: any) => (
-                  <tr key={d.id} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${d.slaBreached ? 'bg-rose-500/[0.03]' : ''}`}>
-                    <td className="px-4 py-3 font-mono text-zinc-300 whitespace-nowrap">{d.reqId ?? d.id.slice(0, 8)}</td>
-                    <td className="px-4 py-3 font-medium text-white max-w-[160px] truncate">{d.counterpartyName ?? '—'}</td>
-                    <td className="px-4 py-3 text-zinc-400">{d.sector ?? '—'}</td>
-                    <td className="px-4 py-3 font-mono font-semibold text-white whitespace-nowrap">{d.requestedAmount != null ? fmtM(d.requestedAmount) : '—'}</td>
-                    <td className="px-4 py-3">
-                      {d.internalRating ? (
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.08] text-zinc-300">{d.internalRating}</span>
-                      ) : '—'}
-                    </td>
-                    <td className="px-4 py-3 font-mono font-bold whitespace-nowrap">
-                      <span className={d.pd != null ? (d.pd > 6 ? 'text-rose-400' : d.pd > 3 ? 'text-amber-400' : 'text-emerald-400') : 'text-zinc-600'}>
-                        {d.pd != null ? `${fmt(d.pd, 2)}%` : '—'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {d.ifrs9Stage ? (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                          d.ifrs9Stage === 'STAGE_3' ? 'bg-rose-500/20 text-rose-400' :
-                          d.ifrs9Stage === 'STAGE_2' ? 'bg-amber-500/20 text-amber-400' :
-                          'bg-emerald-500/10 text-emerald-500'
-                        }`}>{d.ifrs9Stage?.replace('_', ' ')}</span>
-                      ) : '—'}
-                    </td>
-                    <td className="px-4 py-3 font-mono whitespace-nowrap">
-                      <span className={d.ageInDays >= 7 ? 'text-rose-400 font-bold' : d.ageInDays >= 3 ? 'text-amber-400' : 'text-zinc-400'}>
-                        {d.ageInDays}j
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <PriorityBadge priority={d.priority} sla={d.slaBreached} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={d.status} />
-                    </td>
-                  </tr>
-                ))}
+                {queue.map((d: any) => {
+                  const pdColor = d.pd != null
+                    ? d.pd > 6 ? 'text-rose-400' : d.pd > 3 ? 'text-amber-400' : 'text-emerald-400'
+                    : 'text-zinc-600'
+                  const ifrs9Status = d.ifrs9Stage === 'STAGE_3' ? 'HIGH'
+                    : d.ifrs9Stage === 'STAGE_2' ? 'MED'
+                    : 'LOW'
+                  return (
+                    <tr key={d.id} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${d.slaBreached ? 'bg-rose-500/[0.03]' : ''}`}>
+                      {/* Contrepartie + ref */}
+                      <td className="px-4 py-3 max-w-[180px]">
+                        <div className="font-medium text-white truncate">{d.counterpartyName ?? '—'}</div>
+                        <div className="text-[9px] font-mono text-zinc-600 mt-0.5">{d.reqId ?? d.id?.slice(0, 8)}</div>
+                      </td>
+                      {/* Montant */}
+                      <td className="px-4 py-3 font-mono font-semibold text-white whitespace-nowrap">
+                        {d.requestedAmount != null ? fmtM(d.requestedAmount) : '—'}
+                      </td>
+                      {/* PD — couleur + valeur + icône pour daltoniens */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 font-mono font-bold text-[11px] ${pdColor}`}>
+                          {d.pd != null && d.pd > 4 && <AlertTriangle className="w-3 h-3" aria-hidden="true" />}
+                          {d.pd != null ? `${fmt(d.pd, 2)}%` : '—'}
+                        </span>
+                      </td>
+                      {/* Stage IFRS 9 — StatusBadge partagé */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {d.ifrs9Stage
+                          ? <StatusBadge status={ifrs9Status} size="sm" />
+                          : <span className="text-zinc-600">—</span>
+                        }
+                      </td>
+                      {/* Âge */}
+                      <td className="px-4 py-3 font-mono whitespace-nowrap">
+                        <span className={
+                          d.slaBreached ? 'text-rose-400 font-bold' :
+                          d.ageInDays >= 7 ? 'text-amber-400 font-bold' :
+                          d.ageInDays >= 3 ? 'text-amber-400' : 'text-zinc-400'
+                        }>
+                          {d.ageInDays ?? '—'}j
+                        </span>
+                      </td>
+                      {/* Priorité */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <PriorityBadge priority={d.priority} sla={d.slaBreached} />
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

@@ -46,6 +46,29 @@ except Exception as _e:
 logger = logging.getLogger("feature_pipeline")
 
 
+# ── Outlier Capping — Limites hard basées sur les percentiles 1%-99% training ─
+# Le capping winsorisé est appliqué AVANT l'inférence sur chaque feature dérivée.
+# Objectif : éviter qu'une valeur aberrante (ex: DTI=50 sur un payload mal saisi)
+# produise des SHAP values instables et fausse la décision.
+# Calibré sur Home Credit train set — à recalibrer sur données CEMAC réelles.
+OUTLIER_CAPS: Dict[str, Tuple[float, float]] = {
+    "DEBT_TO_INCOME":            (0.0,   4.0),   # P99 Home Credit ~3.5
+    "CREDIT_TO_INCOME_RATIO":    (0.0,  15.0),   # P99 ~12
+    "CREDIT_TO_ANNUITY_RATIO":   (0.0, 100.0),   # P99 ~90
+    "BUREAU_CREDIT_UTILIZATION": (0.0,   1.0),   # Ratio naturellement borné
+    "AMT_CREDIT":                (0.0,  4e8),    # P99 Home Credit
+    "AMT_INCOME_TOTAL":          (0.0,  1.2e8),  # P99 ~9M XAF / 100
+    "AMT_ANNUITY":               (0.0,  2e7),    # P99
+    "INST_LATE_PAYMENT_RATE":    (0.0,   1.0),   # Ratio borné
+    "INST_MEAN_DAYS_LATE":       (0.0, 180.0),   # 6 mois max (au-delà = Stage 3)
+    "POS_SK_DPD_MEAN":           (0.0, 180.0),
+    "AGE_YEARS":                 (18.0, 90.0),   # Plages biologiques raisonnables
+    "EMPLOYMENT_YEARS":          (0.0,  50.0),
+    "EXT_SOURCE_1":              (0.0,   1.0),
+    "EXT_SOURCE_2":              (0.0,   1.0),
+    "EXT_SOURCE_3":              (0.0,   1.0),
+}
+
 # ── Feature Schema : plages attendues pour validation pré-inférence ──────────
 # Ces plages sont calibrées sur le dataset d'entraînement (Home Credit).
 # Un feature hors plage déclenche un avertissement — pas un blocage.
@@ -257,6 +280,37 @@ def build_feature_vector(payload: dict[str, Any]) -> dict:
       - payload_quality_score: float 0.0-100.0
       - imputed_features: list of imputed feature names
     """
+    # ── Feature Store (Redis) — désactivé jusqu'à déploiement production ────────
+    # La connexion Redis était tentée à chaque inférence et échouait silencieusement,
+    # ajoutant une latence inutile (~5-20ms/req). Feature Store sera réactivé quand :
+    #   1. Une instance Redis est provisionnée et configurée via REDIS_URL env var
+    #   2. Le Feature Store est alimenté par le pipeline Core Banking
+    #   3. Le schema de cache est aligné sur le FEATURE_CONTRACT.json v1.0.0
+    # Pour activer : positionner FEATURE_STORE_ENABLED=true et REDIS_URL=redis://...
+    _feature_store_enabled = os.environ.get("FEATURE_STORE_ENABLED", "false").lower() == "true"
+    if _feature_store_enabled:
+        app_id = payload.get("application_id")
+        if app_id:
+            try:
+                import sys as _sys
+                _fs_path = os.path.join(os.path.dirname(__file__), "..", "01_data_layer", "feature_store")
+                if _fs_path not in _sys.path:
+                    _sys.path.insert(0, _fs_path)
+                from client import FeatureStoreClient
+                fs_client = FeatureStoreClient()
+                cached_features = fs_client.get_online_features(entity_id=app_id)
+                if cached_features:
+                    logger.info(f"Feature Store HIT pour {app_id}")
+                    lineage = {feat: "STORED" for feat in cached_features.keys()}
+                    return {
+                        "features": cached_features, "lineage": lineage,
+                        "raw_count": len(cached_features), "derived_count": 0,
+                        "imputed_count": 0, "imputed_features": [],
+                        "payload_quality_score": 100.0, "quality_band": "HIGH",
+                    }
+            except Exception as _e:
+                logger.warning(f"Feature Store ENABLED mais connexion échouée: {_e}")
+
     raw: dict[str, Any] = {}
     derived: dict[str, Any] = {}
     imputed_names: list[str] = []
@@ -362,17 +416,61 @@ def build_feature_vector(payload: dict[str, Any]) -> dict:
     derived["BUREAU_AMT_CREDIT_SUM_SUM"] = exposure * 0.8
     derived["BUREAU_AMT_CREDIT_SUM_DEBT_SUM"] = total_debt if total_debt else exposure * 0.4
 
-    # PD-linked instalment quality
-    pd_input = payload.get("pd_current", 2.0)
-    derived["INST_LATE_PAYMENT_RATE"] = min(pd_input / 100.0 * 2, 0.5)
-    derived["INST_MEAN_DAYS_LATE"] = max(0.0, pd_input * 0.5)
-    derived["POS_SK_DPD_MEAN"] = max(0.0, pd_input * 0.3)
+    # Instalment quality — derived from watchlist/DPD context when available.
+    # ⚠️ ANTI-FEEDBACK-LOOP: ces features NE SONT PAS dérivées de pd_current.
+    # En training (Home Credit), elles reflétaient l'historique réel de paiements.
+    # En inférence corporate, elles sont imputées à 0.0 (neutre) sauf si un
+    # historique DPD est fourni explicitement dans le payload (champs dpd_*).
+    # Utiliser pd_current ici créerait une boucle circulaire :
+    #   analyste pessimiste → pd_current ↑ → INST_LATE_PAYMENT_RATE ↑ → PD modèle ↑
+    # Ce pattern invalide toute interprétation causale des SHAP values.
+    explicit_dpd       = payload.get("days_past_due", 0)          # jours de retard réels déclarés
+    explicit_late_rate = payload.get("historical_late_rate", None) # taux de retard historique (0-1)
+
+    if explicit_late_rate is not None:
+        derived["INST_LATE_PAYMENT_RATE"] = float(min(explicit_late_rate, 1.0))
+        derived["INST_MEAN_DAYS_LATE"]    = float(max(0.0, explicit_dpd))
+        derived["POS_SK_DPD_MEAN"]        = float(max(0.0, explicit_dpd * 0.7))
+    elif explicit_dpd > 0:
+        # DPD déclaré sans taux détaillé — imputation conservative
+        derived["INST_LATE_PAYMENT_RATE"] = min(explicit_dpd / 365.0, 0.5)
+        derived["INST_MEAN_DAYS_LATE"]    = float(explicit_dpd)
+        derived["POS_SK_DPD_MEAN"]        = float(explicit_dpd * 0.7)
+    elif watchlist:
+        # Watchlist sans DPD précis → signal conservateur minimal
+        derived["INST_LATE_PAYMENT_RATE"] = 0.10
+        derived["INST_MEAN_DAYS_LATE"]    = 15.0
+        derived["POS_SK_DPD_MEAN"]        = 10.0
+    else:
+        # Aucun historique de paiement disponible → défaut neutre (zéro retard)
+        # Ces features seront marquées IMPUTED dans la lineage.
+        pass  # laisser dans _SAFE_DEFAULTS (0.0 → IMPUTED)
+
+    # ── Outlier capping winsorisé (avant assemblage) ──────────────────────────
+    # Appliqué uniquement sur les features DERIVED (les RAW viennent du CBS — les clipper
+    # serait masquer une erreur de donnée à la source, qui doit être signalée via schema_validation).
+    n_capped = 0
+    for feat, (lo, hi) in OUTLIER_CAPS.items():
+        if feat in derived:
+            original = derived[feat]
+            capped   = float(np.clip(original, lo, hi))
+            if capped != original:
+                derived[feat] = capped
+                n_capped += 1
+                logger.debug(
+                    f"[OUTLIER_CAP] {feat}: {original:.4f} → {capped:.4f} "
+                    f"(bounds=[{lo}, {hi}])"
+                )
+    if n_capped > 0:
+        logger.info(f"[OUTLIER_CAP] {n_capped} features cappées dans les plages training.")
 
     # ── Assemble final vector, track lineage ──────────────────────────────────
     features_out: dict[str, float] = {}
     lineage: dict[str, str] = {}
 
     # Safe scalar defaults per feature group
+    # Les features DPD/instalment sont à 0.0 quand aucun historique n'est disponible.
+    # Ceci est une imputation neutre (pas de leakage depuis pd_current).
     _SAFE_DEFAULTS = {
         "FLAG_OWN_CAR": 0.0, "FLAG_OWN_REALTY": 0.0,
         "NAME_TYPE_SUITE": 0.0, "NAME_EDUCATION_TYPE": 1.0,
@@ -381,6 +479,12 @@ def build_feature_vector(payload: dict[str, Any]) -> dict:
         "CNT_FAM_MEMBERS": 2.0, "WEEKDAY_APPR_PROCESS_START": 2.0,
         "CODE_GENDER": 0.0, "DAYS_EMPLOYED_ANOM": 0.0,
         "FLAG_DOCUMENT_SUM": 3.0, "FLAG_CONTACT_SUM": 2.0,
+        # Instalment / DPD defaults (neutre — aucun retard connu)
+        "INST_LATE_PAYMENT_RATE": 0.0, "INST_MEAN_DAYS_LATE": 0.0,
+        "INST_MAX_DAYS_LATE": 0.0,     "INST_DAYS_LATE_SUM": 0.0,
+        "INST_IS_LATE_SUM": 0.0,
+        "POS_SK_DPD_MEAN": 0.0,        "POS_SK_DPD_MAX": 0.0,
+        "POS_SK_DPD_DEF_MEAN": 0.0,    "POS_SK_DPD_DEF_MAX": 0.0,
     }
 
     for feat in EXPECTED_FEATURES:

@@ -22,6 +22,16 @@ export class StressTestingController {
     return this.stressTestingService.getPortfolioAnalytics();
   }
 
+  /**
+   * GET /scenarios/transition-matrices
+   * Retourne les matrices de transition calibrées pour les 3 scénarios.
+   * Utilisé par le comité des risques pour valider les hypothèses de stress.
+   */
+  @Get('transition-matrices')
+  getTransitionMatrices() {
+    return this.stressTestingService.getTransitionMatrices();
+  }
+
   @Post('run')
   async runScenario(
     @Body() params: {

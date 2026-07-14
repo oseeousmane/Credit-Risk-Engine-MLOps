@@ -420,11 +420,12 @@ model Counterparty {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  clientUsers  User[]        @relation("ClientCounterparty")
+  clientUsers  User[]              @relation("ClientCounterparty")
   applications Application[]
   decisions    Decision[]
   exposures    Exposure[]
   documents    Document[]
+  ifrs9Audits  Ifrs9StagingAudit[]
 }
 
 model Exposure {
@@ -467,8 +468,9 @@ model Application {
   ownerId String?
   owner   User?   @relation("OwnerRelation", fields: [ownerId], references: [id])
 
-  decision  Decision?
-  documents Document[]
+  decision       Decision?
+  documents      Document[]
+  ifrs9Audits    Ifrs9StagingAudit[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1337,4 +1339,82 @@ model WebhookDelivery {
   attemptCount   Int                 @default(1)
   responseBody   String?
   createdAt      DateTime            @default(now())
+}
+
+// ----------------------------------------------------------------------
+// IFRS 9 Staging Audit — conformité COBAC
+// Chaque décision de staging (classify()) est persistée ici.
+// Immuable après création (audit trail réglementaire).
+// ----------------------------------------------------------------------
+model Ifrs9StagingAudit {
+  id              String  @id @default(uuid())
+  stagingId       String  @unique  // UUID généré par ifrs9_staging.py
+
+  // Lien optionnel vers l'application NestJS (absent pour les scorings ad-hoc)
+  applicationId   String?
+  application     Application? @relation(fields: [applicationId], references: [id])
+
+  // Lien optionnel vers la contrepartie
+  counterpartyId  String?
+  counterparty    Counterparty? @relation(fields: [counterpartyId], references: [id])
+
+  // Classification IFRS 9
+  stage           IFRS9Stage
+  previousStage   IFRS9Stage?
+  sicrTriggered   Boolean
+  stagingReasons  Json         // String[]
+
+  // Paramètres de risque
+  pdCurrent       Float
+  pdOrigination   Float
+  lgdEstimate     Float
+  lgdMethod       String
+  eadEstimate     Float
+  eirUsed         Float
+
+  // Provisions ECL
+  eclProvision    Float
+  eclHorizon      String       // "12_MONTH" | "LIFETIME"
+  rwaEstimate     Float?
+
+  // Contexte d'exécution
+  modelVersion    String
+  scoredBy        String       // "PYTHON_MODEL" | "RULE_ENGINE"
+  requestId       String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([applicationId])
+  @@index([counterpartyId])
+  @@index([stage])
+  @@index([createdAt])
+}
+
+// ----------------------------------------------------------------------
+// Shadow Scoring Log — comparaison champion vs challenger en observation
+// ----------------------------------------------------------------------
+model ShadowScoreLog {
+  id                   String  @id @default(uuid())
+  applicationId        String?
+  requestId            String?
+
+  // Champion (décision effective)
+  championVersion      String
+  championPdScore      Float
+  championRecommendation String
+
+  // Shadow (observation uniquement — ne pas exposer au client)
+  shadowVersion        String
+  shadowPdScore        Float
+  shadowPdDelta        Float   // shadow - champion (pp)
+
+  // Métriques de divergence
+  recommendationMatch  Boolean  // true si même décision
+  pdDeltaAbsPercent    Float    // |delta| en pp
+
+  createdAt            DateTime @default(now())
+
+  @@index([applicationId])
+  @@index([createdAt])
+  @@index([recommendationMatch])
 }

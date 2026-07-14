@@ -42,7 +42,7 @@ function KPICards({ kpis }: { kpis: any }) {
   const animatedExp = useCountUp(Math.round(exposureRaw), 900, 300)
   const avgPd = kpis?.avgPD || 0
 
-  const fmtExp = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(1)}B` : `$${v.toFixed(1)}M`
+  const fmtExp = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)} T XAF` : `${v.toFixed(1)} Mds XAF`
 
   const cards = [
     {
@@ -209,9 +209,9 @@ export default function CounterpartyListPage() {
                       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${
                         c.watchlistFlag 
                         ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
-                        : 'bg-[#3ECF8E]/10 border-[#3ECF8E]/20 text-[#3ECF8E]'
+                        : 'bg-brand-400/10 border-brand-400/20 text-brand-400'
                       }`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${c.watchlistFlag ? 'bg-rose-500 animate-pulse' : 'bg-[#3ECF8E]'}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${c.watchlistFlag ? 'bg-rose-500 animate-pulse' : 'bg-brand-400'}`} />
                         <span className="text-[9px] font-bold uppercase tracking-widest">{c.watchlistFlag ? 'WATCHLIST' : 'STABLE'}</span>
                       </div>
                     </td>
@@ -264,9 +264,9 @@ export default function CounterpartyListPage() {
                   <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded border ${
                       c.watchlistFlag 
                       ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
-                      : 'bg-[#3ECF8E]/10 border-[#3ECF8E]/20 text-[#3ECF8E]'
+                      : 'bg-brand-400/10 border-brand-400/20 text-brand-400'
                     }`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${c.watchlistFlag ? 'bg-rose-500 animate-pulse' : 'bg-[#3ECF8E]'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${c.watchlistFlag ? 'bg-rose-500 animate-pulse' : 'bg-brand-400'}`} />
                       <span className="text-[8px] font-bold uppercase tracking-widest">{c.watchlistFlag ? 'WATCHLIST' : 'STABLE'}</span>
                   </div>
                   <div className="w-20 opacity-70 group-hover:opacity-100 transition-opacity">

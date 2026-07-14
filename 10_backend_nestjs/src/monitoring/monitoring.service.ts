@@ -96,20 +96,45 @@ export class MonitoringService {
     });
     if (!activeModel) return;
 
-    // Fetch real operational counters from the Python /metrics endpoint.
-    // If the Python service is unreachable, skip -- do NOT substitute fabricated data.
-    let pythonMetrics: Record<string, any> | null = null;
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000);
-      const apiKey = process.env.SCORING_API_KEY || '';
-      const headers: Record<string, string> = {};
-      if (apiKey) headers['X-Api-Key'] = apiKey;
+    // Fetch /metrics and /drift in parallel — both calls are independent.
+    // If /metrics is unreachable, skip the whole cycle.
+    const apiKey = process.env.SCORING_API_KEY || '';
+    const commonHeaders: Record<string, string> = {};
+    if (apiKey) commonHeaders['X-Api-Key'] = apiKey;
 
-      const res = await fetch(`${scoringUrl}/metrics`, { signal: controller.signal, headers });
-      clearTimeout(timeout);
-      if (res.ok) pythonMetrics = await res.json();
+    const metricsController = new AbortController();
+    const metricsTimeout = setTimeout(() => metricsController.abort(), 3000);
+
+    const driftController = new AbortController();
+    const driftTimeout = setTimeout(() => driftController.abort(), 5000);
+
+    let pythonMetrics: Record<string, any> | null = null;
+    let driftData: {
+      global_psi: number;
+      top_drifting_features: { feature: string; psi: number; status: string }[];
+      alert_level: string;
+      buffer_size: number;
+      recommendation: string;
+    } | null = null;
+
+    try {
+      const [metricsRes, driftRes] = await Promise.all([
+        fetch(`${scoringUrl}/metrics`, { signal: metricsController.signal, headers: commonHeaders }),
+        fetch(`${scoringUrl}/drift`,   { signal: driftController.signal,   headers: commonHeaders })
+          .catch((driftErr) => {
+            this.logger.debug(`[DRIFT] /drift endpoint unreachable — PSI not updated (${driftErr})`);
+            return null;
+          }),
+      ]);
+      clearTimeout(metricsTimeout);
+      clearTimeout(driftTimeout);
+
+      if (!metricsRes.ok) throw new Error(`/metrics returned HTTP ${metricsRes.status}`);
+      pythonMetrics = await metricsRes.json();
+      if (driftRes?.ok) driftData = await driftRes.json();
     } catch {
+      clearTimeout(metricsTimeout);
+      clearTimeout(driftTimeout);
       this.logger.warn('[MONITORING] Python /metrics unreachable -- skipping metric ingestion cycle.');
       return;
     }
@@ -121,14 +146,42 @@ export class MonitoringService {
       `fallbacks=${pythonMetrics.fallback_count} errors=${pythonMetrics.error_count}`
     );
 
+    // ── Drift PSI : résultat de l'appel /drift parallèle ─────────────────────
+    let globalPsi = 0.0;
+    let criticalFeatures: { feature: string; psi: number; status: string }[] = [];
+
+    if (driftData) {
+      globalPsi = driftData.global_psi ?? 0.0;
+      criticalFeatures = driftData.top_drifting_features ?? [];
+
+      // Écrire le PSI dans ModelVersion — déclenche evaluateModelDrift() au prochain cron
+      await this.prisma.modelVersion.update({
+        where: { id: activeModel.id },
+        data: { psi: globalPsi },
+      });
+
+      if (driftData.alert_level === 'CRITICAL') {
+        this.logger.error(
+          `[DRIFT] CRITICAL — PSI=${globalPsi.toFixed(3)} | ` +
+          `${driftData.recommendation}`
+        );
+      } else if (driftData.alert_level === 'WARNING') {
+        this.logger.warn(
+          `[DRIFT] WARNING — PSI=${globalPsi.toFixed(3)} | ` +
+          `Buffer=${driftData.buffer_size} inferences`
+        );
+      } else if (driftData.alert_level !== 'INSUFFICIENT_DATA') {
+        this.logger.log(`[DRIFT] OK — PSI=${globalPsi.toFixed(3)} (stable)`);
+      }
+    }
+
     await this.ingestMetrics(activeModel.id, {
       inferenceVolume: pythonMetrics.inference_count ?? 0,
       errorRate: pythonMetrics.error_rate ?? 0,
-      // Latency and drift come from the real model -- use stored values until a
-      // dedicated /drift endpoint is implemented on the Python side.
       latencyP50: 0,
       latencyP99: 0,
-      criticalFeatures: [],
+      criticalFeatures,
+      psi: globalPsi > 0 ? globalPsi : undefined,
     });
   }
 
@@ -172,11 +225,11 @@ export class MonitoringService {
       },
     });
 
-    // Alert if quality band degrades to LOW
-    if (payload.qualityBand === 'LOW') {
+    // Alerte si la qualité du payload tombe sous le seuil (>50% features imputées)
+    if (payload.payloadQualityScore < QUALITY_WARN_THRESHOLD || payload.qualityBand === 'LOW') {
       this.logger.warn(
-        `[MONITORING] LOW payload quality detected: ${payload.payloadQualityScore.toFixed(1)}% ` +
-        `(Imputed=${payload.imputedFeaturesCount})`
+        `[MONITORING] LOW payload quality: ${payload.payloadQualityScore.toFixed(1)}% ` +
+        `(threshold=${QUALITY_WARN_THRESHOLD}%, Imputed=${payload.imputedFeaturesCount})`
       );
     }
 

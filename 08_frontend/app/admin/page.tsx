@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -35,11 +35,10 @@ function useCountUp(target: number, duration = 1200, delay = 0) {
   return v
 }
 
-/** Smart format: M for millions, B for billions */
 function fmtExposure(v: number | null | undefined): string {
   if (v == null) return '—'
-  if (v >= 1000) return `$${(v / 1000).toFixed(1)}B`
-  return `$${v.toFixed(1)}M`
+  if (v >= 1000) return `${(v / 1000).toFixed(1)} T XAF`
+  return `${v.toFixed(1)} Mds XAF`
 }
 
 
@@ -71,15 +70,15 @@ function KPICards({ kpis, summary }: { kpis: any; summary: any }) {
 
   const cards = [
     {
-      label: 'Total Portfolio (EAD)',
+      label: 'Exposition Totale (EAD)',
       value: fmtExposure(exposureInt > 0 ? exposureInt / 10 : exposureRaw),
       delta: summary?.model?.status ?? 'ML actif',
       deltaUp: true,
       sub: 'Exposition au Risque',
       icon: TrendingUp,
-      iconColor: 'text-[#3ECF8E]',
-      iconBg: 'bg-[#3ECF8E]/10 border-[#3ECF8E]/20',
-      accent: '#3ECF8E',
+      iconColor: 'text-brand-400',
+      iconBg: 'bg-brand-400/10 border-brand-400/20',
+      accent: '#3B7BFF',
       badge: null,
     },
     {
@@ -103,17 +102,17 @@ function KPICards({ kpis, summary }: { kpis: any; summary: any }) {
       deltaUp: gini != null ? gini >= 45 : true,
       sub: 'portfolio-wide (1Y)',
       icon: Activity,
-      iconColor: 'text-[#3ECF8E]',
-      iconBg: 'bg-[#3ECF8E]/10 border-[#3ECF8E]/20',
-      accent: '#3ECF8E',
+      iconColor: 'text-brand-400',
+      iconBg: 'bg-brand-400/10 border-brand-400/20',
+      accent: '#3B7BFF',
       badge: null,
     },
     {
-      label: 'Pending Decisions',
+      label: 'Décisions en attente',
       value: `${decisions}`,
-      delta: overrideRate != null ? `Override ${overrideRate.toFixed(1)}%` : 'en attente',
+      delta: overrideRate != null ? `Dérogation ${overrideRate.toFixed(1)}%` : 'en attente',
       deltaUp: (overrideRate ?? 0) <= 15,
-      sub: 'awaiting approval',
+      sub: 'approbation requise',
       icon: Clock,
       iconColor: 'text-rose-400',
       iconBg: 'bg-rose-500/10 border-rose-500/20',
@@ -302,9 +301,9 @@ function PortfolioOverview({ kpis, summary, eclTrend }: { kpis: any; summary: an
                 : 'En attente de données ECL'}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" />
-            <span className="text-[8px] text-[#3ECF8E] font-bold">LIVE</span>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-brand-400/10 border border-brand-400/20 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+            <span className="text-[8px] text-brand-400 font-bold">LIVE</span>
           </div>
         </div>
         <div className="relative h-[105px]">
@@ -319,8 +318,8 @@ function PortfolioOverview({ kpis, summary, eclTrend }: { kpis: any; summary: an
             >
               <defs>
                 <linearGradient id="eclGradAdmin" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3ECF8E" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#3ECF8E" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#3B7BFF" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#3B7BFF" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {[20, 40, 60, 80].map(y => (
@@ -328,26 +327,26 @@ function PortfolioOverview({ kpis, summary, eclTrend }: { kpis: any; summary: an
                   stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" strokeDasharray="2 3" />
               ))}
               <path d={areaPath} fill="url(#eclGradAdmin)" />
-              <path d={linePath} fill="none" stroke="#3ECF8E" strokeWidth="1.5"
+              <path d={linePath} fill="none" stroke="#3B7BFF" strokeWidth="1.5"
                 strokeLinecap="round" strokeLinejoin="round"
-                style={{ filter: 'drop-shadow(0 0 4px rgba(62,207,142,0.7))' }} />
+                style={{ filter: 'drop-shadow(0 0 4px rgba(59,123,255,0.7))' }} />
               {hoverX !== null && progress > 0.9 && pts.length > 1 && (() => {
                 const idx = Math.min(Math.max(Math.round((hoverX / W) * (pts.length - 1)), 0), pts.length - 1)
                 const pt = pts[idx]
                 return (
                   <g>
                     <line x1={pt[0]} y1={0} x2={pt[0]} y2={H} stroke="rgba(255,255,255,0.2)" strokeDasharray="1 2" strokeWidth="0.5" />
-                    <circle cx={pt[0]} cy={pt[1]} r="2.5" fill="#3ECF8E" style={{ filter: 'drop-shadow(0 0 6px #3ECF8E)' }} />
-                    <rect x={Math.min(Math.max(pt[0] - 16, 0), W - 32)} y={Math.max(pt[1] - 13, 0)} width="32" height="10" rx="2" fill="#000" stroke="#3ECF8E" strokeWidth="0.5" opacity="0.9" />
-                    <text x={Math.min(Math.max(pt[0], 16), W - 16)} y={Math.max(pt[1] - 7, 6)} fontSize="3.5" fill="#3ECF8E" textAnchor="middle" fontFamily="monospace" fontWeight="bold">
+                    <circle cx={pt[0]} cy={pt[1]} r="2.5" fill="#3B7BFF" style={{ filter: 'drop-shadow(0 0 6px rgba(59,123,255,0.8))' }} />
+                    <rect x={Math.min(Math.max(pt[0] - 16, 0), W - 32)} y={Math.max(pt[1] - 13, 0)} width="32" height="10" rx="2" fill="#000" stroke="#3B7BFF" strokeWidth="0.5" opacity="0.9" />
+                    <text x={Math.min(Math.max(pt[0], 16), W - 16)} y={Math.max(pt[1] - 7, 6)} fontSize="3.5" fill="#3B7BFF" textAnchor="middle" fontFamily="monospace" fontWeight="bold">
                       {fmtExposure(eclData[idx])} · {eclLabels[idx]}
                     </text>
                   </g>
                 )
               })()}
               {hoverX === null && progress > 0.9 && pts.length > 0 && (
-                <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.5" fill="#3ECF8E"
-                  style={{ filter: 'drop-shadow(0 0 6px #3ECF8E)' }} />
+                <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.5" fill="#3B7BFF"
+                  style={{ filter: 'drop-shadow(0 0 6px rgba(59,123,255,0.8))' }} />
               )}
             </svg>
           )}
@@ -384,7 +383,7 @@ function TopConcentrations({ data, isLoading }: { data: any[]; isLoading: boolea
         <div className="flex items-center gap-2">
           {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-600" />}
           <Link href="/counterparty"
-            className="text-[11px] font-semibold text-[#3ECF8E] hover:text-[#3ECF8E]/80 transition-colors flex items-center gap-1">
+            className="text-[11px] font-semibold text-brand-400 hover:text-brand-400/80 transition-colors flex items-center gap-1">
             Voir tout <ArrowUpRight className="w-3 h-3" />
           </Link>
         </div>
@@ -417,7 +416,7 @@ function TopConcentrations({ data, isLoading }: { data: any[]; isLoading: boolea
                         <div className="w-6 h-6 rounded-lg bg-white/[0.06] border border-white/[0.05] flex items-center justify-center text-[8px] font-bold text-zinc-400 flex-shrink-0">
                           {(c.name ?? 'XX').slice(0, 2).toUpperCase()}
                         </div>
-                        <span className="text-[12px] font-semibold text-white truncate max-w-[160px] group-hover:text-[#3ECF8E] transition-colors">{c.name}</span>
+                        <span className="text-[12px] font-semibold text-white truncate max-w-[160px] group-hover:text-brand-400 transition-colors">{c.name}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-zinc-500 text-[11px]">{c.sector ?? '—'}</td>
@@ -471,7 +470,7 @@ function DecisionTable({ queue, isLoading, router }: { queue: any[]; isLoading: 
     <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05]">
         <div className="flex items-center gap-3">
-          <GitMerge className="w-4 h-4 text-[#3ECF8E]" />
+          <GitMerge className="w-4 h-4 text-brand-400" />
           <div>
             <div className="text-[13px] font-bold text-white">Decision Queue</div>
             <div className="text-[10px] text-zinc-500">Active credit decisions requiring action</div>
@@ -481,12 +480,12 @@ function DecisionTable({ queue, isLoading, router }: { queue: any[]; isLoading: 
           {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-600" />}
           {queue.length > 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
               <span className="text-[10px] text-zinc-400 font-medium">{queue.length} open</span>
             </div>
           )}
           <Link href="/decisioning"
-            className="text-[11px] font-semibold text-[#3ECF8E] hover:text-[#3ECF8E]/80 transition-colors flex items-center gap-1">
+            className="text-[11px] font-semibold text-brand-400 hover:text-brand-400/80 transition-colors flex items-center gap-1">
             View all <ArrowUpRight className="w-3 h-3" />
           </Link>
         </div>
@@ -603,7 +602,7 @@ function RightPanel({ alerts, auditEvents, summary }: { alerts: any[]; auditEven
       <div className="bg-[#0d0d0d] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/[0.05]">
           <div className="flex items-center gap-2">
-            <Bell className="w-3.5 h-3.5 text-[#3ECF8E]" />
+            <Bell className="w-3.5 h-3.5 text-brand-400" />
             <span className="text-[12px] font-bold text-white">Alerts</span>
           </div>
           {alerts.length > 0 && (
@@ -796,7 +795,7 @@ export default function AdminOverviewPage() {
                 <FileText className="w-3.5 h-3.5" /> Export Report
               </Link>
               <Link href="/stress-testing"
-                className="px-5 py-2.5 bg-[#3ECF8E] text-[#0a0a0a] text-[12px] font-bold rounded-lg hover:bg-[#3ECF8E]/90 transition-all shadow-[0_0_20px_rgba(62,207,142,0.25)] hover:scale-105 active:scale-95 flex items-center gap-2">
+                className="px-5 py-2.5 bg-brand-400 text-[#0a0a0a] text-[12px] font-bold rounded-lg hover:bg-brand-400/90 transition-all shadow-brand hover:scale-105 active:scale-95 flex items-center gap-2">
                 <Zap className="w-3.5 h-3.5" /> Run Stress Test
               </Link>
             </div>

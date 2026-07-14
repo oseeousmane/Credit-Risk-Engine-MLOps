@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -65,10 +65,10 @@ function CallbackHandler() {
   return (
     <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6 font-sans">
       <div className="w-full max-w-md bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-8 relative overflow-hidden flex flex-col items-center text-center">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#3ECF8E]/8 rounded-full blur-[80px]" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-400/8 rounded-full blur-[80px]" />
         
-        <div className="w-12 h-12 rounded-xl bg-[#3ECF8E]/10 border border-[#3ECF8E]/25 flex items-center justify-center shadow-[0_0_24px_rgba(62,207,142,0.2)] mb-6 animate-pulse">
-          <TrendingUp className="w-6 h-6 text-[#3ECF8E]" />
+        <div className="w-12 h-12 rounded-xl bg-brand-400/10 border border-brand-400/25 flex items-center justify-center shadow-[0_0_24px_rgba(59,123,255,0.2)] mb-6 animate-pulse">
+          <TrendingUp className="w-6 h-6 text-brand-400" />
         </div>
         
         <h2 className="text-lg font-bold text-white mb-2 relative">Enterprise SSO</h2>
@@ -78,7 +78,7 @@ function CallbackHandler() {
             <ShieldCheck className="w-4 h-4 flex-shrink-0" /> {error}
           </div>
         ) : (
-          <p className="text-[12px] text-[#3ECF8E] mt-2 relative font-medium flex items-center gap-2">
+          <p className="text-[12px] text-brand-400 mt-2 relative font-medium flex items-center gap-2">
             <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -105,10 +105,10 @@ export default function AuthCallbackPage() {
     <React.Suspense fallback={
       <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6 font-sans">
         <div className="w-full max-w-md bg-[#0d0d0d] border border-white/[0.08] rounded-2xl p-8 relative flex flex-col items-center">
-          <div className="w-12 h-12 rounded-xl bg-[#3ECF8E]/10 border border-[#3ECF8E]/25 flex items-center justify-center animate-pulse mb-6">
-            <TrendingUp className="w-6 h-6 text-[#3ECF8E]" />
+          <div className="w-12 h-12 rounded-xl bg-brand-400/10 border border-brand-400/25 flex items-center justify-center animate-pulse mb-6">
+            <TrendingUp className="w-6 h-6 text-brand-400" />
           </div>
-          <p className="text-[12px] text-[#3ECF8E] font-medium">Loading authentication module...</p>
+          <p className="text-[12px] text-brand-400 font-medium">Loading authentication module...</p>
         </div>
       </div>
     }>

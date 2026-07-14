@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import Link from 'next/link'
 import { ArrowRight, TrendingUp, X } from 'lucide-react'
 import { useState } from 'react'
@@ -12,12 +12,12 @@ export function HeroHeader() {
     <div className="fixed top-0 left-0 right-0 z-50 flex flex-col">
       {/* Announcement Bar */}
       {barVisible && (
-        <div className="relative bg-gradient-to-r from-[#0d1f13] via-[#0a1a2e] to-[#0d1f13] border-b border-[#3ECF8E]/20 px-4 py-2.5 flex items-center justify-center gap-3">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#3ECF8E]/5 via-blue-500/5 to-[#3ECF8E]/5" />
-          <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse shadow-[0_0_8px_#3ECF8E] relative z-10" />
+        <div className="relative bg-gradient-to-r from-[#0d1f13] via-[#0a1a2e] to-[#0d1f13] border-b border-brand-400/20 px-4 py-2.5 flex items-center justify-center gap-3">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-blue-500/5 to-brand-400/5" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse shadow-[0_0_8px_rgba(59,123,255,0.6)] relative z-10" />
           <p className="text-[12px] font-medium text-zinc-300 relative z-10 text-center">
             Octaix Risk Engine now supports{' '}
-            <span className="text-[#3ECF8E] font-bold">Enterprise Credit + Microfinance Pilot Workflows</span>
+            <span className="text-brand-400 font-bold">Enterprise Credit + Microfinance Pilot Workflows</span>
           </p>
           <Link
             href={`/${locale}/modules`}
@@ -38,12 +38,12 @@ export function HeroHeader() {
       <nav className="bg-[#030303]/80 backdrop-blur-xl border-b border-white/[0.05] px-6 h-14 flex items-center justify-between">
         {/* Logo */}
         <Link href={`/${locale}/home`} className="flex items-center gap-2.5 group flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#3ECF8E] to-emerald-600 flex items-center justify-center shadow-[0_0_20px_rgba(62,207,142,0.3)] group-hover:shadow-[0_0_30px_rgba(62,207,142,0.5)] transition-all">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-400 to-brand-500 flex items-center justify-center shadow-[0_0_20px_rgba(59,123,255,0.3)] group-hover:shadow-[0_0_30px_rgba(59,123,255,0.5)] transition-all">
             <TrendingUp className="w-4 h-4 text-[#030303]" />
           </div>
           <div>
             <span className="text-[15px] font-bold text-white tracking-tight leading-none block">Octaix</span>
-            <span className="text-[9px] font-bold text-[#3ECF8E]/70 uppercase tracking-[0.2em] leading-none">Risk Engine</span>
+            <span className="text-[9px] font-bold text-brand-400/70 uppercase tracking-[0.2em] leading-none">Risk Engine</span>
           </div>
         </Link>
 
@@ -69,7 +69,7 @@ export function HeroHeader() {
         {/* CTA */}
         <Link
           href={`/${locale}/contact`}
-          className="inline-flex items-center gap-2 px-5 py-2 bg-[#3ECF8E] text-[#030303] text-[13px] font-bold rounded-lg hover:bg-[#3ECF8E]/90 transition-all shadow-[0_0_20px_rgba(62,207,142,0.2)] hover:shadow-[0_0_30px_rgba(62,207,142,0.4)] hover:scale-105 active:scale-95"
+          className="inline-flex items-center gap-2 px-5 py-2 bg-brand-400 text-[#030303] text-[13px] font-bold rounded-lg hover:bg-brand-400/90 transition-all shadow-[0_0_20px_rgba(59,123,255,0.2)] hover:shadow-[0_0_30px_rgba(59,123,255,0.4)] hover:scale-105 active:scale-95"
         >
           Request Demo
         </Link>

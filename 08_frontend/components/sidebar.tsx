@@ -1,5 +1,4 @@
 'use client'
-import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -140,12 +139,12 @@ export function Sidebar() {
     <div className="w-full h-full flex flex-col bg-[#080808] border-r border-white/[0.06]">
       {/* Brand */}
       <div className="h-16 px-5 flex items-center gap-3 border-b border-white/[0.06] flex-shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-[#3ECF8E]/10 border border-[#3ECF8E]/25 flex items-center justify-center shadow-[0_0_20px_rgba(62,207,142,0.15)]">
-          <TrendingUp className="w-4 h-4 text-[#3ECF8E]" />
+        <div className="w-8 h-8 rounded-lg bg-brand-400/10 border border-brand-400/25 flex items-center justify-center shadow-[0_0_20px_rgba(59,123,255,0.2)]">
+          <TrendingUp className="w-4 h-4 text-brand-400" />
         </div>
         <div>
-          <div className="text-sm font-black text-white tracking-tight leading-none" style={{letterSpacing: '-0.02em'}}>RiskEngine</div>
-          <div className="text-[10px] text-zinc-600 leading-none mt-0.5 uppercase tracking-widest">Enterprise v4.2</div>
+          <div className="text-sm font-black text-white tracking-tight leading-none" style={{letterSpacing: '-0.02em'}}>ORE</div>
+          <div className="text-[10px] text-zinc-600 leading-none mt-0.5 uppercase tracking-widest">Octaix Risk Engine</div>
         </div>
       </div>
 
@@ -172,7 +171,7 @@ export function Sidebar() {
                     {active && (
                       <motion.div
                         layoutId="sidebar-active-bg"
-                        className="absolute inset-0 bg-[#3ECF8E]/[0.08] rounded-lg"
+                        className="absolute inset-0 bg-brand-400/[0.08] rounded-lg"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -182,24 +181,24 @@ export function Sidebar() {
                     {active && (
                       <motion.div
                         layoutId="sidebar-active-indicator"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#3ECF8E] rounded-r-full shadow-[0_0_10px_rgba(62,207,142,0.8)]"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-brand-400 rounded-r-full shadow-[0_0_10px_rgba(59,123,255,0.6)]"
                         transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
                       />
                     )}
                     <Icon className={cn(
                       'w-4 h-4 flex-shrink-0 transition-colors relative z-10',
-                      active ? 'text-[#3ECF8E]' : 'text-zinc-600 group-hover:text-zinc-400'
+                      active ? 'text-brand-400' : 'text-zinc-600 group-hover:text-zinc-400'
                     )} />
                     <span className="flex-1 truncate relative z-10">{item.name}</span>
                     {item.badge === 'LIVE' && (
-                      <span className="relative z-10 flex items-center gap-1 text-[9px] font-bold text-[#3ECF8E] bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded px-1.5 py-0.5 uppercase tracking-wider">
-                        <span className="w-1 h-1 rounded-full bg-[#3ECF8E] animate-pulse shadow-[0_0_8px_rgba(62,207,142,0.8)]" />
+                      <span className="relative z-10 flex items-center gap-1 text-[9px] font-bold text-brand-400 bg-brand-400/10 border border-brand-400/20 rounded px-1.5 py-0.5 uppercase tracking-wider">
+                        <span className="w-1 h-1 rounded-full bg-brand-400 animate-pulse shadow-[0_0_8px_rgba(59,123,255,0.5)]" />
                         Live
                       </span>
                     )}
                     {item.badge === 'ONLINE' && (
-                      <span className="relative z-10 flex items-center gap-1 text-[9px] font-bold text-[#3ECF8E] bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded px-1.5 py-0.5 uppercase tracking-wider">
-                        <span className="w-1 h-1 rounded-full bg-[#3ECF8E] animate-pulse shadow-[0_0_8px_rgba(62,207,142,0.8)]" />
+                      <span className="relative z-10 flex items-center gap-1 text-[9px] font-bold text-brand-400 bg-brand-400/10 border border-brand-400/20 rounded px-1.5 py-0.5 uppercase tracking-wider">
+                        <span className="w-1 h-1 rounded-full bg-brand-400 animate-pulse shadow-[0_0_8px_rgba(59,123,255,0.5)]" />
                         Online
                       </span>
                     )}
@@ -224,7 +223,7 @@ export function Sidebar() {
           </Link>
         </div>
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-          <div className="w-8 h-8 rounded-full bg-[#3ECF8E]/15 border border-[#3ECF8E]/25 flex items-center justify-center text-[#3ECF8E] text-[11px] font-black flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-brand-400/15 border border-brand-400/25 flex items-center justify-center text-brand-400 text-[11px] font-black flex-shrink-0">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
